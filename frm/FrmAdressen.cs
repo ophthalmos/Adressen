@@ -11,6 +11,7 @@ using System.Xml;
 using System.Xml.Linq;
 using Adressen.cls;
 using Google.Apis.Auth.OAuth2;
+using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.PeopleService.v1;
 using Google.Apis.PeopleService.v1.Data;
 using Google.Apis.Services;
@@ -119,6 +120,7 @@ public partial class FrmAdressen : Form
     private int lastColumn = -1;
     private SortOrder lastOrder = SortOrder.None;
     private string lastTooltipText = string.Empty;
+    private bool birthdayShow = true; // false wenn Zugriffstoken für Google-Kontakte fehlt oder abgelaufen ist
     private readonly string[] documentTypes = ["*.doc", "*.dot", "*.docx", "*.doct", "*.docm", "*.odt", "*.ott", "*.fodt", "*.uot", "*.pdf"];
     private List<string> addressCbItems_Anrede = [];
     private List<string> addressCbItems_Präfix = [];
@@ -2209,6 +2211,7 @@ public partial class FrmAdressen : Form
         });
         try  // https://console.cloud.google.com/flows/enableapi?apiid=people.googleapis.com
         {
+            if (!File.Exists(Path.Combine(tokenDir, "Google.Apis.Auth.OAuth2.Responses.TokenResponse-user"))) { birthdayShow = false; }
             string[] scopes = [PeopleServiceService.Scope.Contacts]; // für OAuth2-Freigabe, mehrere Eingaben mit Komma gerennt (PeopleServiceService.Scope.ContactsOtherReadonly)
             UserCredential credential;
             using (FileStream stream = new(secretPath, FileMode.Open, FileAccess.Read)) // "..\\..\\..\\client_secret.json"
@@ -2230,6 +2233,11 @@ public partial class FrmAdressen : Form
             peopleRequest.PageSize = 2000; // The number of connections to include in the response. Valid values are between 1 and 2000, inclusive. Defaults to 100 if not set or set to 0.
             e.Result = peopleRequest.Execute();
         }
+        //catch (TokenResponseException ex)
+        //{
+        //    birthdayAutoShow = false;
+        //    MessageBox.Show(ex.Message);
+        //}
         catch (Google.GoogleApiException ex)
         {
             Invoke(() =>
@@ -2244,6 +2252,8 @@ public partial class FrmAdressen : Form
 
     private void BackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
     {
+        //var birthdayShow = true; // keine Geburtstagsanzeige wenn Token abgelaufen und Browser gestartet wird
+
         Invoke(() =>
         {
             toolStripProgressBar.Visible = false;
@@ -2253,7 +2263,7 @@ public partial class FrmAdressen : Form
         if (e.Cancelled) { return; }
         if (e.Error != null)
         {
-            if (e.Error is Google.Apis.Auth.OAuth2.Responses.TokenResponseException)
+            if (e.Error is TokenResponseException)
             {
                 Utilities.ErrorMsgTaskDlg(Handle, "Das Oauth-Zugriffstoken ist abgelaufen.", "Der Google-OAuth-Dialog wird im Browser aufgerufen,\nDort könne Sie den Zugriff auf Ihre Kontakte erneut erlauben.", TaskDialogIcon.Information);
                 timer.Start();
@@ -2378,7 +2388,11 @@ public partial class FrmAdressen : Form
                 contactCbItems_Land = [.. cbLand.Items.Cast<string>()];
                 contactCbItems_Schlussformel = [.. cbSchlussformel.Items.Cast<string>()];
                 ContactEditFields(0);
-                if (birthdayAutoShow) { BirthdaysToolStripMenuItem_Click(birthdaysToolStripMenuItem, EventArgs.Empty); }
+                //Invoke(() =>
+                //{
+                    if (birthdayShow && birthdayAutoShow) { BirthdaysToolStripMenuItem_Click(birthdaysToolStripMenuItem, EventArgs.Empty); }
+                //});
+                birthdayShow = true;
             }
         }
     }
@@ -2387,6 +2401,7 @@ public partial class FrmAdressen : Form
     {
         if (!backgroundWorker.IsBusy)
         {
+            birthdayShow = false;
             backgroundWorker.RunWorkerAsync();
             timer.Stop();
         }
@@ -2509,8 +2524,11 @@ public partial class FrmAdressen : Form
     {
         if (e.TabPage == contactTabPage && contactDGV.Rows.Count == 0 && !backgroundWorker.IsBusy) // GoogleTSButton_Click startet den BackgroundWorker
         {
-            if (Utilities.YesNo_TaskDialog(Handle, "Google Kontakte", heading: "Keine Kontakte vorhanden", text: "Möchten Sie Ihre Kontakte laden?", TaskDialogIcon.ShieldBlueBar)) { GoogleTSButton_Click(googleTSButton, EventArgs.Empty); }
-            else { e.Cancel = true; }
+            if (Utilities.YesNo_TaskDialog(Handle, "Google Kontakte", heading: "Keine Kontakte vorhanden", text: "Möchten Sie Ihre Kontakte laden?", TaskDialogIcon.ShieldBlueBar))
+            {
+                GoogleTSButton_Click(googleTSButton, EventArgs.Empty);
+            }
+            //else { e.Cancel = true; }
         }
         else if (e.TabPage == addressTabPage && contactDGV.SelectedRows.Count > 0)
         {
@@ -3082,7 +3100,7 @@ public partial class FrmAdressen : Form
                     command2.Parameters.AddWithValue("@nachname", "Mustermann");
                     command2.Parameters.AddWithValue("@vorname", "Max");
                     command2.Parameters.AddWithValue("@zwischenname", "von und zu");
-                    command2.Parameters.AddWithValue("@nicknname", "Maxi");
+                    command2.Parameters.AddWithValue("@nickname", "Maxi");
                     command2.Parameters.AddWithValue("@suffix", "Jr. MBA");  // Master of Business Administration
                     command2.Parameters.AddWithValue("@straße", "Langer Weg 144");
                     command2.Parameters.AddWithValue("@plz", "01234");
