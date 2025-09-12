@@ -8,3 +8,7 @@ Das funktioniert in gleicher Weise auch mit LibreOffice-Dokumenten.
 Darüberhinaus beinhaltet das Programm eine komplexe Funktion zum Bedrucken von Briefumschlägen.
 
 Auf Wunsch wird beim Programmstart an anstehende Geburtstage erinnert.
+
+![Screenshot](Adressen.png)
+
+Further information and release downloads at [oss.schielen.de/adressen](https://oss.schielen.de/adressen)
