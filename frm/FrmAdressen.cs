@@ -3889,7 +3889,7 @@ public partial class FrmAdressen : Form
 
     private void MännlicheVornamenToolStripMenuItem_Click(object sender, EventArgs e) => Utilities.StartFile(Handle, boysPath);
 
-    private void WebsiteToolStripMenuItem_Click(object sender, EventArgs e) => Utilities.StartLink(Handle, @"https://oss.schielen.de/adressen/");
+    private void WebsiteToolStripMenuItem_Click(object sender, EventArgs e) => Utilities.StartLink(Handle, @"https://www.netradio.info/adressen");
 
     private void GithubToolStripMenuItem_Click(object sender, EventArgs e) => Utilities.StartLink(Handle, @"https://github.com/ophthalmos/Adressen");
 
