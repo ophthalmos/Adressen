@@ -48,7 +48,6 @@
   <ItemGroup>
     <None Remove="Adressen.db" />
     <None Remove="Adressen.sqbpro" />
-    <None Remove="Adressen.zip" />
     <None Remove="AdressenSetup.exe" />
     <None Remove="client_secret.json.old" />
     <None Remove="FrmAdressen.zip" />
