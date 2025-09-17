@@ -11,4 +11,4 @@ Auf Wunsch wird beim Programmstart an anstehende Geburtstage erinnert.
 
 ![Screenshot](Adressen.png)
 
-Further information and release downloads at [www.netradio.info/adressen](https://www.netradio.info/adressen)
+Further information and release downloads at [www.netradio.info/address](https://www.netradio.info/address)
