@@ -893,6 +893,7 @@ partial class FrmAdressen
         // 
         splitContainer.Panel2.BackColor = SystemColors.ControlLightLight;
         splitContainer.Panel2.Controls.Add(tabulation);
+        splitContainer.Panel2MinSize = 550;
         splitContainer.Size = new Size(1237, 652);
         splitContainer.SplitterDistance = 656;
         splitContainer.SplitterWidth = 5;
@@ -1778,7 +1779,7 @@ partial class FrmAdressen
         btnEditContact.FlatAppearance.MouseDownBackColor = SystemColors.GradientActiveCaption;
         btnEditContact.FlatAppearance.MouseOverBackColor = SystemColors.GradientInactiveCaption;
         btnEditContact.FlatStyle = FlatStyle.Flat;
-        btnEditContact.Image = Properties.Resources.edit_24;
+        btnEditContact.Image = Properties.Resources.contacts_24;
         btnEditContact.Location = new Point(3, 457);
         btnEditContact.Name = "btnEditContact";
         btnEditContact.Size = new Size(45, 26);
@@ -1881,6 +1882,7 @@ partial class FrmAdressen
         maskedTextBox.Dock = DockStyle.Fill;
         maskedTextBox.InsertKeyMode = InsertKeyMode.Overwrite;
         maskedTextBox.Location = new Point(0, 3);
+        maskedTextBox.MinimumSize = new Size(70, 18);
         maskedTextBox.Name = "maskedTextBox";
         maskedTextBox.PromptChar = ' ';
         maskedTextBox.Size = new Size(79, 18);
@@ -2139,10 +2141,11 @@ partial class FrmAdressen
         // 
         fileSystemWatcher.EnableRaisingEvents = true;
         fileSystemWatcher.IncludeSubdirectories = true;
+        fileSystemWatcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.CreationTime;
         fileSystemWatcher.SynchronizingObject = this;
-        fileSystemWatcher.Changed += FileSystemWatcher_Event;
-        fileSystemWatcher.Created += FileSystemWatcher_Event;
-        fileSystemWatcher.Renamed += FileSystemWatcher_Event;
+        fileSystemWatcher.Changed += FileSystemWatcher_OnChanged;
+        fileSystemWatcher.Created += FileSystemWatcher_OnChanged;
+        fileSystemWatcher.Renamed += FileSystemWatcher_OnRenamed;
         // 
         // FrmAdressen
         // 
@@ -2156,7 +2159,7 @@ partial class FrmAdressen
         Font = new Font("Segoe UI", 10F);
         Icon = (Icon)resources.GetObject("$this.Icon");
         MainMenuStrip = menuStrip;
-        MinimumSize = new Size(628, 244);
+        MinimumSize = new Size(932, 576);
         Name = "FrmAdressen";
         Text = "Adressen";
         FormClosing += FrmAdressen_FormClosing;

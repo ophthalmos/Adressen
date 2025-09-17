@@ -1,5 +1,5 @@
 #define MyAppName "Adressen"
-#define MyAppVersion "1.0.0.0"
+#define MyAppVersion "1.0.0.1"
 
 [Setup]
 AppName={#MyAppName}
@@ -11,9 +11,9 @@ ArchitecturesInstallIn64BitMode=x64os
 PrivilegesRequired=admin
 AppPublisher=Wilhelm Happe
 VersionInfoCopyright=(C) 2025, W. Happe
-AppPublisherURL=https://www.ophthalmostar.de/
-AppSupportURL=https://www.ophthalmostar.de/
-AppUpdatesURL=https://www.ophthalmostar.de/
+AppPublisherURL=https://www.netradio.info/
+AppSupportURL=https://www.netradio.info/
+AppUpdatesURL=https://www.netradio.info/
 DefaultDirName={autopf}\{#MyAppName}
 DisableWelcomePage=yes
 DisableDirPage=no

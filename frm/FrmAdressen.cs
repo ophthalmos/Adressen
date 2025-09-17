@@ -121,7 +121,7 @@ public partial class FrmAdressen : Form
     private SortOrder lastOrder = SortOrder.None;
     private string lastTooltipText = string.Empty;
     private bool birthdayShow = true; // false wenn Zugriffstoken für Google-Kontakte fehlt oder abgelaufen ist
-    private readonly string[] documentTypes = ["*.doc", "*.dot", "*.docx", "*.doct", "*.docm", "*.odt", "*.ott", "*.fodt", "*.uot", "*.pdf"];
+    private readonly string[] documentTypes = ["*.doc", "*.dot", "*.docx", "*.doct", "*.docm", "*.odt", "*.ott", "*.fodt", "*.uot", "*.pdf", "*.txt"];
     private List<string> addressCbItems_Anrede = [];
     private List<string> addressCbItems_Präfix = [];
     private List<string> addressCbItems_PLZ = [];
@@ -161,6 +161,7 @@ public partial class FrmAdressen : Form
         "Sehr geehrte Damen und Herren"
     ];
     private static readonly Dictionary<string, bool> nameGenderMap = new(StringComparer.OrdinalIgnoreCase);
+    //private Dictionary<string, string>? contactGroupsDict;
 
     public FrmAdressen(string[] args)
     {
@@ -1972,7 +1973,7 @@ public partial class FrmAdressen : Form
             var service = await Utilities.GetPeopleServiceAsync(secretPath, tokenDir);
             HashSet<string> personFields = []; // HashSet, um Duplikate zu vermeiden
             var getRequest = service.People.Get(ressource);
-            getRequest.PersonFields = "names,nicknames,userDefined,organizations,addresses,birthdays,emailAddresses,phoneNumbers,urls,biographies";
+            getRequest.PersonFields = "names,memberships,nicknames,userDefined,organizations,addresses,birthdays,emailAddresses,phoneNumbers,urls,biographies";
             var person = await getRequest.ExecuteAsync();
 
             var nameKeys = new[] { "Präfix", "Vorname", "Zwischenname", "Nickname", "Nachname", "Suffix" };
@@ -2227,8 +2228,12 @@ public partial class FrmAdressen : Form
                 credential = GoogleWebAuthorizationBroker.AuthorizeAsync(GoogleClientSecrets.FromStream(stream).Secrets, scopes, "user", CancellationToken.None, new FileDataStore(tokenDir, true)).Result;
             }
             using PeopleServiceService service = new(new BaseClientService.Initializer() { HttpClientInitializer = credential, ApplicationName = appName });
+
+            //var groupResponse = service.ContactGroups.List().Execute();
+            //if (groupResponse != null) { contactGroupsDict = groupResponse.ContactGroups.ToDictionary(g => g.ResourceName, g => g.Name); }
+
             var peopleRequest = service.People.Connections.List("people/me");
-            peopleRequest.PersonFields = "names,nicknames,addresses,phoneNumbers,emailAddresses,biographies,birthdays,urls,organizations,userDefined"; // nickNames
+            peopleRequest.PersonFields = "names,memberships,nicknames,addresses,phoneNumbers,emailAddresses,biographies,birthdays,urls,organizations,userDefined"; // nickNames
             peopleRequest.SortOrder = (PeopleResource.ConnectionsResource.ListRequest.SortOrderEnum)3;
             peopleRequest.PageSize = 2000; // The number of connections to include in the response. Valid values are between 1 and 2000, inclusive. Defaults to 100 if not set or set to 0.
             e.Result = peopleRequest.Execute();
@@ -2325,6 +2330,25 @@ public partial class FrmAdressen : Form
                             else if (customField.Key == "Dokumente") { dokumente = customField.Value ?? string.Empty; }
                         }
                     }
+
+                    //if (person.Memberships != null && person.Memberships.Any())
+                    //{
+                    //    foreach (var membership in person.Memberships)
+                    //    {
+                    //        if (contactGroupsDict != null && membership.ContactGroupMembership != null)
+                    //        {
+                    //            var test = membership.ContactGroupMembership.ContactGroupResourceName;
+                    //            if (test != null && test != "contactGroups/myContacts" && test != "contactGroups/starred")
+                    //            {
+                    //                var cg = membership.ContactGroupMembership;
+                    //                if (cg != null && contactGroupsDict.TryGetValue(cg.ContactGroupResourceName, out var groupName))
+                    //                {
+                    //                    MessageBox.Show($"Kontakt ist in Gruppe: {groupName}");
+                    //                }
+                    //            }
+                    //        }
+                    //    }
+                    //}
                     contactDGV.Rows.Add(
                         anrede,
                         person.Names != null ? person.Names[0].HonorificPrefix ?? string.Empty : "",
@@ -2390,7 +2414,7 @@ public partial class FrmAdressen : Form
                 ContactEditFields(0);
                 //Invoke(() =>
                 //{
-                    if (birthdayShow && birthdayAutoShow) { BirthdaysToolStripMenuItem_Click(birthdaysToolStripMenuItem, EventArgs.Empty); }
+                if (birthdayShow && birthdayAutoShow) { BirthdaysToolStripMenuItem_Click(birthdaysToolStripMenuItem, EventArgs.Empty); }
                 //});
                 birthdayShow = true;
             }
@@ -3701,11 +3725,23 @@ public partial class FrmAdressen : Form
     }
 
 
-    private void FileSystemWatcher_Event(object sender, FileSystemEventArgs e)
+    private void FileSystemWatcher_OnChanged(object sender, FileSystemEventArgs e)
     {
         debounceTimer.Stop(); // Stop the timer to prevent multiple triggers
-        Debug.WriteLine($"Event: {e.ChangeType} - {e.FullPath}");
-        if (e is not FileSystemEventArgs me || (me.Name != null && me.Name.StartsWith('~')) || !File.Exists(e.FullPath)) { return; } // Ignore temporary files and folders
+        Debug.WriteLine($"ChangedEvent: {e.ChangeType} - {e.FullPath} - {e.Name}");
+        if (e.Name is { Length: > 2 } name && name.StartsWith("~$")) { debounceTimer.Start(); } // vorhandenes Tag bleibt; Workaround für neue Word-Dokumente
+        else
+        {
+            debounceTimer.Tag = e.FullPath;
+            if (!string.IsNullOrEmpty(e.FullPath)) { debounceTimer.Start(); }
+        }
+    }
+
+    private void FileSystemWatcher_OnRenamed(object sender, RenamedEventArgs e)
+    {
+        debounceTimer.Stop(); // Stop the timer to prevent multiple triggers
+        Debug.WriteLine($"RenamedEvent: {e.ChangeType} - {e.FullPath}");
+        if (e is not RenamedEventArgs me || me.Name == null) { return; }
         debounceTimer.Tag = e.FullPath;
         if (!string.IsNullOrEmpty(e.FullPath)) { debounceTimer.Start(); }
     }
@@ -3747,7 +3783,7 @@ public partial class FrmAdressen : Form
     {
         debounceTimer.Stop(); // Stop the timer until the next event    
         var text = debounceTimer.Tag as string ?? string.Empty;
-        if (string.IsNullOrEmpty(text) || !File.Exists(text)) { return; }
+        if (string.IsNullOrEmpty(text)) { return; } //  || !File.Exists(text)
         NativeMethods.SetForegroundWindow(Handle);
         var ort = cbOrt.Text;
         var nameEtc = string.Join(" ", new[] { tbVorname.Text, tbNachname.Text, tbFirma.Text }.Where(s => !string.IsNullOrWhiteSpace(s)));
@@ -3889,7 +3925,7 @@ public partial class FrmAdressen : Form
 
     private void MännlicheVornamenToolStripMenuItem_Click(object sender, EventArgs e) => Utilities.StartFile(Handle, boysPath);
 
-    private void WebsiteToolStripMenuItem_Click(object sender, EventArgs e) => Utilities.StartLink(Handle, @"https://www.netradio.info/adressen");
+    private void WebsiteToolStripMenuItem_Click(object sender, EventArgs e) => Utilities.StartLink(Handle, @"https://www.netradio.info/address");
 
     private void GithubToolStripMenuItem_Click(object sender, EventArgs e) => Utilities.StartLink(Handle, @"https://github.com/ophthalmos/Adressen");
 

@@ -121,8 +121,11 @@
   <data name="google-people16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\google-people16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="info16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\info16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="import16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\import16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="database16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\database16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="SaveHL" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\SaveHL.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -139,26 +142,23 @@
   <data name="Close24" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\Close24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="address-book-blue" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\address-book-blue.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="printer24" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\printer24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="info32" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\info32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="F1Help_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\F1Help_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="ComboBox_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\ComboBox_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="Datalist_16x" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\Datalist_16x.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="address-book-blue16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\address-book-blue16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="word16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\word16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="SortHS_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\SortHS_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="ZoomIn16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\ZoomIn16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="UpArrow_Blue_24" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\UpArrow_Blue_24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="CompareFiles_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\CompareFiles_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="add-contact16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\add-contact16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -172,14 +172,14 @@
   <data name="delete-contact16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\delete-contact16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="import16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\import16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="plus_blue_24" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\plus_blue_24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="minus-blue_24" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\minus-blue_24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="splitter16x" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\splitter16x.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="printer24" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\printer24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="copy-contact16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\copy-contact16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="address-book" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\address-book.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -190,26 +190,26 @@
   <data name="SaveClose16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\SaveClose16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="DeleteFilter16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\DeleteFilter16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="word24" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\word24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="plus_blue_24" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\plus_blue_24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="word16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\word16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="F1Help_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\F1Help_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="printer16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\printer16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="UpArrow_Blue_24" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\UpArrow_Blue_24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="address-book-blue" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\address-book-blue.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="mail16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\mail16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="copy-contact16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\copy-contact16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="splitter16x" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\splitter16x.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="database16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\database16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="wordhelp16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\wordhelp16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -232,11 +232,11 @@
   <data name="FavoriteStar16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\FavoriteStar16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="calendar-small16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\calendar-small16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="select-column16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\select-column16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="SortHS_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\SortHS_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="info16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\info16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="word32" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\word32.bmp;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -244,14 +244,17 @@
   <data name="help-word16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\help-word16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="copy-contact" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\copy-contact.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="ZoomToFit16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\ZoomToFit16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="clipboard-plus16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\clipboard-plus16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="copy-contact" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\copy-contact.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="ComboBox_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\ComboBox_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="envelope24" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\envelope24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -262,11 +265,8 @@
   <data name="delete-address24" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\delete-address24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="edit_24" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\edit_24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="width16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\width16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="info32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\info32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="vertical" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\vertical.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -277,11 +277,11 @@
   <data name="script-text_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\script-text_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="select-column16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\select-column16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="calendar-small16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\calendar-small16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="DeleteFilter16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\DeleteFilter16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="width16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\width16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="delete16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\delete16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -289,19 +289,19 @@
   <data name="exit16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\exit16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="Datalist_16x" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\Datalist_16x.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="address-book-blue16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\address-book-blue16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="keyboard16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\keyboard16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="printer16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\printer16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="minus-blue_24" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\minus-blue_24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="reset-permission16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\reset-permission16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="CompareFiles_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\CompareFiles_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="contacts_24" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\contacts_24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>
