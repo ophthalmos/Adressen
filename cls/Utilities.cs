@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics;
-using System.Drawing;
 using System.Drawing.Printing;
 using System.Globalization;
 using System.Net;
@@ -8,6 +7,7 @@ using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Xml.Linq;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.PeopleService.v1;
 using Google.Apis.PeopleService.v1.Data;
@@ -21,6 +21,9 @@ namespace Adressen.cls;
 
 internal static class Utilities
 {
+    internal static HttpClient? MainHttpClient => httpClient;
+    private static HttpClient? httpClient;
+
     internal static void ErrorMsgTaskDlg(nint hwnd, string error, string message, TaskDialogIcon? icon = null)
     {
         TaskDialog.ShowDialog(hwnd, new TaskDialogPage() { Caption = Application.ProductName, SizeToContent = true, Heading = error, Text = message, Icon = icon ?? TaskDialogIcon.Error, AllowCancel = true, Buttons = { TaskDialogButton.OK } });
@@ -84,6 +87,15 @@ internal static class Utilities
         });
     }
 
+    internal static string CleanTemporaryWordPrefix(string fullPath)
+    {
+        if (string.IsNullOrEmpty(fullPath)) { return fullPath; }
+        var directory = Path.GetDirectoryName(fullPath);
+        var fileName = Path.GetFileName(fullPath);
+        if (fileName.StartsWith("~$")) { fileName = fileName[2..]; }
+        return Path.Combine(directory ?? string.Empty, fileName);
+    }
+
     internal static void StartDir(nint handle, string dirPath)
     {
         try
@@ -145,30 +157,100 @@ internal static class Utilities
 
     internal static void HelpMsgTaskDlg(nint hwnd, string appName, Icon? icon)
     {
+        var curVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        var buildDate = GetBuildDate();
         TaskDialogButton paypalButton = new TaskDialogCommandLinkButton("Anerkennung spenden via PayPal");
-        var foot = "              © " + GetBuildDate().ToString("yyyy") + " Wilhelm Happe, Version " + Assembly.GetExecutingAssembly().GetName().Version?.ToString() + " (" + GetBuildDate().ToString("d") + ")";
+        TaskDialogButton updateButton = new TaskDialogCommandLinkButton("Nach Programm-Update suchen…") { AllowCloseDialog = false };
+        var foot = "              © " + buildDate.ToString("yyyy") + " Wilhelm Happe, Version " + curVersion?.ToString() + " (" + buildDate.ToString("d") + ")";
         var msg = "Adressverwaltung für die komfortable Zusammen-" + Environment.NewLine +
             "arbeit mit Microsoft-Word und LibreOffice-Writer" + Environment.NewLine +
             "und der Möglichkeit, Briefumschläge zu bedrucken." + Environment.NewLine +
             "Neben den lokal gespeicherten Adressen können" + Environment.NewLine + "Google-Kontakte geladen und verwendet werden.";
-        var page = new TaskDialogPage()
+        var initialPage = new TaskDialogPage()
         {
             Caption = "Über " + appName,
             Heading = appName,
             Text = msg,
             Icon = icon == null ? null : new TaskDialogIcon(icon),
             AllowCancel = true,
-            Buttons = { paypalButton, TaskDialogButton.OK },
+            SizeToContent = true,
+            Buttons = { paypalButton, updateButton, TaskDialogButton.OK },
             DefaultButton = TaskDialogButton.OK,
             Footnote = foot
         };
 
-        if (TaskDialog.ShowDialog(hwnd, page) == paypalButton)
+        TaskDialogButton downloadButton = new TaskDialogCommandLinkButton("AdressenSetup.exe herunterladen", "Führen Sie das Setupprogramm aus,\num die neueste Version zu installieren.");
+        var updatePage = new TaskDialogPage()
         {
-            try { Process.Start(new ProcessStartInfo("https://www.paypal.com/donate/?hosted_button_id=9YUZ3SLQZP6ZN") { UseShellExecute = true }); }
-            catch (Exception ex) { ErrorMsgTaskDlg(hwnd, ex.GetType().ToString(), ex.Message); }
-        }
+            Caption = appName,
+            Heading = "Adressen ist auf dem neuesten Stand.",
+            Text = $"Version {curVersion} (Offizielles Build, 64-Bit)", //\n\nAutomatische Suche nach Updates:",
+            Icon = TaskDialogIcon.Information,
+            AllowCancel = true,
+            SizeToContent = true,
+            Buttons = { TaskDialogButton.Close }
+        };
+
+        //var radioButton1 = updatePage.RadioButtons.Add("täglich");
+        //var radioButton2 = updatePage.RadioButtons.Add("wöchentlich");
+        //var radioButton3 = updatePage.RadioButtons.Add("monatlich");
+        //var radioButton4 = updatePage.RadioButtons.Add("niemals");
+        //radioButton4.Checked = true;
+
+        //radioButton1.CheckedChanged += (s, e) => Console.WriteLine("RadioButton1 CheckedChanged: " + radioButton1.Checked);
+        //radioButton2.CheckedChanged += (s, e) => Console.WriteLine("RadioButton2 CheckedChanged: " + radioButton2.Checked);
+        //radioButton3.CheckedChanged += (s, e) => Console.WriteLine("RadioButton3 CheckedChanged: " + radioButton3.Checked);
+        //radioButton4.CheckedChanged += (s, e) => Console.WriteLine("RadioButton4 CheckedChanged: " + radioButton4.Checked);
+
+
+        var urlString = string.Empty;
+        updateButton.Click += async (sender, e) =>
+        {
+            updateButton.Enabled = false; // um doppelte Klicks zu verhindern
+            var xmlURL = "https://www.netradio.info/download/adressen.xml";
+            Version? updateVersion = null;
+            var dateString = string.Empty;
+            try
+            {
+                httpClient ??= new HttpClient();
+                httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", "application/xml; charset=utf-8");
+                using var response = await httpClient.GetAsync(xmlURL);
+                response.EnsureSuccessStatusCode();
+                var xmlContent = await response.Content.ReadAsStringAsync();
+                var doc = XDocument.Parse(xmlContent);
+                var versionString = doc.Element("adressen")?.Element("version")?.Value;
+                if (versionString != null) { updateVersion = new Version(versionString); }
+                dateString = doc.Element("adressen")?.Element("date")?.Value;
+                urlString = doc.Element("adressen")?.Element("url64")?.Value;
+            }
+            catch (HttpRequestException ex) // when (ex is WebException or NullReferenceException or ArgumentNullException or XmlException or ArgumentException or IOException)
+            {
+                updatePage.Icon = TaskDialogIcon.Error;
+                updatePage.Heading = "Es ist ein Fehler aufgetreten.";
+                var exStatusCode = ex.StatusCode;
+                if (exStatusCode == HttpStatusCode.NotFound) { updatePage.Text = "Die Update-Informationen wurden nicht gefunden."; }
+                else { updatePage.Text = exStatusCode?.ToString().Length > 0 ? $"Status-Code: {exStatusCode}\nFehlermeldung: {ex.Message}" : $"Fehlermeldung: {ex.Message}"; } // + "\n\nAutomatische Suche nach Updates:"; }
+            }
+            catch (Exception ex) // when (ex is WebException or NullReferenceException or ArgumentNullException or XmlException or ArgumentException or IOException)
+            {
+                updatePage.Icon = TaskDialogIcon.Error;
+                updatePage.Heading = ex.GetType().ToString();
+                updatePage.Text = ex.Message;  // + "\n\nAutomatische Suche nach Updates:"; 
+            }
+            if (updateVersion != null && updateVersion.CompareTo(curVersion) > 0)
+            {
+                updatePage.Heading = "Es steht ein Update zur Verfügung!";
+                updatePage.Text = $"Version {updateVersion?.ToString()} vom {dateString}";  //\n\nAutomatische Suche nach Updates:";
+                updatePage.Buttons.Add(downloadButton);
+            }
+            initialPage.Navigate(updatePage);  // When the user clicks updateButton, navigate to the second page.
+        };
+
+        var result = TaskDialog.ShowDialog(hwnd, initialPage);
+        if (result == paypalButton) { StartLink(hwnd, "https://www.paypal.com/donate/?hosted_button_id=9YUZ3SLQZP6ZN"); }
+        else if (result == downloadButton) { StartLink(hwnd, urlString); }
     }
+
 
     //public static bool IsLibreOfficeInstalled()
     //{

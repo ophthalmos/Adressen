@@ -173,6 +173,16 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap contacts_24 {
+            get {
+                object obj = ResourceManager.GetObject("contacts_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap copy_contact {
             get {
                 object obj = ResourceManager.GetObject("copy-contact", resourceCulture);
@@ -256,16 +266,6 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap document_text_24 {
             get {
                 object obj = ResourceManager.GetObject("document-text_24", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap edit_24 {
-            get {
-                object obj = ResourceManager.GetObject("edit_24", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -433,16 +433,6 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap minus_circle_24 {
-            get {
-                object obj = ResourceManager.GetObject("minus-circle_24", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
-        /// </summary>
         internal static System.Drawing.Bitmap options16 {
             get {
                 object obj = ResourceManager.GetObject("options16", resourceCulture);
@@ -456,16 +446,6 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap plus_blue_24 {
             get {
                 object obj = ResourceManager.GetObject("plus_blue_24", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap plus_circle_24 {
-            get {
-                object obj = ResourceManager.GetObject("plus-circle_24", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
