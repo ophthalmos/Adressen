@@ -143,6 +143,16 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap clipboard_text16 {
+            get {
+                object obj = ResourceManager.GetObject("clipboard-text16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap Close24 {
             get {
                 object obj = ResourceManager.GetObject("Close24", resourceCulture);
@@ -546,6 +556,16 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap select_column16 {
             get {
                 object obj = ResourceManager.GetObject("select-column16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Shield_16 {
+            get {
+                object obj = ResourceManager.GetObject("Shield_16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
