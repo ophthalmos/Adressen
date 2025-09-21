@@ -1,5 +1,5 @@
 #define MyAppName "Adressen"
-#define MyAppVersion "1.0.0.1"
+#define MyAppVersion "1.0.2"
 
 [Setup]
 AppName={#MyAppName}
@@ -15,6 +15,7 @@ AppPublisherURL=https://www.netradio.info/
 AppSupportURL=https://www.netradio.info/
 AppUpdatesURL=https://www.netradio.info/
 DefaultDirName={autopf}\{#MyAppName}
+LicenseFile=Lizenzvereinbarung.txt
 DisableWelcomePage=yes
 DisableDirPage=no
 DisableReadyPage=yes
@@ -148,15 +149,15 @@ begin
   end;
 end;
 
-procedure InitializeWizard;
-var
-  StaticText: TNewStaticText;
-begin
-  StaticText := TNewStaticText.Create(WizardForm);
-  StaticText.Parent := WizardForm.FinishedPage;
-  StaticText.Left := WizardForm.FinishedLabel.Left;
-  StaticText.Top := WizardForm.FinishedLabel.Top + 120;
-  StaticText.Font.Style := [fsBold];
-  StaticText.Caption := 'Ein Zugang zu Google-Kontakten ist derzeit nur'#13'mit eigenen OAuth-Developer-Key möglich.'#13#13 + 
-'Speichern Sie die Datei mit folgendem Pfadnamen:'#13'''…\AppData\Roaming\Adressen\client_secret.json''';
-end;
+// procedure InitializeWizard;
+// var
+  // StaticText: TNewStaticText;
+// begin
+  // StaticText := TNewStaticText.Create(WizardForm);
+  // StaticText.Parent := WizardForm.FinishedPage;
+  // StaticText.Left := WizardForm.FinishedLabel.Left;
+  // StaticText.Top := WizardForm.FinishedLabel.Top + 120;
+  // StaticText.Font.Style := [fsBold];
+  // StaticText.Caption := 'Ein Zugang zu Google-Kontakten ist derzeit nur'#13'mit eigenen OAuth-Developer-Key möglich.'#13#13 + 
+// 'Speichern Sie die Datei mit folgendem Pfadnamen:'#13'''…\AppData\Roaming\Adressen\client_secret.json''';
+// end;

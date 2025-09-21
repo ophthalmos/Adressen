@@ -14,4 +14,23 @@ Sie sind berechtigt, dieses Programm inklusive aller zugehörigen Dateien an Drit
 Sie haben keinen Anspruch auf Produktunterstützung ("Support") durch den Autor. Der Autor ist aber bemüht, Supportanfragen zu beantworten. Produktunterstützung wird ausschließlich per Email angeboten.
 
 4. Haftungsausschluss
-DIE BENUTZUNG DES PROGRAMMS "Adressen" ERFOLGT AUF EIGENE GEFAHR! DER AUTOR WILHELM HAPPE IST NICHT FÜR SCHÄDEN VERANTWORTLICH, DIE DURCH VERWENDUNG ODER VERBREITUNG DER SOFTWARE "Adressen" VERURSACHT WERDEN. IN KEINEM FALL IST DER AUTOR VERANTWORTLICH FÜR ENTGANGENEN UMSATZ ODER GEWINN, DEN VERLUST VON DATEN SOWIE UNMITTELBARE ODER MITTELBARE FOLGESCHÄDEN AN HARD- UND SOFTWARE, DIE DURCH DEN GEBRAUCH ODER DIE UNMÖGLICHKEIT DES GEBRAUCHS DER SOFTWARE VERURSACHT WURDEN.
+Die Benutzung des Programms „Adressen“ erfolgt auf eigene Gefahr! Der Autor Wilhelm Happe ist nicht für Schäden verantwortlich, die durch Verwendung oder Verbreitung der Software „Adressen“ verursacht werden. In keinem Fall ist der Autor verantwortlich für entgangenen Umsatz oder Gewinn, den Verlust von Daten sowie unmittelbare oder mittelbare Folgeschäden an Hard- und Software, die durch den Gebrauch oder die Unmöglichkeit des Gebrauchs der Software verursacht wurden.
+
+5. Verwendete Drittanbieter-Komponenten:
+•  SQLite
+   Gemeinfrei (Public Domain)
+   https://sqlite.org
+•  System.Data.SQLite (über Stub.System.Data.SQLite.Core.NetStandard)
+   zlib/Public Domain
+   https://system.data.sqlite.org
+•  Json.NET (Newtonsoft.Json) – MIT-Lizenz
+   © James Newton-King https://www.newtonsoft.com/json
+•  Google.Apis.PeopleService.v1 – Apache-Lizenz 2.0
+   © Google Inc. https://github.com/googleapis/google-api-dotnet-client
+•  LibreOffice SDK/UNO API - Mozilla Public License Version 2.0 (MPL 2.0)
+   © The Document Foundation https://www.libreoffice.org/download/sdk/
+•  Microsoft Office Interop-Komponenten. Für die Nutzung ist eine
+   gültige Microsoft Office-Installation erforderlich.
+
+
+

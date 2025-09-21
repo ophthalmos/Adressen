@@ -3982,6 +3982,10 @@ public partial class FrmAdressen : Form
         }
         else { Utilities.ErrorMsgTaskDlg(Handle, "Dateien nicht gefunden", girlPath + Environment.NewLine + boysPath); }
     }
+
+    private void TermsofuseToolStripMenuItem_Click(object sender, EventArgs e) => Utilities.StartLink(Handle, "https://www.netradio.info/adressen-terms-of-use/");
+    private void PrivacypolicyToolStripMenuItem_Click(object sender, EventArgs e) => Utilities.StartLink(Handle, "https://www.netradio.info/adressen-privacy-policy/");
+    private void LicenseTxtToolStripMenuItem_Click(object sender, EventArgs e) => Utilities.StartFile(Handle, "Lizenzvereinbarung.txt");
 }
 
 

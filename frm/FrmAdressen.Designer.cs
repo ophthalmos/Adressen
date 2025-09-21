@@ -87,6 +87,10 @@ partial class FrmAdressen
         wordHelpToolStripMenuItem = new ToolStripMenuItem();
         helpdokuTSMenuItem = new ToolStripMenuItem();
         toolStripSeparator12 = new ToolStripSeparator();
+        termsofuseToolStripMenuItem = new ToolStripMenuItem();
+        privacypolicyToolStripMenuItem = new ToolStripMenuItem();
+        licenseTxtToolStripMenuItem = new ToolStripMenuItem();
+        toolStripSeparator19 = new ToolStripSeparator();
         websiteToolStripMenuItem = new ToolStripMenuItem();
         githubToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator5 = new ToolStripSeparator();
@@ -594,7 +598,7 @@ partial class FrmAdressen
         // 
         // helpToolStripMenuItem
         // 
-        helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { wordHelpToolStripMenuItem, helpdokuTSMenuItem, toolStripSeparator12, websiteToolStripMenuItem, githubToolStripMenuItem, toolStripSeparator5, aboutToolStripMenuItem });
+        helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { wordHelpToolStripMenuItem, helpdokuTSMenuItem, toolStripSeparator12, termsofuseToolStripMenuItem, privacypolicyToolStripMenuItem, licenseTxtToolStripMenuItem, toolStripSeparator19, websiteToolStripMenuItem, githubToolStripMenuItem, toolStripSeparator5, aboutToolStripMenuItem });
         helpToolStripMenuItem.Name = "helpToolStripMenuItem";
         helpToolStripMenuItem.Size = new Size(44, 20);
         helpToolStripMenuItem.Text = "Hilfe";
@@ -623,6 +627,35 @@ partial class FrmAdressen
         // 
         toolStripSeparator12.Name = "toolStripSeparator12";
         toolStripSeparator12.Size = new Size(225, 6);
+        // 
+        // termsofuseToolStripMenuItem
+        // 
+        termsofuseToolStripMenuItem.Image = Properties.Resources.clipboard_text16;
+        termsofuseToolStripMenuItem.Name = "termsofuseToolStripMenuItem";
+        termsofuseToolStripMenuItem.Size = new Size(228, 22);
+        termsofuseToolStripMenuItem.Text = "Nutzungsbedingungen";
+        termsofuseToolStripMenuItem.Click += TermsofuseToolStripMenuItem_Click;
+        // 
+        // privacypolicyToolStripMenuItem
+        // 
+        privacypolicyToolStripMenuItem.Image = Properties.Resources.Shield_16;
+        privacypolicyToolStripMenuItem.Name = "privacypolicyToolStripMenuItem";
+        privacypolicyToolStripMenuItem.Size = new Size(228, 22);
+        privacypolicyToolStripMenuItem.Text = "Datenschutzbestimmungen";
+        privacypolicyToolStripMenuItem.Click += PrivacypolicyToolStripMenuItem_Click;
+        // 
+        // licenseTxtToolStripMenuItem
+        // 
+        licenseTxtToolStripMenuItem.Image = Properties.Resources.script_text_16;
+        licenseTxtToolStripMenuItem.Name = "licenseTxtToolStripMenuItem";
+        licenseTxtToolStripMenuItem.Size = new Size(228, 22);
+        licenseTxtToolStripMenuItem.Text = "Lizenzvereinbarung";
+        licenseTxtToolStripMenuItem.Click += LicenseTxtToolStripMenuItem_Click;
+        // 
+        // toolStripSeparator19
+        // 
+        toolStripSeparator19.Name = "toolStripSeparator19";
+        toolStripSeparator19.Size = new Size(225, 6);
         // 
         // websiteToolStripMenuItem
         // 
@@ -2376,4 +2409,8 @@ partial class FrmAdressen
     private ToolStripMenuItem männlicheVornamenToolStripMenuItem;
     private ToolStripSeparator toolStripSeparator18;
     private ToolStripMenuItem nameduplicatesToolStripMenuItem;
+    private ToolStripMenuItem termsofuseToolStripMenuItem;
+    private ToolStripMenuItem privacypolicyToolStripMenuItem;
+    private ToolStripSeparator toolStripSeparator19;
+    private ToolStripMenuItem licenseTxtToolStripMenuItem;
 }

@@ -157,11 +157,12 @@ internal static class Utilities
 
     internal static void HelpMsgTaskDlg(nint hwnd, string appName, Icon? icon)
     {
-        var curVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        Version? curVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        var threeVersion = curVersion is not null ? $"{curVersion.Major}.{curVersion.Minor}.{curVersion.Build}" : "unbekannt";
         var buildDate = GetBuildDate();
         TaskDialogButton paypalButton = new TaskDialogCommandLinkButton("Anerkennung spenden via PayPal");
         TaskDialogButton updateButton = new TaskDialogCommandLinkButton("Nach Programm-Update suchen…") { AllowCloseDialog = false };
-        var foot = "              © " + buildDate.ToString("yyyy") + " Wilhelm Happe, Version " + curVersion?.ToString() + " (" + buildDate.ToString("d") + ")";
+        var foot = "              © " + buildDate.ToString("yyyy") + " Wilhelm Happe, Version " + threeVersion + " (" + buildDate.ToString("d") + ")";
         var msg = "Adressverwaltung für die komfortable Zusammen-" + Environment.NewLine +
             "arbeit mit Microsoft-Word und LibreOffice-Writer" + Environment.NewLine +
             "und der Möglichkeit, Briefumschläge zu bedrucken." + Environment.NewLine +
@@ -179,12 +180,12 @@ internal static class Utilities
             Footnote = foot
         };
 
-        TaskDialogButton downloadButton = new TaskDialogCommandLinkButton("AdressenSetup.exe herunterladen", "Führen Sie das Setupprogramm aus,\num die neueste Version zu installieren.");
+        TaskDialogButton downloadButton = new TaskDialogCommandLinkButton("AdressenSetup.exe herunterladen", "AdressenSetup.exe wird im Download-Ordner\ngespeichert. Führen Sie das Setupprogramm\naus, um die neueste Version zu installieren.");
         var updatePage = new TaskDialogPage()
         {
             Caption = appName,
             Heading = "Adressen ist auf dem neuesten Stand.",
-            Text = $"Version {curVersion} (Offizielles Build, 64-Bit)", //\n\nAutomatische Suche nach Updates:",
+            Text = $"Version {threeVersion} (Offizielles Build, 64-Bit)", //\n\nAutomatische Suche nach Updates:",
             Icon = TaskDialogIcon.Information,
             AllowCancel = true,
             SizeToContent = true,
