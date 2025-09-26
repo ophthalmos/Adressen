@@ -133,6 +133,16 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Clearall16 {
+            get {
+                object obj = ResourceManager.GetObject("Clearall16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap clipboard_plus16 {
             get {
                 object obj = ResourceManager.GetObject("clipboard-plus16", resourceCulture);
@@ -383,6 +393,36 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap inbox24 {
+            get {
+                object obj = ResourceManager.GetObject("inbox24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap inboxdoc16 {
+            get {
+                object obj = ResourceManager.GetObject("inboxdoc16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap inboxdoc24 {
+            get {
+                object obj = ResourceManager.GetObject("inboxdoc24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap info16 {
             get {
                 object obj = ResourceManager.GetObject("info16", resourceCulture);
@@ -423,6 +463,36 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap mail_minus16 {
+            get {
+                object obj = ResourceManager.GetObject("mail-minus16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap mail_plus16 {
+            get {
+                object obj = ResourceManager.GetObject("mail-plus16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap mail_plus161 {
+            get {
+                object obj = ResourceManager.GetObject("mail-plus161", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap mail16 {
             get {
                 object obj = ResourceManager.GetObject("mail16", resourceCulture);
@@ -436,6 +506,26 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap minus_blue_24 {
             get {
                 object obj = ResourceManager.GetObject("minus-blue_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap mobile_minus16 {
+            get {
+                object obj = ResourceManager.GetObject("mobile-minus16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap mobile_plus16 {
+            get {
+                object obj = ResourceManager.GetObject("mobile-plus16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -586,6 +676,36 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap splitter16x {
             get {
                 object obj = ResourceManager.GetObject("splitter16x", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap telephone_minus16 {
+            get {
+                object obj = ResourceManager.GetObject("telephone-minus16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap telephone_plus16 {
+            get {
+                object obj = ResourceManager.GetObject("telephone-plus16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap universal24 {
+            get {
+                object obj = ResourceManager.GetObject("universal24", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

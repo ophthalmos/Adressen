@@ -262,10 +262,10 @@ partial class FrmPrintSetting
         formatPage.BorderStyle = BorderStyle.FixedSingle;
         formatPage.Controls.Add(gbText);
         formatPage.Controls.Add(gbFormat);
-        formatPage.Location = new Point(4, 26);
+        formatPage.Location = new Point(4, 24);
         formatPage.Name = "formatPage";
         formatPage.Padding = new Padding(3);
-        formatPage.Size = new Size(316, 171);
+        formatPage.Size = new Size(316, 173);
         formatPage.TabIndex = 1;
         formatPage.Text = "Format";
         // 
@@ -355,9 +355,9 @@ partial class FrmPrintSetting
         senderPage.BorderStyle = BorderStyle.FixedSingle;
         senderPage.Controls.Add(tcSender);
         senderPage.Controls.Add(ckbPrintSender);
-        senderPage.Location = new Point(4, 26);
+        senderPage.Location = new Point(4, 24);
         senderPage.Name = "senderPage";
-        senderPage.Size = new Size(316, 171);
+        senderPage.Size = new Size(316, 173);
         senderPage.TabIndex = 3;
         senderPage.Text = "Absender";
         // 
@@ -381,6 +381,7 @@ partial class FrmPrintSetting
         tcSender.SizeMode = TabSizeMode.Fixed;
         tcSender.TabIndex = 2;
         tcSender.DrawItem += TcSender_DrawItem;
+        tcSender.SelectedIndexChanged += TcSender_SelectedIndexChanged;
         // 
         // tpSender1
         // 
@@ -538,9 +539,9 @@ partial class FrmPrintSetting
         recipientPage.Controls.Add(ckbAnredePrint);
         recipientPage.Controls.Add(lblEmpfPrint);
         recipientPage.Controls.Add(ckbLandPrint);
-        recipientPage.Location = new Point(4, 26);
+        recipientPage.Location = new Point(4, 24);
         recipientPage.Name = "recipientPage";
-        recipientPage.Size = new Size(316, 171);
+        recipientPage.Size = new Size(316, 173);
         recipientPage.TabIndex = 4;
         recipientPage.Text = "Empfänger";
         recipientPage.UseVisualStyleBackColor = true;
@@ -617,6 +618,7 @@ partial class FrmPrintSetting
         ckbBoldSender.TabIndex = 12;
         ckbBoldSender.Text = "Absender";
         ckbBoldSender.UseVisualStyleBackColor = true;
+        ckbBoldSender.CheckedChanged += CkbBoldSender_CheckedChanged;
         // 
         // ckbBoldRecipient
         // 
@@ -627,6 +629,7 @@ partial class FrmPrintSetting
         ckbBoldRecipient.TabIndex = 11;
         ckbBoldRecipient.Text = "Empfänger";
         ckbBoldRecipient.UseVisualStyleBackColor = true;
+        ckbBoldRecipient.CheckedChanged += CkbBoldRecipient_CheckedChanged;
         // 
         // lblBold
         // 
@@ -645,6 +648,7 @@ partial class FrmPrintSetting
         nudSenderOffsetY.Size = new Size(55, 25);
         nudSenderOffsetY.TabIndex = 9;
         nudSenderOffsetY.TextAlign = HorizontalAlignment.Center;
+        nudSenderOffsetY.ValueChanged += NudOffset_ValueChanged;
         // 
         // label1
         // 
@@ -681,6 +685,7 @@ partial class FrmPrintSetting
         nudSenderOffsetX.Size = new Size(55, 25);
         nudSenderOffsetX.TabIndex = 5;
         nudSenderOffsetX.TextAlign = HorizontalAlignment.Center;
+        nudSenderOffsetX.ValueChanged += NudOffset_ValueChanged;
         // 
         // nudRecipOffsetY
         // 
@@ -691,6 +696,7 @@ partial class FrmPrintSetting
         nudRecipOffsetY.Size = new Size(55, 25);
         nudRecipOffsetY.TabIndex = 4;
         nudRecipOffsetY.TextAlign = HorizontalAlignment.Center;
+        nudRecipOffsetY.ValueChanged += NudOffset_ValueChanged;
         // 
         // lblRecipOffsetY
         // 
@@ -728,6 +734,7 @@ partial class FrmPrintSetting
         nudRecipOffsetX.Size = new Size(55, 25);
         nudRecipOffsetX.TabIndex = 0;
         nudRecipOffsetX.TextAlign = HorizontalAlignment.Center;
+        nudRecipOffsetX.ValueChanged += NudOffset_ValueChanged;
         // 
         // btnSave
         // 

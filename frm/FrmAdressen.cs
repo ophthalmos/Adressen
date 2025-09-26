@@ -161,7 +161,11 @@ public partial class FrmAdressen : Form
         "Sehr geehrte Damen und Herren"
     ];
     private static readonly Dictionary<string, bool> nameGenderMap = new(StringComparer.OrdinalIgnoreCase);
-    //private Dictionary<string, string>? contactGroupsDict;
+    private bool isFilteredAddress = false;
+    private bool isFilteredContact = false;
+    private readonly string[] dataFields = ["Anrede", "Präfix", "Nachname", "Vorname", "Zwischenname", "Nickname",
+        "Suffix", "Firma", "Straße", "PLZ", "Ort", "Land", "Betreff", "Grußformel", "Schlussformel", "Geburtstag",
+        "Mail1", "Mail2", "Telefon1", "Telefon2", "Mobil", "Fax", "Internet", "Notizen", "Dokumente"];
 
     public FrmAdressen(string[] args)
     {
@@ -175,8 +179,20 @@ public partial class FrmAdressen : Form
         }
 
         InitializeComponent();
+
         typeof(DataGridView).InvokeMember("DoubleBuffered", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.SetProperty, null, addressDGV, [true]);
         typeof(DataGridView).InvokeMember("DoubleBuffered", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.SetProperty, null, contactDGV, [true]);
+
+        imageList.Images.Add(Properties.Resources.address_book);
+        imageList.Images.Add(Properties.Resources.address_book_blue);
+        imageList.Images.Add(Properties.Resources.universal24);
+        imageList.Images.Add(Properties.Resources.inbox24);
+        imageList.Images.Add(Properties.Resources.inboxdoc24);
+        tabControl.ImageList = imageList; // Bilder zur Laufzeit aus Projekt-Ressourcen laden, vermeidet BinaryFormatter
+        tabControl.TabPages[0].ImageIndex = 0;
+        tabControl.TabPages[1].ImageIndex = 1;
+        tabulation.TabPages[0].ImageIndex = 2;
+        tabulation.TabPages[1].ImageIndex = 3;
 
         if (Utilities.IsInnoSetupValid(Path.GetDirectoryName(appPath)!))
         {
@@ -213,33 +229,10 @@ public partial class FrmAdressen : Form
         contactDGV.ColumnHeadersDefaultCellStyle.SelectionBackColor = contactDGV.ColumnHeadersDefaultCellStyle.BackColor;
         searchTSTextBox.TextBox.PlaceholderText = " Suche";
         splitterPosition = splitContainer.SplitterDistance;
-        addBookDict.Add("Anrede", string.Empty);
-        addBookDict.Add("Präfix", string.Empty);
-        addBookDict.Add("Vorname", string.Empty);
-        addBookDict.Add("Zwischenname", string.Empty);
-        addBookDict.Add("Nickname", string.Empty);
-        addBookDict.Add("Nachname", string.Empty);
-        addBookDict.Add("Präfix_Zwischenname_Nachname", string.Empty);
-        addBookDict.Add("Vorname_Zwischenname_Nachname", string.Empty);
-        addBookDict.Add("Präfix_Vorname_Zwischenname_Nachname", string.Empty);
-        addBookDict.Add("Anrede_Präfix_Vorname_Zwischenname_Nachname", string.Empty);
-        addBookDict.Add("Suffix", string.Empty);
-        addBookDict.Add("Firma", string.Empty);
-        addBookDict.Add("StraßeNr", string.Empty);
-        addBookDict.Add("PLZ", string.Empty);
-        addBookDict.Add("Ort", string.Empty);
-        addBookDict.Add("PLZ_Ort", string.Empty);
-        addBookDict.Add("Land", string.Empty);
-        addBookDict.Add("Betreff", string.Empty);
-        addBookDict.Add("Grußformel", string.Empty);
-        addBookDict.Add("Schlussformel", string.Empty);
-        addBookDict.Add("Mail1", string.Empty);
-        addBookDict.Add("Mail2", string.Empty);
-        addBookDict.Add("Telefon1", string.Empty);
-        addBookDict.Add("Telefon2", string.Empty);
-        addBookDict.Add("Mobil", string.Empty);
-        addBookDict.Add("Fax", string.Empty);
-        addBookDict.Add("Internet", string.Empty);
+
+        string[] extraFields = ["Präfix_Zwischenname_Nachname", "Vorname_Zwischenname_Nachname", "Präfix_Vorname_Zwischenname_Nachname",
+            "Anrede_Präfix_Vorname_Zwischenname_Nachname", "StraßeNr", "PLZ_Ort"];
+        foreach (var field in dataFields.SkipLast(2).Concat(extraFields)) { addBookDict[field] = string.Empty; } // Notizen und Dokumente nicht 
 
         dictEditField.Add(cbAnrede, "Anrede");
         dictEditField.Add(cbPräfix, "Präfix");
@@ -551,7 +544,7 @@ public partial class FrmAdressen : Form
             copyToOtherDGVTSMenuItem.Enabled = false;
             tabControl.SelectTab(0);
             AdressEditFields(dataTable.Rows.Count > 0 ? 0 : -1);
-            searchTSTextBox.Focus();
+            searchTSTextBox.Focus(); //MessageBox.Show(string.Join(Environment.NewLine, [.. dataTable.Columns.Cast<DataColumn>().Select(x => x.ColumnName)]));
         }
         catch (Exception ex) { Utilities.ErrorMsgTaskDlg(Handle, "ConnectSQLDatabase: " + ex.GetType().ToString(), ex.Message); }
     }
@@ -762,6 +755,7 @@ public partial class FrmAdressen : Form
 
     private void AdressEditFields(int rowIndex) // rowIndex = -1 => ClearFields
     {
+        tabulation.SelectedTab = tabPageDetail;
         try
         {
             ignoreTextChange = true; // verhindert, dass TextChanged
@@ -866,66 +860,29 @@ public partial class FrmAdressen : Form
         tsClearLabel.Visible = searchTSTextBox.TextBox.Text.Length > 0;
         try
         {
-            var patternRaw = searchTSTextBox.TextBox.Text;
-            foreach (var pair in new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
+            var normalizedSearchTerm = Utilities.NormalizeString(searchTSTextBox.TextBox.Text);
+            if (tabControl.SelectedTab == addressTabPage)
             {
-                ["ä"] = "(ä|ae)",
-                ["ae"] = "(ä|ae)",
-                ["ö"] = "(ö|oe)",
-                ["oe"] = "(ö|oe)",
-                ["ü"] = "(ü|ue)",
-                ["ue"] = "(ü|ue)",
-                ["ß"] = "(ß|ss)",
-                ["ss"] = "(ß|ss)",
-            }) { patternRaw = Regex.Replace(patternRaw, pair.Key, pair.Value, RegexOptions.IgnoreCase); }
-            var regex = new Regex(patternRaw, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant);
-            if (tabControl.SelectedTab == addressTabPage && BindingContext?[addressDGV] != null)
-            {
-                if (addressDGV.DataSource != null && BindingContext != null)
+                if (string.IsNullOrWhiteSpace(normalizedSearchTerm))
                 {
-                    var manager = (CurrencyManager)BindingContext[addressDGV.DataSource];
-                    manager.SuspendBinding();
-                    addressDGV.ClearSelection();
-                    AdressEditFields(-1);
-                    var total = 0;
-                    addressDGV.SuspendLayout();
-                    foreach (DataGridViewRow row in addressDGV.Rows)
+                    FilterAddressDGV(row => true);
+                    isFilteredAddress = false;
+                    flexiTSStatusLabel.Text = "";
+                }
+                else
+                {
+                    FilterAddressDGV(row =>
                     {
-                        if (row.IsNewRow) { continue; }
-                        var sb = new StringBuilder();
-                        for (var i = 0; i < row.Cells.Count - 1; i++)
-                        {
-                            var cellValue = row.Cells[i].Value?.ToString()?.Replace(Environment.NewLine, " ") ?? "";
-                            sb.Append(cellValue).Append(' ');
-                        }
-                        var content = sb.ToString();
-                        if (!regex.IsMatch(content)) { row.Visible = false; }
-                        else
-                        {
-                            total++;
-                            row.Visible = true;
-                        }
-                    }
-                    if (total > 0)
-                    {
-                        var firstVisibleIndex = Utilities.GetFirstVisibleRowIndex(addressDGV); // Get the first visible row index   
-                        addressDGV.Rows[firstVisibleIndex].Selected = true; // Select the first row  
-                        AdressEditFields(firstVisibleIndex);
-                    }
-                    else
-                    {
-                        addressDGV.ClearSelection();
-                        AdressEditFields(-1);
-                    }
-                    toolStripStatusLabel.Text = total.ToString() + " Adressen";
-                    manager.ResumeBinding();
-                    addressDGV.ResumeLayout();
+                        var content = string.Join(" ", row.Cells.Cast<DataGridViewCell>()
+                        .Take(row.Cells.Count - 1) // Nimmt alle Zellen außer der letzten
+                        .Select(c => c.Value?.ToString() ?? ""));
+                        return Utilities.NormalizeString(content).Contains(normalizedSearchTerm); // Die eigentliche Filterbedingung
+                    });
                 }
             }
             else if (tabControl.SelectedTab == contactTabPage)
             {
                 var test = contactNewRowIndex >= 0 && contactDGV.SelectedRows[0].Index == contactNewRowIndex && CheckNewContactTidyUp();
-                //var ressource = CheckContactDataChange() ?? string.Empty;
                 var dataChanged = CheckContactDataChange();
                 if (test || dataChanged)
                 {
@@ -944,38 +901,29 @@ public partial class FrmAdressen : Form
                     await CreateContactAsync();
                     return;
                 }
-                contactDGV.SuspendLayout();
-                contactDGV.ClearSelection();
-                ContactEditFields(-1);
-                var total = 0;
-                foreach (DataGridViewRow row in contactDGV.Rows)
+                if (string.IsNullOrWhiteSpace(normalizedSearchTerm))
                 {
-                    var content = string.Join(" ", row.Cells.Cast<DataGridViewCell>().Take(row.Cells.Count - 1).Select(c => c.Value?.ToString() ?? "").Select(t => t.Replace(Environment.NewLine, " ")));
-                    if (regex.IsMatch(content))
-                    {
-                        total++;
-                        row.Visible = true;
-                    }
-                    else { row.Visible = false; }
-                }
-                if (total > 0)
-                {
-                    var firstVisibleIndex = Utilities.GetFirstVisibleRowIndex(contactDGV); // Get the first visible row index   
-                    contactDGV.Rows[firstVisibleIndex].Selected = true; // Select the first row  
-                    ContactEditFields(firstVisibleIndex);
+                    FilterContactDGV(row => true);
+                    isFilteredContact = false;
                 }
                 else
                 {
-                    contactDGV.ClearSelection();
-                    ContactEditFields(-1);
+                    FilterContactDGV(row =>
+                    {
+                        var content = string.Join(" ", row.Cells.Cast<DataGridViewCell>()
+                        .Take(row.Cells.Count - 1) // Nimmt alle Zellen außer der letzten
+                        .Select(c => c.Value?.ToString() ?? "")); //.Select(t => t.Replace(Environment.NewLine, " ")));
+                        return Utilities.NormalizeString(content).Contains(normalizedSearchTerm); // Die eigentliche Filterbedingung
+                    });
                 }
-
-                contactDGV.ResumeLayout();
-                toolStripStatusLabel.Text = total.ToString() + " Kontakte";
             }
         }
         catch (Exception ex) { Utilities.ErrorMsgTaskDlg(Handle, "SearchTSTextBox_TextChanged: " + ex.GetType().ToString(), ex.Message); }
-        finally { lastSearchText = searchTSTextBox.TextBox.Text; }
+        finally
+        {
+            lastSearchText = searchTSTextBox.TextBox.Text;
+            flexiTSStatusLabel.Text = "";
+        }
     }
 
     private void AddressDGV_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
@@ -1293,6 +1241,14 @@ public partial class FrmAdressen : Form
             {
                 var indexToDelete = row.Index; // Schritt 1: Den Index der aktuell ausgewählten Zeile merken, BEVOR sie gelöscht wird.
                 if (row.DataBoundItem is DataRowView dataRowView) { dataRowView.Row.Delete(); } // Schritt 2: Die Zeile aus der Datenquelle löschen.
+                if (addressDGV.Rows.Count == 0) // Wenn keine Zeilen mehr vorhanden sind, Auswahl löschen und Felder leeren.
+                {
+                    ignoreSearchChange = true;
+                    searchTextBox.Clear();
+                    ignoreSearchChange = false; 
+                    AdressEditFields(-1);
+                    return;
+                }
                 if (searchTSTextBox.TextLength > 0) { SearchTSTextBox_TextChanged(null!, null!); } // Schritt 3: Den Filter neu anwenden, wenn ein Suchtext vorhanden ist.
                 var nextSelectedIndex = -1; // Schritt 4: Die vorherige sichtbare Zeile finden und auswählen.
                 for (var i = indexToDelete; i >= 0; i--)  // Wir starten die Suche beim Index der gelöschten Zeile und gehen rückwärts.
@@ -1333,9 +1289,6 @@ public partial class FrmAdressen : Form
         if (tabControl.SelectedTab == contactTabPage && contactDGV.SelectedRows.Count > 0)
         {
             if (contactNewRowIndex >= 0 && contactDGV.SelectedRows[0].Index == contactNewRowIndex && CheckNewContactTidyUp()) { await CreateContactAsync(); }
-
-            //var ressource = CheckContactDataChange() ?? string.Empty;
-            //if (!string.IsNullOrEmpty(ressource)) { ShowMultiPageTaskDialog(ressource); }
             if (CheckContactDataChange()) { ShowMultiPageTaskDialog(); }
         }
         if (dataTable != null) { SaveSQLDatabase(true); }
@@ -1402,35 +1355,99 @@ public partial class FrmAdressen : Form
 
     private void ImportToolStripMenuItem_Click(object sender, EventArgs e)
     {
-        openFileDialog.Filter = "CSV-Dateien (*.csv)|*.csv|Alle Dateien (*.*)|*.*";
-        //openFileDialog.FileName = "adress.csv";
-        if (openFileDialog.ShowDialog() == DialogResult.OK && (openFileDialog.FileName != "") && dataTable != null)
+        var btnCreateCSV = new TaskDialogButton("Beispiel-CSV-Datei erstellen");
+        var firstPage = new TaskDialogPage()
         {
-            var columnNames = dataTable.Columns.Cast<DataColumn>().Select(x => x.ColumnName).ToArray();
-            if (columnNames == null) { return; }
+            Caption = Application.ProductName,
+            Heading = "Folgende Spaltennamen werden in der ersten Zeile der CSV-Datei erwartet:",
+            Text = string.Join(", ", dataFields.SkipLast(1)) + "\n\nNicht alle Spaltennamen sind erforderlich.\nDie Spaltenreihenfolge ist beliebig.", // Dokumente ausgenommen  
+            Icon = TaskDialogIcon.Information,
+            AllowCancel = true,
+            Buttons = { btnCreateCSV, TaskDialogButton.Continue }
+        };
+        var result = TaskDialog.ShowDialog(this, firstPage);    
+        if (result == btnCreateCSV)
+        {
+            var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            var filePath = Path.Combine(desktopPath, "adress.csv");
+            try
+            {
+                using var writer = new StreamWriter(filePath, false, Encoding.UTF8); // false = überschreiben   
+                writer.WriteLine(string.Join(";", dataFields.SkipLast(1))); // Dokumente ausgenommen  
+                writer.WriteLine(string.Join(";", dataFields.SkipLast(1).Select(s => s.ToLower()))); // Beispielinhalt
+                var secondPage = new TaskDialogPage()
+                {
+                    Caption = Application.ProductName,
+                    Heading = "Beispiel-CSV-Datei erstellt",
+                    Text = "Die Datei 'adress.csv' wurde auf Ihrem Desktop gespeichert.\nDie Trennung der Spalten erfolgt durch ein Semikolon (;).",
+                    Icon = TaskDialogIcon.Information,
+                    AllowCancel = true,
+                    SizeToContent = true,
+                    DefaultButton = TaskDialogButton.Continue,
+                    Buttons = { TaskDialogButton.Continue, TaskDialogButton.Cancel }
+                };
+                if (TaskDialog.ShowDialog(this, secondPage) != TaskDialogButton.Continue) { return; }
+            }
+            catch (Exception ex) { Utilities.ErrorMsgTaskDlg(Handle, "Fehler beim Erstellen der CSV-Datei!", ex.Message); }
+        }
+        else if (result != TaskDialogButton.Continue) { return; }
+
+        openFileDialog.Filter = "CSV-Dateien (*.csv)|*.csv|Alle Dateien (*.*)|*.*";
+        openFileDialog.FileName = "adress.csv";
+        openFileDialog.Title = "CSV-Datei zum Importieren auswählen";
+        openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+        if (openFileDialog.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(openFileDialog.FileName) && dataTable != null)
+        {
+            var allowedColumns = new HashSet<string>(dataFields.SkipLast(1)); // HashSet, Dokumente ausgenommen
+            if (allowedColumns == null) { return; }
             var reader = Utilities.ReadAsLines(openFileDialog.FileName);
-            var headers = reader.First().Split(';');  //this assume the first record is filled with the column names
+            if (!reader.Any()) { return; }  // Die Datei ist leer, nichts zu tun.
+            var headers = reader.First().Split(';'); // Annahme: Die erste Zeile enthält die Spaltennamen
+
+            var unknownColumns = headers.Where(h => !string.IsNullOrEmpty(h) && !allowedColumns.Contains(h)).ToList();
+            if (unknownColumns.Count != 0)
+            {
+                var unknownColumnsStr = string.Join(", ", unknownColumns);
+                Utilities.ErrorMsgTaskDlg(Handle, "Unbekannte Spaltennamen!", $"Die folgenden Spalten in der CSV-Datei sind ungültig: {unknownColumnsStr}\n\nDer Importvorgang wird abgebrochen.");
+                return;
+            }
+            if (addressDGV.Rows.Count > 0 && !Utilities.YesNo_TaskDialog(Handle, appName, // dataTable.Rows.Count geht hier nicht, weil z.B. Löschen nicht gespeichert wurde
+                heading: "Daten importieren", text: $"'{databaseFilePath}' enthält bereits Daten.\nMöchten Sie die neuen Daten aus der CSV-Datei hinzufügen?",
+                TaskDialogIcon.ShieldWarningYellowBar)) { return; }
+
+            var firstNewRowIndex = addressDGV.Rows.Count; // dataTable.Rows.Count geht hier nicht, weil z.B. Löschen nicht gespeichert wurde    
+
+            var columnIndexMap = new Dictionary<int, string>();  // Mapping vom Spaltenindex in der CSV zum Spaltennamen (Wert)
             for (var i = 0; i < headers.Length; i++)
             {
-                if (headers[i] != columnNames[i])     // Cave: Id in letzter Spalte!
-                {
-                    Utilities.ErrorMsgTaskDlg(Handle, "Ungleiche Headernamen!", headers[i] + " : " + columnNames[i]);
-                    return;
-                }
+                if (!string.IsNullOrEmpty(headers[i])) { columnIndexMap.Add(i, headers[i]); }
             }
             var records = reader.Skip(1);
-            //var maxVal = dataTable.AsEnumerable().Max(r => r.Field<long>("Id")) + 1;
             foreach (var record in records)
             {
                 var splitArray = record.Split(';');
-                if (splitArray.Length == dataTable!.Columns.Count)
+                if (splitArray.Length != headers.Length)
                 {
-                    var row = dataTable.NewRow();
-                    for (var i = 0; i < splitArray.Length - 1; i++) { row[i] = string.IsNullOrEmpty(splitArray[i]) ? "" : splitArray[i]; }
-                    //row[splitArray.Length - 1] = maxVal++;  // Id in letzter Spalte; es ist egal was darin steht, wird eh überschrieben
-                    dataTable.Rows.Add(row);
+                    Utilities.ErrorMsgTaskDlg(Handle, "Inkonsistente Daten!", $"Eine Zeile hat {splitArray.Length} Felder, aber die Kopfzeile hat {headers.Length}.\nDie Zeile wird übersprungen.");
+                    continue; // Überspringt diese fehlerhafte Zeile und fährt mit der nächsten fort.
                 }
-                else { Utilities.ErrorMsgTaskDlg(Handle, "Ungleiche Arraylänge!", splitArray.Length + " : " + dataTable!.Columns.Count); }
+                var row = dataTable.NewRow();
+                foreach (var mapping in columnIndexMap)
+                {
+                    var csvIndex = mapping.Key;
+                    var columnName = mapping.Value;
+                    var value = splitArray[csvIndex]; // Der Index wird verwendet, um den Wert aus dem splitArray zu lesen
+                    row[columnName] = string.IsNullOrEmpty(value) ? DBNull.Value : value; // Der Name wird verwendet, um die richtige Spalte in der DataRow zu finden
+                }
+                dataTable.Rows.Add(row);
+                saveTSButton.Enabled = true;
+
+                if (addressDGV.Rows.Count > firstNewRowIndex)
+                {
+                    addressDGV.Rows[firstNewRowIndex].Selected = true;
+                    addressDGV.FirstDisplayedScrollingRowIndex = firstNewRowIndex;
+                }
             }
         }
     }
@@ -1472,7 +1489,7 @@ public partial class FrmAdressen : Form
                 }
             case Keys.F11:
                 foreach (var key in (string[])[.. addBookDict.Keys]) { addBookDict[key] = string.Empty; }
-                Utilities.WordErrorTaskDlg(Handle, [.. addBookDict.Keys], new(Properties.Resources.word32));
+                Utilities.WordInfoTaskDlg(Handle, [.. addBookDict.Keys], new(Properties.Resources.word32));
                 return true; // You return true to indicate that you handled the keystroke and don't want it to be passed on to other controls.
             case Keys.F5:
                 tabControl.SelectedIndex = 0;
@@ -1489,9 +1506,16 @@ public partial class FrmAdressen : Form
             case Keys.F1:
                 Utilities.StartFile(Handle, @"Adressen.pdf");
                 return true;
-            case Keys.F9:
+            case Keys.I | Keys.Control:
                 Utilities.HelpMsgTaskDlg(Handle, appName, Icon);
                 return true;
+            case Keys.F9:
+                if (tabControl.SelectedTab == addressTabPage)
+                {
+                    AdressenSelResetToolStripMenuItem_Click(null!, null!);
+                    return true;
+                }
+                else { return false; }
             case Keys.Enter | Keys.Control:
             case Keys.Tab | Keys.Shift: // Keys.Control funktioniert nicht
                 tabControl.SelectedIndex = tabControl.SelectedIndex == 1 ? 0 : 1;
@@ -1766,7 +1790,7 @@ public partial class FrmAdressen : Form
             wordApp ??= (Word.Application)Marshal2.GetActiveObject("Word.Application");
             if (wordApp == null)
             {
-                Utilities.WordErrorTaskDlg(Handle, [.. addBookDict.Keys], new(Properties.Resources.word32));
+                Utilities.WordInfoTaskDlg(Handle, [.. addBookDict.Keys], new(Properties.Resources.word32));
                 return;
             }
             else
@@ -1779,7 +1803,7 @@ public partial class FrmAdressen : Form
             if (wordApp.Documents.Count >= 1) { wordDoc = wordApp.ActiveDocument; }
             if (wordDoc == null)
             {
-                Utilities.WordErrorTaskDlg(Handle, [.. addBookDict.Keys], new(Properties.Resources.word32));
+                Utilities.WordInfoTaskDlg(Handle, [.. addBookDict.Keys], new(Properties.Resources.word32));
                 return;
             }
             foreach (var entry in addBookDict)
@@ -1845,7 +1869,7 @@ public partial class FrmAdressen : Form
     private void WordHelpToolStripMenuItem_Click(object sender, EventArgs e)
     {
         foreach (var key in (string[])[.. addBookDict.Keys]) { addBookDict[key] = string.Empty; }
-        Utilities.WordErrorTaskDlg(Handle, [.. addBookDict.Keys], new(Properties.Resources.word32));
+        Utilities.WordInfoTaskDlg(Handle, [.. addBookDict.Keys], new(Properties.Resources.word32));
     }
 
     private void StatusbarToolStripMenuItem_Click(object sender, EventArgs e) => statusStrip.Visible = statusbarToolStripMenuItem.Checked = !statusbarToolStripMenuItem.Checked;
@@ -2605,7 +2629,7 @@ public partial class FrmAdressen : Form
                 ignoreSearchChange = false;
                 lastAddressSearch = string.Empty;
             }
-            flexiTSStatusLabel.Visible = true;
+            //flexiTSStatusLabel.Visible = true;
             if (dataTable != null && dataTable.Rows.Count > 0)
             {
                 Text = appName + " – " + (string?)(string.IsNullOrEmpty(databaseFilePath) ? "unbenannt" : Utilities.CorrectUNC(databaseFilePath));  // Workaround for UNC-Path
@@ -2615,7 +2639,9 @@ public partial class FrmAdressen : Form
                     = deleteTSButton.Enabled = newToolStripMenuItem.Enabled = newTSButton.Enabled = duplicateToolStripMenuItem.Enabled = copyTSButton.Enabled = wordTSButton.Enabled
                     = envelopeTSButton.Enabled = true;
                 copyToOtherDGVTSMenuItem.Enabled = false;
-                toolStripStatusLabel.Text = addressDGV.Rows.Cast<DataGridViewRow>().Count(r => r.Visible).ToString() + " Adressen";
+                var rowCount = addressDGV.Rows.Count;
+                var visibleRowCount = addressDGV.Rows.Cast<DataGridViewRow>().Count(static r => r.Visible);
+                toolStripStatusLabel.Text = rowCount == visibleRowCount ? $"{visibleRowCount} Adressen" : $"{visibleRowCount}/{rowCount} Adressen";
                 if (addressDGV.SelectedRows.Count > 0) { AdressEditFields(addressDGV.SelectedRows[0].Index); }
             }
         }
@@ -2654,16 +2680,19 @@ public partial class FrmAdressen : Form
                 ignoreSearchChange = false;
                 lastContactSearch = string.Empty;
             }
-            flexiTSStatusLabel.Visible = false;
+            //flexiTSStatusLabel.Visible = false;
             Text = appName + " – Google-Kontakte"; // + GetMailAdress();
             btnEditContact.Visible = true;
             //saveTSButton.Enabled = changedContactData.Count > 0; // eigentlich immer false, da Änderungen sofort übernommen werden  
             newToolStripMenuItem.Enabled = duplicateToolStripMenuItem.Enabled = deleteToolStripMenuItem.Enabled = deleteToolStripMenuItem.Enabled
                 = duplicateToolStripMenuItem.Enabled = false;
             copyTSButton.Enabled = newTSButton.Enabled = deleteTSButton.Enabled = copyToOtherDGVTSMenuItem.Enabled = wordTSButton.Enabled = envelopeTSButton.Enabled = true;
-            toolStripStatusLabel.Text = contactDGV.Rows.Cast<DataGridViewRow>().Count(r => r.Visible).ToString() + " Kontakte";
+            var rowCount = contactDGV.Rows.Count;
+            var visibleRowCount = contactDGV.Rows.Cast<DataGridViewRow>().Count(static r => r.Visible);
+            toolStripStatusLabel.Text = rowCount == visibleRowCount ? $"{visibleRowCount} Kontakte" : $"{visibleRowCount}/{rowCount} Kontakte";
             if (contactDGV.SelectedRows.Count == 1) { ContactEditFields(contactDGV.SelectedRows[0].Index); }
         }
+        flexiTSStatusLabel.Text = string.Empty;
         searchTSTextBox.TextBox.Focus();
     }
 
@@ -3109,32 +3138,30 @@ public partial class FrmAdressen : Form
             using (var connection = new SQLiteConnection((string?)$"Data Source={databaseFilePath};FailIfMissing=False;"))
             {
                 connection.Open();
-                var createTableQuery = @"
-                        CREATE TABLE Adressen (Anrede TEXT, Präfix TEXT, Nachname TEXT, Vorname TEXT, Zwischenname TEXT, Nickname TEXT, Suffix TEXT, Firma TEXT, Straße TEXT, PLZ TEXT, 
-                        Ort TEXT, Land TEXT, Betreff TEXT, Grußformel TEXT, Schlussformel TEXT, Geburtstag TEXT, Mail1 TEXT, Mail2 TEXT, Telefon1 TEXT, Telefon2 TEXT, 
-                        Mobil TEXT, Fax TEXT, Internet TEXT, Notizen TEXT, Dokumente TEXT, Id INTEGER PRIMARY KEY AUTOINCREMENT)";
+                var columnDefinitions = string.Join(", ", dataFields.Select(field => $"{field} TEXT"));
+                var createTableQuery = $@"CREATE TABLE Adressen ({columnDefinitions}, Id INTEGER PRIMARY KEY AUTOINCREMENT)";
                 using var command1 = new SQLiteCommand(createTableQuery, connection);
                 command1.ExecuteNonQuery();
 
                 using (var command2 = new SQLiteCommand("INSERT INTO Adressen (Anrede, Präfix, Nachname, Vorname, Zwischenname,  Nickname, Suffix, Straße, PLZ, Ort, Grußformel, Geburtstag, Mail1) " +
-                    "VALUES (@anrede, @präfix, @nachname, @vorname, @zwischenname, @nickname, @suffix, @straße, @plz, @ort, @grußformel, @geburtstag, @mail1)", connection))
+                    "VALUES (@Anrede, @Präfix, @Nachname, @Vorname, @Zwischenname, @Nickname, @Suffix, @Straße, @Plz, @Ort, @Grußformel, @Geburtstag, @Mail1)", connection))
                 {
-                    command2.Parameters.AddWithValue("@anrede", "Herrn");
-                    command2.Parameters.AddWithValue("@präfix", "Dr. h.c.");
-                    command2.Parameters.AddWithValue("@nachname", "Mustermann");
-                    command2.Parameters.AddWithValue("@vorname", "Max");
-                    command2.Parameters.AddWithValue("@zwischenname", "von und zu");
-                    command2.Parameters.AddWithValue("@nickname", "Maxi");
-                    command2.Parameters.AddWithValue("@suffix", "Jr. MBA");  // Master of Business Administration
-                    command2.Parameters.AddWithValue("@straße", "Langer Weg 144");
-                    command2.Parameters.AddWithValue("@plz", "01234");
-                    command2.Parameters.AddWithValue("@ort", "Entenhausen");
-                    command2.Parameters.AddWithValue("@grußformel", "Lieber Max");
-                    command2.Parameters.AddWithValue("@geburtstag", "6.3.1995");
-                    command2.Parameters.AddWithValue("@mail1", "abc@xyz.com");
+                    command2.Parameters.AddWithValue("@Anrede", "Herrn");
+                    command2.Parameters.AddWithValue("@Präfix", "Dr. h.c.");
+                    command2.Parameters.AddWithValue("@Nachname", "Mustermann");
+                    command2.Parameters.AddWithValue("@Vorname", "Max");
+                    command2.Parameters.AddWithValue("@Zwischenname", "von und zu");
+                    command2.Parameters.AddWithValue("@Nickname", "Maxi");
+                    command2.Parameters.AddWithValue("@Suffix", "Jr. MBA");  // Master of Business Administration
+                    command2.Parameters.AddWithValue("@Straße", "Langer Weg 144");
+                    command2.Parameters.AddWithValue("@Plz", "01234");
+                    command2.Parameters.AddWithValue("@Ort", "Entenhausen");
+                    command2.Parameters.AddWithValue("@Grußformel", "Lieber Max");
+                    command2.Parameters.AddWithValue("@Geburtstag", "6.3.1995");
+                    command2.Parameters.AddWithValue("@Mail1", "abc@xyz.com");
                     command2.ExecuteNonQuery();
                 }
-                connection.Close();
+                connection.Close(); // not really necessary, because of using   
             }
             ConnectSQLDatabase(databaseFilePath);
         }
@@ -3367,10 +3394,13 @@ public partial class FrmAdressen : Form
                 SQLiteConnection.CreateFile(dbPath);
                 using var connection = new SQLiteConnection((string?)$"Data Source={dbPath};Version=3;");
                 connection.Open();
-                var createTableSql = @"CREATE TABLE IF NOT EXISTS Adressen (Anrede TEXT, Präfix TEXT, Nachname TEXT, Vorname TEXT, Zwischenname TEXT, Nickname TEXT, Suffix TEXT, Firma TEXT, Straße TEXT, PLZ TEXT, Ort TEXT, Land TEXT, Betreff TEXT, Grußformel TEXT, Schlussformel TEXT, Geburtstag TEXT, Mail1 TEXT, Mail2 TEXT, Telefon1 TEXT, Telefon2 TEXT, Mobil TEXT, Fax TEXT, Internet TEXT, Notizen TEXT, Dokumente TEXT, Id INTEGER PRIMARY KEY AUTOINCREMENT)";
+                var columnDefinitions = string.Join(", ", dataFields.Select(field => $"{field} TEXT"));
+                var createTableSql = $@"CREATE TABLE IF NOT EXISTS Adressen ({columnDefinitions}, Id INTEGER PRIMARY KEY AUTOINCREMENT)";
                 new SQLiteCommand(createTableSql, connection).ExecuteNonQuery();
                 using var transaction = connection.BeginTransaction();
-                var insertCommand = new SQLiteCommand(connection) { CommandText = @"INSERT INTO Adressen (Anrede, Präfix, Nachname, Vorname, Zwischenname, Nickname, Suffix, Firma, Straße, PLZ, Ort, Land, Betreff, Grußformel, Schlussformel, Geburtstag, Mail1, Mail2, Telefon1, Telefon2, Mobil, Fax, Internet, Notizen, Dokumente) VALUES (@Anrede, @Präfix, @Nachname, @Vorname, @Zwischenname, @Nickname, @Suffix, @Firma, @Straße, @PLZ, @Ort, @Land, @Betreff, @Grußformel, @Schlussformel, @Geburtstag, @Mail1, @Mail2, @Telefon1, @Telefon2, @Mobil, @Fax, @Internet, @Notizen, @Dokumente)" };
+                var columnNames = string.Join(", ", dataFields);
+                var columnParams = string.Join(", ", dataFields.Select(field => "@" + field));
+                var insertCommand = new SQLiteCommand(connection) { CommandText = $@"INSERT INTO Adressen ({columnNames}) VALUES ({columnParams})" };
                 foreach (DataGridViewRow row in contactDGV.Rows)
                 {
                     if (!row.IsNewRow)
@@ -3893,18 +3923,20 @@ public partial class FrmAdressen : Form
 
     private void Clear_SearchTextBox()
     {
-        if (tabControl.SelectedTab == addressTabPage && addressDGV.SelectedRows.Count > 0)
+        if (tabControl.SelectedTab == addressTabPage)
         {
+            if (addressDGV.SelectedRows.Count == 0) { searchTSTextBox.TextBox.Clear(); return; }
             var rowIndex = addressDGV.SelectedRows[0].Index;
-            searchTSTextBox.TextBox.Clear();
+            searchTSTextBox.TextBox.Clear(); // löst SearchTSTextBox_TextChanged aus    
             if (rowIndex >= 0)
             {
                 addressDGV.Rows[rowIndex].Selected = true;
                 addressDGV.FirstDisplayedScrollingRowIndex = rowIndex;
             }
         }
-        else if (tabControl.SelectedTab == contactTabPage && contactDGV.SelectedRows.Count > 0)
+        else if (tabControl.SelectedTab == contactTabPage)
         {
+            if (contactDGV.SelectedRows.Count == 0) { searchTSTextBox.TextBox.Clear(); return; }
             var rowIndex = contactDGV.SelectedRows[0].Index;
             searchTSTextBox.TextBox.Clear();
             if (rowIndex >= 0)
@@ -3986,6 +4018,218 @@ public partial class FrmAdressen : Form
     private void TermsofuseToolStripMenuItem_Click(object sender, EventArgs e) => Utilities.StartLink(Handle, "https://www.netradio.info/adressen-terms-of-use/");
     private void PrivacypolicyToolStripMenuItem_Click(object sender, EventArgs e) => Utilities.StartLink(Handle, "https://www.netradio.info/adressen-privacy-policy/");
     private void LicenseTxtToolStripMenuItem_Click(object sender, EventArgs e) => Utilities.StartFile(Handle, "Lizenzvereinbarung.txt");
+
+    private void AdressenMitBriefToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        static bool filter(DataGridViewRow row) => !string.IsNullOrEmpty(row.Cells["Dokumente"].Value?.ToString()); // lokale Funktion statt Lambda-Ausdruck (Func<>)
+        if (tabControl.SelectedTab == addressTabPage)
+        {
+            FilterAddressDGV(filter);
+            isFilteredAddress = true;
+            flexiTSStatusLabel.Text = "… mit Briefverweis";
+        }
+    }
+
+    private void MailPlusFilterToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        static bool filter(DataGridViewRow row) => !string.IsNullOrEmpty((string?)(row.Cells["Mail1"].Value?.ToString() + row.Cells["Mail2"].Value?.ToString()));
+        if (tabControl.SelectedTab == addressTabPage)
+        {
+            FilterAddressDGV(filter);
+            isFilteredAddress = true;
+        }
+        else if (tabControl.SelectedTab == contactTabPage)
+        {
+            FilterContactDGV(filter);
+            isFilteredContact = true;
+        }
+        flexiTSStatusLabel.Text = "… mit E-Mailadresse";
+    }
+
+    private void MailMinusFilterToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        static bool filter(DataGridViewRow row) => string.IsNullOrEmpty((string?)(row.Cells["Mail1"].Value?.ToString() + row.Cells["Mail2"].Value?.ToString()));
+        if (tabControl.SelectedTab == addressTabPage)
+        {
+            FilterAddressDGV(filter);
+            isFilteredAddress = true;
+        }
+        else if (tabControl.SelectedTab == contactTabPage)
+        {
+            FilterContactDGV(filter);
+            isFilteredContact = true;
+        }
+        flexiTSStatusLabel.Text = "… ohne E-Mailadresse";
+    }
+
+    private void TelephonePlusFilterToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        static bool filter(DataGridViewRow row) => !string.IsNullOrEmpty((string?)(row.Cells["Telefon1"].Value?.ToString() + row.Cells["Telefon2"].Value?.ToString()));
+        if (tabControl.SelectedTab == addressTabPage)
+        {
+            FilterAddressDGV(filter);
+            isFilteredAddress = true;
+        }
+        else if (tabControl.SelectedTab == contactTabPage)
+        {
+            FilterContactDGV(filter);
+            isFilteredContact = true;
+        }
+        flexiTSStatusLabel.Text = "… mit Telefonnummer";
+    }
+
+    private void TelephoneMinusFilterToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        static bool filter(DataGridViewRow row) => string.IsNullOrEmpty((string?)(row.Cells["Telefon1"].Value?.ToString() + row.Cells["Telefon2"].Value?.ToString()));
+        if (tabControl.SelectedTab == addressTabPage)
+        {
+            FilterAddressDGV(filter);
+            isFilteredAddress = true;
+        }
+        else if (tabControl.SelectedTab == contactTabPage)
+        {
+            FilterContactDGV(filter);
+            isFilteredContact = true;
+        }
+        flexiTSStatusLabel.Text = "… ohne Telefonnummer";
+    }
+
+    private void MobilePlusFilterToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        static bool filter(DataGridViewRow row) => !string.IsNullOrEmpty(row.Cells["Mobil"].Value?.ToString());
+        if (tabControl.SelectedTab == addressTabPage)
+        {
+            FilterAddressDGV(filter);
+            isFilteredAddress = true;
+        }
+        else if (tabControl.SelectedTab == contactTabPage)
+        {
+            FilterContactDGV(filter);
+            isFilteredContact = true;
+        }
+        flexiTSStatusLabel.Text = "… mit Mobilfunknummer";
+    }
+
+    private void MobileMinusFilterToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        static bool filter(DataGridViewRow row) => string.IsNullOrEmpty(row.Cells["Mobil"].Value?.ToString());
+        if (tabControl.SelectedTab == addressTabPage)
+        {
+            FilterAddressDGV(filter);
+            isFilteredAddress = true;
+        }
+        else if (tabControl.SelectedTab == contactTabPage)
+        {
+            FilterContactDGV(filter);
+            isFilteredContact = true;
+        }
+        flexiTSStatusLabel.Text = "… ohne Mobilfunknummer";
+    }
+
+    private void AdressenSelResetToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        static bool filter(DataGridViewRow row) => true; // lokale Funktion statt Lambda-Ausdruck (Func<>)
+        if (tabControl.SelectedTab == addressTabPage)
+        {
+            var rowIndex = addressDGV.SelectedRows.Count > 0 ? addressDGV.SelectedRows[0].Index : -1;
+            FilterAddressDGV(filter);
+            if (rowIndex >= 0 && addressDGV.Rows[rowIndex] != null)
+            {
+                addressDGV.Rows[rowIndex].Selected = true;
+                addressDGV.FirstDisplayedScrollingRowIndex = rowIndex;
+            }
+            isFilteredAddress = false;
+        }
+        else if (tabControl.SelectedTab == contactTabPage)
+        {
+            var rowIndex = contactDGV.SelectedRows.Count > 0 ? contactDGV.SelectedRows[0].Index : -1;
+            FilterContactDGV(filter);
+            if (rowIndex >= 0 && contactDGV.Rows[rowIndex] != null)
+            {
+                contactDGV.Rows[rowIndex].Selected = true;
+                contactDGV.FirstDisplayedScrollingRowIndex = rowIndex;
+            }
+            isFilteredContact = false;
+        }
+        ignoreSearchChange = true; // F9 löst SearchTSTextBox_TextChanged aus
+        searchTSTextBox.TextBox.Clear();
+        ignoreSearchChange = false;
+        flexiTSStatusLabel.Text = "";
+    }
+
+    private void FilterlToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
+    {
+        adressenMitBriefToolStripMenuItem.Enabled = adressenSelResetToolStripMenuItem.Enabled = tabControl.SelectedTab == addressTabPage && addressDGV.Rows.Count > 0;
+        adressenSelResetToolStripMenuItem.Enabled = tabControl.SelectedTab == contactTabPage ? isFilteredContact : isFilteredAddress;
+        mailPlusFilterToolStripMenuItem.Enabled = mailMinusFilterToolStripMenuItem.Enabled =
+            telephonePlusFilterToolStripMenuItem.Enabled = telephoneMinusFilterToolStripMenuItem.Enabled =
+            mobilePlusFilterToolStripMenuItem.Enabled = mobileMinusFilterToolStripMenuItem.Enabled =
+            (tabControl.SelectedTab == addressTabPage && addressDGV.Rows.Count > 0) || (tabControl.SelectedTab == contactTabPage && contactDGV.Rows.Count > 0);
+    }
+
+    private void FilterAddressDGV(Func<DataGridViewRow, bool> filterCondition)
+    {
+        if (addressDGV.DataSource == null || BindingContext == null) { return; }
+        var manager = (CurrencyManager)BindingContext[addressDGV.DataSource]; // Holen des CurrencyManagers, um 
+        manager.SuspendBinding(); // Datenbindung während der Bearbeitung pausieren
+        addressDGV.SuspendLayout(); // UI-Updates anhalten für bessere Performance
+        addressDGV.ClearSelection();
+        AdressEditFields(-1); // Ihre Methode zum Zurücksetzen der Felder
+        var visibleRowCount = 0;
+        foreach (DataGridViewRow row in addressDGV.Rows)
+        {
+            if (row.IsNewRow) { continue; }
+            if (filterCondition(row)) // Hier wird die übergebene Filter-Logik aufgerufen!
+            {
+                row.Visible = true;
+                visibleRowCount++;
+            }
+            else { row.Visible = false; }
+        }
+        if (visibleRowCount > 0)
+        {
+            var firstVisibleIndex = Utilities.GetFirstVisibleRowIndex(addressDGV);  // Die erste sichtbare Zeile finden und selektieren
+            if (firstVisibleIndex != -1)
+            {
+                addressDGV.Rows[firstVisibleIndex].Selected = true;
+                AdressEditFields(firstVisibleIndex); // Ihre Methode zum Füllen der Felder
+            }
+        }
+        manager.ResumeBinding(); // Datenbindung wieder aufnehmen
+        addressDGV.ResumeLayout(); // UI-Updates wieder erlauben
+        var rowCount = addressDGV.Rows.Count;
+        toolStripStatusLabel.Text = rowCount == visibleRowCount ? $"{visibleRowCount} Adressen" : $"{visibleRowCount}/{rowCount} Adressen";
+    }
+
+    private void FilterContactDGV(Func<DataGridViewRow, bool> filterCondition)
+    {
+        contactDGV.SuspendLayout(); // UI-Updates anhalten für bessere Performance
+        contactDGV.ClearSelection();
+        ContactEditFields(-1); // Ihre Methode zum Zurücksetzen der Felder
+        var visibleRowCount = 0;
+        foreach (DataGridViewRow row in contactDGV.Rows)
+        {
+            if (row.IsNewRow) { continue; }
+            if (filterCondition(row)) // Hier wird die übergebene Filter-Logik aufgerufen!
+            {
+                row.Visible = true;
+                visibleRowCount++;
+            }
+            else { row.Visible = false; }
+        }
+        if (visibleRowCount > 0)
+        {
+            var firstVisibleIndex = Utilities.GetFirstVisibleRowIndex(contactDGV);  // Die erste sichtbare Zeile finden und selektieren
+            if (firstVisibleIndex != -1)
+            {
+                contactDGV.Rows[firstVisibleIndex].Selected = true;
+                ContactEditFields(firstVisibleIndex); // Ihre Methode zum Füllen der Felder
+            }
+        }
+        contactDGV.ResumeLayout(); // UI-Updates wieder erlauben    
+        var rowCount = contactDGV.Rows.Count;
+        toolStripStatusLabel.Text = rowCount == visibleRowCount ? $"{visibleRowCount} Kontakte" : $"{visibleRowCount}/{rowCount} Kontakte";
+
+    }
+
 }
-
-

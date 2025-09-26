@@ -119,7 +119,7 @@ internal static class Utilities
     }
 
 
-    internal static void WordErrorTaskDlg(nint hwnd, string[] allKeys, TaskDialogIcon icon)
+    internal static void WordInfoTaskDlg(nint hwnd, string[] allKeys, TaskDialogIcon icon)
     {
         var btnCreateDoc = new TaskDialogButton("Beispieldokument erstellen");
         var page = new TaskDialogPage()
@@ -157,7 +157,7 @@ internal static class Utilities
 
     internal static void HelpMsgTaskDlg(nint hwnd, string appName, Icon? icon)
     {
-        Version? curVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        var curVersion = Assembly.GetExecutingAssembly().GetName().Version;
         var threeVersion = curVersion is not null ? $"{curVersion.Major}.{curVersion.Minor}.{curVersion.Build}" : "unbekannt";
         var buildDate = GetBuildDate();
         TaskDialogButton paypalButton = new TaskDialogCommandLinkButton("Anerkennung spenden via PayPal");
@@ -428,7 +428,7 @@ internal static class Utilities
             //para3.Format.Borders[WdBorderType.wdBorderTop].LineStyle = WdLineStyle.wdLineStyleSingle;
 
             var para4 = wordDoc.Paragraphs.Add();
-            para4.Range.Text = "Probieren Sie nun das Einfügen einer Adresse aus, indem Sie im Adressen-Programm eine Adresse selektieren und dann auf den Button »In TV eintragen« klicken. Wiederholen Sie den Vorgang mit anderen Adressen!";
+            para4.Range.Text = "Probieren Sie nun das Einfügen einer Adresse aus, indem Sie im Adressen-Programm eine Adresse selektieren und dann auf den Button »In Brief einfügen« klicken. Wiederholen Sie den Vorgang mit anderen Adressen!";
             para4.Range.InsertParagraphAfter();
 
             var para5 = wordDoc.Paragraphs.Add();
@@ -694,6 +694,8 @@ internal static class Utilities
         }
         return Convert.ToBase64String(bytes);
     }
+
+    public static string NormalizeString(string input) => string.IsNullOrEmpty(input) ? "" : input.ToLower().Replace("ä", "ae").Replace("ö", "oe").Replace("ü", "ue").Replace("ß", "ss");
 
     public static IEnumerable<string> ReadAsLines(string filename)
     {
