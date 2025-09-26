@@ -29,13 +29,13 @@ partial class FrmAdressen
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
+        var resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmAdressen));
         var dataGridViewCellStyle1 = new DataGridViewCellStyle();
         var dataGridViewCellStyle2 = new DataGridViewCellStyle();
         var dataGridViewCellStyle3 = new DataGridViewCellStyle();
         var dataGridViewCellStyle4 = new DataGridViewCellStyle();
         var dataGridViewCellStyle5 = new DataGridViewCellStyle();
         var dataGridViewCellStyle6 = new DataGridViewCellStyle();
-        var resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmAdressen));
         menuStrip = new MenuStrip();
         fileToolStripMenuItem = new ToolStripMenuItem();
         newDBToolStripMenuItem = new ToolStripMenuItem();
@@ -44,9 +44,10 @@ partial class FrmAdressen
         recentToolStripMenuItem = new ToolStripMenuItem();
         googleToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator8 = new ToolStripSeparator();
+        importToolStripMenuItem = new ToolStripMenuItem();
+        toolStripSeparator21 = new ToolStripSeparator();
         exportToolStripMenuItem = new ToolStripMenuItem();
         googlebackupToolStripMenuItem = new ToolStripMenuItem();
-        importToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator6 = new ToolStripSeparator();
         exitToolStripMenuItem = new ToolStripMenuItem();
         editToolStripMenuItem = new ToolStripMenuItem();
@@ -69,6 +70,16 @@ partial class FrmAdressen
         splitterAutomaticToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator11 = new ToolStripSeparator();
         statusbarToolStripMenuItem = new ToolStripMenuItem();
+        filterlToolStripMenuItem = new ToolStripMenuItem();
+        adressenMitBriefToolStripMenuItem = new ToolStripMenuItem();
+        mailPlusFilterToolStripMenuItem = new ToolStripMenuItem();
+        mailMinusFilterToolStripMenuItem = new ToolStripMenuItem();
+        telephonePlusFilterToolStripMenuItem = new ToolStripMenuItem();
+        telephoneMinusFilterToolStripMenuItem = new ToolStripMenuItem();
+        mobilePlusFilterToolStripMenuItem = new ToolStripMenuItem();
+        mobileMinusFilterToolStripMenuItem = new ToolStripMenuItem();
+        toolStripSeparator20 = new ToolStripSeparator();
+        adressenSelResetToolStripMenuItem = new ToolStripMenuItem();
         extraToolStripMenuItem = new ToolStripMenuItem();
         optionsToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator9 = new ToolStripSeparator();
@@ -127,7 +138,6 @@ partial class FrmAdressen
         addressDGV = new DataGridView();
         contactTabPage = new TabPage();
         contactDGV = new DataGridView();
-        imageList = new ImageList(components);
         tabulation = new TabControl();
         tabPageDetail = new TabPage();
         editSplitContainer = new SplitContainer();
@@ -190,6 +200,7 @@ partial class FrmAdressen
         dokuTopPanel = new Panel();
         searchPictureBox = new PictureBox();
         searchTextBox = new TextBox();
+        imageList = new ImageList(components);
         contextMenu = new ContextMenuStrip(components);
         newTSMenuItem = new ToolStripMenuItem();
         dupTSMenuItem = new ToolStripMenuItem();
@@ -238,7 +249,7 @@ partial class FrmAdressen
         // 
         // menuStrip
         // 
-        menuStrip.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, viewToolStripMenuItem, extraToolStripMenuItem, helpToolStripMenuItem });
+        menuStrip.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, viewToolStripMenuItem, filterlToolStripMenuItem, extraToolStripMenuItem, helpToolStripMenuItem });
         menuStrip.Location = new Point(0, 0);
         menuStrip.Name = "menuStrip";
         menuStrip.Size = new Size(1237, 24);
@@ -246,7 +257,7 @@ partial class FrmAdressen
         // 
         // fileToolStripMenuItem
         // 
-        fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newDBToolStripMenuItem, toolStripSeparator10, openToolStripMenuItem, recentToolStripMenuItem, googleToolStripMenuItem, toolStripSeparator8, exportToolStripMenuItem, googlebackupToolStripMenuItem, importToolStripMenuItem, toolStripSeparator6, exitToolStripMenuItem });
+        fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newDBToolStripMenuItem, toolStripSeparator10, openToolStripMenuItem, recentToolStripMenuItem, googleToolStripMenuItem, toolStripSeparator8, importToolStripMenuItem, toolStripSeparator21, exportToolStripMenuItem, googlebackupToolStripMenuItem, toolStripSeparator6, exitToolStripMenuItem });
         fileToolStripMenuItem.Name = "fileToolStripMenuItem";
         fileToolStripMenuItem.Size = new Size(46, 20);
         fileToolStripMenuItem.Text = "Datei";
@@ -255,80 +266,85 @@ partial class FrmAdressen
         // 
         // newDBToolStripMenuItem
         // 
-        newDBToolStripMenuItem.Image = Properties.Resources.database16;
+        newDBToolStripMenuItem.Image = (Image)resources.GetObject("newDBToolStripMenuItem.Image");
         newDBToolStripMenuItem.Name = "newDBToolStripMenuItem";
-        newDBToolStripMenuItem.Size = new Size(226, 22);
+        newDBToolStripMenuItem.Size = new Size(229, 22);
         newDBToolStripMenuItem.Text = "&Neue Datenbank erstellen";
         newDBToolStripMenuItem.Click += NewDBToolStripMenuItem_Click;
         // 
         // toolStripSeparator10
         // 
         toolStripSeparator10.Name = "toolStripSeparator10";
-        toolStripSeparator10.Size = new Size(223, 6);
+        toolStripSeparator10.Size = new Size(226, 6);
         // 
         // openToolStripMenuItem
         // 
-        openToolStripMenuItem.Image = Properties.Resources.address_book16;
+        openToolStripMenuItem.Image = (Image)resources.GetObject("openToolStripMenuItem.Image");
         openToolStripMenuItem.Name = "openToolStripMenuItem";
-        openToolStripMenuItem.Size = new Size(226, 22);
+        openToolStripMenuItem.Size = new Size(229, 22);
         openToolStripMenuItem.Text = "Lokale &Datenbank öffnen";
         openToolStripMenuItem.Click += OpenToolStripMenuItem_Click;
         // 
         // recentToolStripMenuItem
         // 
-        recentToolStripMenuItem.Image = Properties.Resources.Datalist_16x;
+        recentToolStripMenuItem.Image = (Image)resources.GetObject("recentToolStripMenuItem.Image");
         recentToolStripMenuItem.Name = "recentToolStripMenuItem";
-        recentToolStripMenuItem.Size = new Size(226, 22);
+        recentToolStripMenuItem.Size = new Size(229, 22);
         recentToolStripMenuItem.Text = "Zu&letzt geöffnet…";
         recentToolStripMenuItem.DropDownOpening += RecentToolStripMenuItem_DropDownOpening;
         // 
         // googleToolStripMenuItem
         // 
-        googleToolStripMenuItem.Image = Properties.Resources.address_book_blue16;
+        googleToolStripMenuItem.Image = (Image)resources.GetObject("googleToolStripMenuItem.Image");
         googleToolStripMenuItem.Name = "googleToolStripMenuItem";
-        googleToolStripMenuItem.Size = new Size(226, 22);
+        googleToolStripMenuItem.Size = new Size(229, 22);
         googleToolStripMenuItem.Text = "&Google-Kontakte laden";
         googleToolStripMenuItem.Click += GoogleToolStripMenuItem_Click;
         // 
         // toolStripSeparator8
         // 
         toolStripSeparator8.Name = "toolStripSeparator8";
-        toolStripSeparator8.Size = new Size(223, 6);
+        toolStripSeparator8.Size = new Size(226, 6);
+        // 
+        // importToolStripMenuItem
+        // 
+        importToolStripMenuItem.Image = (Image)resources.GetObject("importToolStripMenuItem.Image");
+        importToolStripMenuItem.Name = "importToolStripMenuItem";
+        importToolStripMenuItem.Size = new Size(229, 22);
+        importToolStripMenuItem.Text = "&CSV-Datei lokal importieren…";
+        importToolStripMenuItem.Click += ImportToolStripMenuItem_Click;
+        // 
+        // toolStripSeparator21
+        // 
+        toolStripSeparator21.Name = "toolStripSeparator21";
+        toolStripSeparator21.Size = new Size(226, 6);
         // 
         // exportToolStripMenuItem
         // 
-        exportToolStripMenuItem.Image = Properties.Resources.export_csv16;
+        exportToolStripMenuItem.Image = (Image)resources.GetObject("exportToolStripMenuItem.Image");
         exportToolStripMenuItem.Name = "exportToolStripMenuItem";
-        exportToolStripMenuItem.Size = new Size(226, 22);
+        exportToolStripMenuItem.Size = new Size(229, 22);
         exportToolStripMenuItem.Text = "&Export der lokalen Adressen";
         exportToolStripMenuItem.Click += ExportToolStripMenuItem_Click;
         // 
         // googlebackupToolStripMenuItem
         // 
-        googlebackupToolStripMenuItem.Image = Properties.Resources.SaveHL;
+        googlebackupToolStripMenuItem.Image = (Image)resources.GetObject("googlebackupToolStripMenuItem.Image");
         googlebackupToolStripMenuItem.Name = "googlebackupToolStripMenuItem";
-        googlebackupToolStripMenuItem.Size = new Size(226, 22);
+        googlebackupToolStripMenuItem.Size = new Size(229, 22);
         googlebackupToolStripMenuItem.Text = "&Backup der Google-Kontakte";
         googlebackupToolStripMenuItem.Click += GooglebackupToolStripMenuItem_Click;
-        // 
-        // importToolStripMenuItem
-        // 
-        importToolStripMenuItem.Image = Properties.Resources.import16;
-        importToolStripMenuItem.Name = "importToolStripMenuItem";
-        importToolStripMenuItem.Size = new Size(226, 22);
-        importToolStripMenuItem.Text = "&CSV-Datei lokal importieren";
-        importToolStripMenuItem.Click += ImportToolStripMenuItem_Click;
         // 
         // toolStripSeparator6
         // 
         toolStripSeparator6.Name = "toolStripSeparator6";
-        toolStripSeparator6.Size = new Size(223, 6);
+        toolStripSeparator6.Size = new Size(226, 6);
         // 
         // exitToolStripMenuItem
         // 
-        exitToolStripMenuItem.Image = Properties.Resources.exit16;
+        exitToolStripMenuItem.Image = (Image)resources.GetObject("exitToolStripMenuItem.Image");
         exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-        exitToolStripMenuItem.Size = new Size(226, 22);
+        exitToolStripMenuItem.Size = new Size(229, 22);
         exitToolStripMenuItem.Text = "&Beenden";
         exitToolStripMenuItem.Click += ExitToolStripMenuItem_Click;
         // 
@@ -344,7 +360,7 @@ partial class FrmAdressen
         // 
         // clipboardTSMenuItem
         // 
-        clipboardTSMenuItem.Image = Properties.Resources.clipboard_plus16;
+        clipboardTSMenuItem.Image = (Image)resources.GetObject("clipboardTSMenuItem.Image");
         clipboardTSMenuItem.Name = "clipboardTSMenuItem";
         clipboardTSMenuItem.ShortcutKeyDisplayString = "Strg+C";
         clipboardTSMenuItem.Size = new Size(292, 22);
@@ -359,7 +375,7 @@ partial class FrmAdressen
         // newToolStripMenuItem
         // 
         newToolStripMenuItem.Enabled = false;
-        newToolStripMenuItem.Image = Properties.Resources.add_contact16;
+        newToolStripMenuItem.Image = (Image)resources.GetObject("newToolStripMenuItem.Image");
         newToolStripMenuItem.Name = "newToolStripMenuItem";
         newToolStripMenuItem.ShortcutKeyDisplayString = "Strg+N";
         newToolStripMenuItem.Size = new Size(292, 22);
@@ -369,7 +385,7 @@ partial class FrmAdressen
         // duplicateToolStripMenuItem
         // 
         duplicateToolStripMenuItem.Enabled = false;
-        duplicateToolStripMenuItem.Image = Properties.Resources.copy_contact16;
+        duplicateToolStripMenuItem.Image = (Image)resources.GetObject("duplicateToolStripMenuItem.Image");
         duplicateToolStripMenuItem.Name = "duplicateToolStripMenuItem";
         duplicateToolStripMenuItem.ShortcutKeyDisplayString = "Strg+D";
         duplicateToolStripMenuItem.Size = new Size(292, 22);
@@ -384,7 +400,7 @@ partial class FrmAdressen
         // deleteToolStripMenuItem
         // 
         deleteToolStripMenuItem.Enabled = false;
-        deleteToolStripMenuItem.Image = Properties.Resources.delete_contact16;
+        deleteToolStripMenuItem.Image = (Image)resources.GetObject("deleteToolStripMenuItem.Image");
         deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
         deleteToolStripMenuItem.ShortcutKeyDisplayString = "Strg+Entf";
         deleteToolStripMenuItem.Size = new Size(292, 22);
@@ -399,7 +415,7 @@ partial class FrmAdressen
         // copyToOtherDGVTSMenuItem
         // 
         copyToOtherDGVTSMenuItem.Enabled = false;
-        copyToOtherDGVTSMenuItem.Image = Properties.Resources.copy_contact16;
+        copyToOtherDGVTSMenuItem.Image = (Image)resources.GetObject("copyToOtherDGVTSMenuItem.Image");
         copyToOtherDGVTSMenuItem.Name = "copyToOtherDGVTSMenuItem";
         copyToOtherDGVTSMenuItem.ShortcutKeyDisplayString = "Strg+K";
         copyToOtherDGVTSMenuItem.Size = new Size(292, 22);
@@ -414,7 +430,7 @@ partial class FrmAdressen
         // rejectChangesToolStripMenuItem
         // 
         rejectChangesToolStripMenuItem.Enabled = false;
-        rejectChangesToolStripMenuItem.Image = Properties.Resources.Reject16;
+        rejectChangesToolStripMenuItem.Image = (Image)resources.GetObject("rejectChangesToolStripMenuItem.Image");
         rejectChangesToolStripMenuItem.Name = "rejectChangesToolStripMenuItem";
         rejectChangesToolStripMenuItem.ShortcutKeyDisplayString = "Strg+Z";
         rejectChangesToolStripMenuItem.Size = new Size(292, 22);
@@ -428,7 +444,7 @@ partial class FrmAdressen
         // 
         // wordToolStripMenuItem
         // 
-        wordToolStripMenuItem.Image = Properties.Resources.word16;
+        wordToolStripMenuItem.Image = (Image)resources.GetObject("wordToolStripMenuItem.Image");
         wordToolStripMenuItem.Name = "wordToolStripMenuItem";
         wordToolStripMenuItem.ShortcutKeyDisplayString = "Strg+W";
         wordToolStripMenuItem.Size = new Size(292, 22);
@@ -437,7 +453,7 @@ partial class FrmAdressen
         // 
         // envelopeToolStripMenuItem
         // 
-        envelopeToolStripMenuItem.Image = Properties.Resources.envelope16;
+        envelopeToolStripMenuItem.Image = (Image)resources.GetObject("envelopeToolStripMenuItem.Image");
         envelopeToolStripMenuItem.Name = "envelopeToolStripMenuItem";
         envelopeToolStripMenuItem.ShortcutKeyDisplayString = "Strg+U";
         envelopeToolStripMenuItem.Size = new Size(292, 22);
@@ -455,7 +471,7 @@ partial class FrmAdressen
         // 
         // columnSelectToolStripMenuItem
         // 
-        columnSelectToolStripMenuItem.Image = Properties.Resources.select_column16;
+        columnSelectToolStripMenuItem.Image = (Image)resources.GetObject("columnSelectToolStripMenuItem.Image");
         columnSelectToolStripMenuItem.Name = "columnSelectToolStripMenuItem";
         columnSelectToolStripMenuItem.Size = new Size(214, 22);
         columnSelectToolStripMenuItem.Text = "Spalten &auswählen…";
@@ -463,7 +479,7 @@ partial class FrmAdressen
         // 
         // columnWidthsResetToolStripMenuItem
         // 
-        columnWidthsResetToolStripMenuItem.Image = Properties.Resources.width16;
+        columnWidthsResetToolStripMenuItem.Image = (Image)resources.GetObject("columnWidthsResetToolStripMenuItem.Image");
         columnWidthsResetToolStripMenuItem.Name = "columnWidthsResetToolStripMenuItem";
         columnWidthsResetToolStripMenuItem.Size = new Size(214, 22);
         columnWidthsResetToolStripMenuItem.Text = "Spalten&breite zurücksetzen";
@@ -471,7 +487,7 @@ partial class FrmAdressen
         // 
         // splitterAutomaticToolStripMenuItem
         // 
-        splitterAutomaticToolStripMenuItem.Image = Properties.Resources.splitter16x;
+        splitterAutomaticToolStripMenuItem.Image = (Image)resources.GetObject("splitterAutomaticToolStripMenuItem.Image");
         splitterAutomaticToolStripMenuItem.Name = "splitterAutomaticToolStripMenuItem";
         splitterAutomaticToolStripMenuItem.Size = new Size(214, 22);
         splitterAutomaticToolStripMenuItem.Text = "&Splitter zurücksetzen";
@@ -491,6 +507,84 @@ partial class FrmAdressen
         statusbarToolStripMenuItem.Text = "Status&zeile";
         statusbarToolStripMenuItem.Click += StatusbarToolStripMenuItem_Click;
         // 
+        // filterlToolStripMenuItem
+        // 
+        filterlToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { adressenMitBriefToolStripMenuItem, mailPlusFilterToolStripMenuItem, mailMinusFilterToolStripMenuItem, telephonePlusFilterToolStripMenuItem, telephoneMinusFilterToolStripMenuItem, mobilePlusFilterToolStripMenuItem, mobileMinusFilterToolStripMenuItem, toolStripSeparator20, adressenSelResetToolStripMenuItem });
+        filterlToolStripMenuItem.Name = "filterlToolStripMenuItem";
+        filterlToolStripMenuItem.Size = new Size(45, 20);
+        filterlToolStripMenuItem.Text = "Filter";
+        filterlToolStripMenuItem.DropDownOpening += FilterlToolStripMenuItem_DropDownOpening;
+        // 
+        // adressenMitBriefToolStripMenuItem
+        // 
+        adressenMitBriefToolStripMenuItem.Image = (Image)resources.GetObject("adressenMitBriefToolStripMenuItem.Image");
+        adressenMitBriefToolStripMenuItem.Name = "adressenMitBriefToolStripMenuItem";
+        adressenMitBriefToolStripMenuItem.Size = new Size(241, 22);
+        adressenMitBriefToolStripMenuItem.Text = "Alle Adressen mit Briefverweis";
+        adressenMitBriefToolStripMenuItem.Click += AdressenMitBriefToolStripMenuItem_Click;
+        // 
+        // mailPlusFilterToolStripMenuItem
+        // 
+        mailPlusFilterToolStripMenuItem.Image = Properties.Resources.mail_plus161;
+        mailPlusFilterToolStripMenuItem.Name = "mailPlusFilterToolStripMenuItem";
+        mailPlusFilterToolStripMenuItem.Size = new Size(241, 22);
+        mailPlusFilterToolStripMenuItem.Text = "Alle mit E-Mail-Adresse";
+        mailPlusFilterToolStripMenuItem.Click += MailPlusFilterToolStripMenuItem_Click;
+        // 
+        // mailMinusFilterToolStripMenuItem
+        // 
+        mailMinusFilterToolStripMenuItem.Image = Properties.Resources.mail_minus16;
+        mailMinusFilterToolStripMenuItem.Name = "mailMinusFilterToolStripMenuItem";
+        mailMinusFilterToolStripMenuItem.Size = new Size(241, 22);
+        mailMinusFilterToolStripMenuItem.Text = "Alle ohne E-Mail-Adresse";
+        mailMinusFilterToolStripMenuItem.Click += MailMinusFilterToolStripMenuItem_Click;
+        // 
+        // telephonePlusFilterToolStripMenuItem
+        // 
+        telephonePlusFilterToolStripMenuItem.Image = Properties.Resources.telephone_plus16;
+        telephonePlusFilterToolStripMenuItem.Name = "telephonePlusFilterToolStripMenuItem";
+        telephonePlusFilterToolStripMenuItem.Size = new Size(241, 22);
+        telephonePlusFilterToolStripMenuItem.Text = "Alle mit Telefonnummer";
+        telephonePlusFilterToolStripMenuItem.Click += TelephonePlusFilterToolStripMenuItem_Click;
+        // 
+        // telephoneMinusFilterToolStripMenuItem
+        // 
+        telephoneMinusFilterToolStripMenuItem.Image = Properties.Resources.telephone_minus16;
+        telephoneMinusFilterToolStripMenuItem.Name = "telephoneMinusFilterToolStripMenuItem";
+        telephoneMinusFilterToolStripMenuItem.Size = new Size(241, 22);
+        telephoneMinusFilterToolStripMenuItem.Text = "Alle ohne Telefonummer";
+        telephoneMinusFilterToolStripMenuItem.Click += TelephoneMinusFilterToolStripMenuItem_Click;
+        // 
+        // mobilePlusFilterToolStripMenuItem
+        // 
+        mobilePlusFilterToolStripMenuItem.Image = Properties.Resources.mobile_plus16;
+        mobilePlusFilterToolStripMenuItem.Name = "mobilePlusFilterToolStripMenuItem";
+        mobilePlusFilterToolStripMenuItem.Size = new Size(241, 22);
+        mobilePlusFilterToolStripMenuItem.Text = "Alle mit Mobiltelefonnummer";
+        mobilePlusFilterToolStripMenuItem.Click += MobilePlusFilterToolStripMenuItem_Click;
+        // 
+        // mobileMinusFilterToolStripMenuItem
+        // 
+        mobileMinusFilterToolStripMenuItem.Image = Properties.Resources.mobile_minus16;
+        mobileMinusFilterToolStripMenuItem.Name = "mobileMinusFilterToolStripMenuItem";
+        mobileMinusFilterToolStripMenuItem.Size = new Size(241, 22);
+        mobileMinusFilterToolStripMenuItem.Text = "Alle ohne Mobiltelefonnummer";
+        mobileMinusFilterToolStripMenuItem.Click += MobileMinusFilterToolStripMenuItem_Click;
+        // 
+        // toolStripSeparator20
+        // 
+        toolStripSeparator20.Name = "toolStripSeparator20";
+        toolStripSeparator20.Size = new Size(238, 6);
+        // 
+        // adressenSelResetToolStripMenuItem
+        // 
+        adressenSelResetToolStripMenuItem.Image = (Image)resources.GetObject("adressenSelResetToolStripMenuItem.Image");
+        adressenSelResetToolStripMenuItem.Name = "adressenSelResetToolStripMenuItem";
+        adressenSelResetToolStripMenuItem.ShortcutKeyDisplayString = "F9";
+        adressenSelResetToolStripMenuItem.Size = new Size(241, 22);
+        adressenSelResetToolStripMenuItem.Text = "Filter zurücksetzen";
+        adressenSelResetToolStripMenuItem.Click += AdressenSelResetToolStripMenuItem_Click;
+        // 
         // extraToolStripMenuItem
         // 
         extraToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { optionsToolStripMenuItem, toolStripSeparator9, birthdaysToolStripMenuItem, toolStripSeparator17, authentMenuItem, browserPeopleMenuItem, toolStripSeparator3, genderRecognitionToolStripMenuItem });
@@ -503,7 +597,7 @@ partial class FrmAdressen
         // 
         // optionsToolStripMenuItem
         // 
-        optionsToolStripMenuItem.Image = Properties.Resources.options16;
+        optionsToolStripMenuItem.Image = (Image)resources.GetObject("optionsToolStripMenuItem.Image");
         optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
         optionsToolStripMenuItem.ShortcutKeyDisplayString = "Strg+E";
         optionsToolStripMenuItem.Size = new Size(263, 22);
@@ -517,7 +611,7 @@ partial class FrmAdressen
         // 
         // birthdaysToolStripMenuItem
         // 
-        birthdaysToolStripMenuItem.Image = Properties.Resources.FavoriteStar16;
+        birthdaysToolStripMenuItem.Image = (Image)resources.GetObject("birthdaysToolStripMenuItem.Image");
         birthdaysToolStripMenuItem.Name = "birthdaysToolStripMenuItem";
         birthdaysToolStripMenuItem.ShortcutKeyDisplayString = "Strg+B";
         birthdaysToolStripMenuItem.Size = new Size(263, 22);
@@ -531,7 +625,7 @@ partial class FrmAdressen
         // 
         // authentMenuItem
         // 
-        authentMenuItem.Image = Properties.Resources.delete16;
+        authentMenuItem.Image = (Image)resources.GetObject("authentMenuItem.Image");
         authentMenuItem.Name = "authentMenuItem";
         authentMenuItem.Size = new Size(263, 22);
         authentMenuItem.Text = "Google-&Authentifizierung entfernen";
@@ -540,7 +634,7 @@ partial class FrmAdressen
         // 
         // browserPeopleMenuItem
         // 
-        browserPeopleMenuItem.Image = Properties.Resources.google_people16;
+        browserPeopleMenuItem.Image = (Image)resources.GetObject("browserPeopleMenuItem.Image");
         browserPeopleMenuItem.Name = "browserPeopleMenuItem";
         browserPeopleMenuItem.Size = new Size(263, 22);
         browserPeopleMenuItem.Text = "Google-&Kontakte im Browser";
@@ -554,14 +648,14 @@ partial class FrmAdressen
         // genderRecognitionToolStripMenuItem
         // 
         genderRecognitionToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { weiblicheVornamenToolStripMenuItem, männlicheVornamenToolStripMenuItem, toolStripSeparator18, sortNamesToolStripMenuItem, nameduplicatesToolStripMenuItem });
-        genderRecognitionToolStripMenuItem.Image = Properties.Resources.ComboBox_16;
+        genderRecognitionToolStripMenuItem.Image = (Image)resources.GetObject("genderRecognitionToolStripMenuItem.Image");
         genderRecognitionToolStripMenuItem.Name = "genderRecognitionToolStripMenuItem";
         genderRecognitionToolStripMenuItem.Size = new Size(263, 22);
         genderRecognitionToolStripMenuItem.Text = "Gruß&formel-Geschlechtserkennung";
         // 
         // weiblicheVornamenToolStripMenuItem
         // 
-        weiblicheVornamenToolStripMenuItem.Image = Properties.Resources.script_text_16;
+        weiblicheVornamenToolStripMenuItem.Image = (Image)resources.GetObject("weiblicheVornamenToolStripMenuItem.Image");
         weiblicheVornamenToolStripMenuItem.Name = "weiblicheVornamenToolStripMenuItem";
         weiblicheVornamenToolStripMenuItem.Size = new Size(239, 22);
         weiblicheVornamenToolStripMenuItem.Text = "&Weibliche Vornamen öffnen";
@@ -569,7 +663,7 @@ partial class FrmAdressen
         // 
         // männlicheVornamenToolStripMenuItem
         // 
-        männlicheVornamenToolStripMenuItem.Image = Properties.Resources.script_text_16;
+        männlicheVornamenToolStripMenuItem.Image = (Image)resources.GetObject("männlicheVornamenToolStripMenuItem.Image");
         männlicheVornamenToolStripMenuItem.Name = "männlicheVornamenToolStripMenuItem";
         männlicheVornamenToolStripMenuItem.Size = new Size(239, 22);
         männlicheVornamenToolStripMenuItem.Text = "&Männliche Vornamen öffnen";
@@ -582,7 +676,7 @@ partial class FrmAdressen
         // 
         // sortNamesToolStripMenuItem
         // 
-        sortNamesToolStripMenuItem.Image = Properties.Resources.SortHS_16;
+        sortNamesToolStripMenuItem.Image = (Image)resources.GetObject("sortNamesToolStripMenuItem.Image");
         sortNamesToolStripMenuItem.Name = "sortNamesToolStripMenuItem";
         sortNamesToolStripMenuItem.Size = new Size(239, 22);
         sortNamesToolStripMenuItem.Text = "&Vornamen prüfen und sortieren";
@@ -590,7 +684,7 @@ partial class FrmAdressen
         // 
         // nameduplicatesToolStripMenuItem
         // 
-        nameduplicatesToolStripMenuItem.Image = Properties.Resources.CompareFiles_16;
+        nameduplicatesToolStripMenuItem.Image = (Image)resources.GetObject("nameduplicatesToolStripMenuItem.Image");
         nameduplicatesToolStripMenuItem.Name = "nameduplicatesToolStripMenuItem";
         nameduplicatesToolStripMenuItem.Size = new Size(239, 22);
         nameduplicatesToolStripMenuItem.Text = "&Übereinstimmungen suchen";
@@ -607,7 +701,7 @@ partial class FrmAdressen
         // 
         // wordHelpToolStripMenuItem
         // 
-        wordHelpToolStripMenuItem.Image = Properties.Resources.wordhelp16;
+        wordHelpToolStripMenuItem.Image = (Image)resources.GetObject("wordHelpToolStripMenuItem.Image");
         wordHelpToolStripMenuItem.Name = "wordHelpToolStripMenuItem";
         wordHelpToolStripMenuItem.ShortcutKeyDisplayString = "F11";
         wordHelpToolStripMenuItem.Size = new Size(228, 22);
@@ -616,7 +710,7 @@ partial class FrmAdressen
         // 
         // helpdokuTSMenuItem
         // 
-        helpdokuTSMenuItem.Image = Properties.Resources.F1Help_16;
+        helpdokuTSMenuItem.Image = (Image)resources.GetObject("helpdokuTSMenuItem.Image");
         helpdokuTSMenuItem.Name = "helpdokuTSMenuItem";
         helpdokuTSMenuItem.ShortcutKeyDisplayString = "F1";
         helpdokuTSMenuItem.Size = new Size(228, 22);
@@ -630,7 +724,7 @@ partial class FrmAdressen
         // 
         // termsofuseToolStripMenuItem
         // 
-        termsofuseToolStripMenuItem.Image = Properties.Resources.clipboard_text16;
+        termsofuseToolStripMenuItem.Image = (Image)resources.GetObject("termsofuseToolStripMenuItem.Image");
         termsofuseToolStripMenuItem.Name = "termsofuseToolStripMenuItem";
         termsofuseToolStripMenuItem.Size = new Size(228, 22);
         termsofuseToolStripMenuItem.Text = "Nutzungsbedingungen";
@@ -638,7 +732,7 @@ partial class FrmAdressen
         // 
         // privacypolicyToolStripMenuItem
         // 
-        privacypolicyToolStripMenuItem.Image = Properties.Resources.Shield_16;
+        privacypolicyToolStripMenuItem.Image = (Image)resources.GetObject("privacypolicyToolStripMenuItem.Image");
         privacypolicyToolStripMenuItem.Name = "privacypolicyToolStripMenuItem";
         privacypolicyToolStripMenuItem.Size = new Size(228, 22);
         privacypolicyToolStripMenuItem.Text = "Datenschutzbestimmungen";
@@ -646,7 +740,7 @@ partial class FrmAdressen
         // 
         // licenseTxtToolStripMenuItem
         // 
-        licenseTxtToolStripMenuItem.Image = Properties.Resources.script_text_16;
+        licenseTxtToolStripMenuItem.Image = (Image)resources.GetObject("licenseTxtToolStripMenuItem.Image");
         licenseTxtToolStripMenuItem.Name = "licenseTxtToolStripMenuItem";
         licenseTxtToolStripMenuItem.Size = new Size(228, 22);
         licenseTxtToolStripMenuItem.Text = "Lizenzvereinbarung";
@@ -659,7 +753,7 @@ partial class FrmAdressen
         // 
         // websiteToolStripMenuItem
         // 
-        websiteToolStripMenuItem.Image = Properties.Resources.Web_16;
+        websiteToolStripMenuItem.Image = (Image)resources.GetObject("websiteToolStripMenuItem.Image");
         websiteToolStripMenuItem.Name = "websiteToolStripMenuItem";
         websiteToolStripMenuItem.Size = new Size(228, 22);
         websiteToolStripMenuItem.Text = "Projekthomepage";
@@ -667,7 +761,7 @@ partial class FrmAdressen
         // 
         // githubToolStripMenuItem
         // 
-        githubToolStripMenuItem.Image = Properties.Resources.git_16;
+        githubToolStripMenuItem.Image = (Image)resources.GetObject("githubToolStripMenuItem.Image");
         githubToolStripMenuItem.Name = "githubToolStripMenuItem";
         githubToolStripMenuItem.Size = new Size(228, 22);
         githubToolStripMenuItem.Text = "Sourcecode bei GitHub";
@@ -680,9 +774,9 @@ partial class FrmAdressen
         // 
         // aboutToolStripMenuItem
         // 
-        aboutToolStripMenuItem.Image = Properties.Resources.info16;
+        aboutToolStripMenuItem.Image = (Image)resources.GetObject("aboutToolStripMenuItem.Image");
         aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-        aboutToolStripMenuItem.ShortcutKeyDisplayString = "F9";
+        aboutToolStripMenuItem.ShortcutKeyDisplayString = "Strg+I";
         aboutToolStripMenuItem.Size = new Size(228, 22);
         aboutToolStripMenuItem.Text = "Über &Adressen…";
         aboutToolStripMenuItem.Click += AboutToolStripMenuItem_Click;
@@ -698,7 +792,7 @@ partial class FrmAdressen
         // 
         // openTSButton
         // 
-        openTSButton.Image = Properties.Resources.address_book;
+        openTSButton.Image = (Image)resources.GetObject("openTSButton.Image");
         openTSButton.ImageTransparentColor = Color.Magenta;
         openTSButton.Name = "openTSButton";
         openTSButton.Size = new Size(108, 28);
@@ -708,7 +802,7 @@ partial class FrmAdressen
         // 
         // googleTSButton
         // 
-        googleTSButton.Image = Properties.Resources.address_book_blue;
+        googleTSButton.Image = (Image)resources.GetObject("googleTSButton.Image");
         googleTSButton.ImageTransparentColor = Color.Magenta;
         googleTSButton.Name = "googleTSButton";
         googleTSButton.Size = new Size(116, 28);
@@ -724,7 +818,7 @@ partial class FrmAdressen
         // saveTSButton
         // 
         saveTSButton.Enabled = false;
-        saveTSButton.Image = Properties.Resources.SaveHL;
+        saveTSButton.Image = (Image)resources.GetObject("saveTSButton.Image");
         saveTSButton.ImageTransparentColor = Color.Magenta;
         saveTSButton.Name = "saveTSButton";
         saveTSButton.Size = new Size(87, 28);
@@ -767,7 +861,7 @@ partial class FrmAdressen
         // newTSButton
         // 
         newTSButton.Enabled = false;
-        newTSButton.Image = Properties.Resources.add_contact;
+        newTSButton.Image = (Image)resources.GetObject("newTSButton.Image");
         newTSButton.ImageTransparentColor = Color.Magenta;
         newTSButton.Name = "newTSButton";
         newTSButton.Size = new Size(57, 28);
@@ -778,7 +872,7 @@ partial class FrmAdressen
         // copyTSButton
         // 
         copyTSButton.Enabled = false;
-        copyTSButton.Image = Properties.Resources.copy_contact;
+        copyTSButton.Image = (Image)resources.GetObject("copyTSButton.Image");
         copyTSButton.ImageTransparentColor = Color.Magenta;
         copyTSButton.Name = "copyTSButton";
         copyTSButton.Size = new Size(94, 28);
@@ -794,7 +888,7 @@ partial class FrmAdressen
         // deleteTSButton
         // 
         deleteTSButton.Enabled = false;
-        deleteTSButton.Image = Properties.Resources.delete_address24;
+        deleteTSButton.Image = (Image)resources.GetObject("deleteTSButton.Image");
         deleteTSButton.Name = "deleteTSButton";
         deleteTSButton.Size = new Size(79, 28);
         deleteTSButton.Text = "Löschen";
@@ -809,7 +903,7 @@ partial class FrmAdressen
         // wordTSButton
         // 
         wordTSButton.Enabled = false;
-        wordTSButton.Image = Properties.Resources.word24;
+        wordTSButton.Image = (Image)resources.GetObject("wordTSButton.Image");
         wordTSButton.Name = "wordTSButton";
         wordTSButton.Size = new Size(122, 28);
         wordTSButton.Text = "In Brief einfügen";
@@ -819,7 +913,7 @@ partial class FrmAdressen
         // envelopeTSButton
         // 
         envelopeTSButton.Enabled = false;
-        envelopeTSButton.Image = Properties.Resources.envelope24;
+        envelopeTSButton.Image = (Image)resources.GetObject("envelopeTSButton.Image");
         envelopeTSButton.Name = "envelopeTSButton";
         envelopeTSButton.Size = new Size(96, 28);
         envelopeTSButton.Text = "Adressieren";
@@ -828,7 +922,7 @@ partial class FrmAdressen
         // 
         // dokuPlusTSButton
         // 
-        dokuPlusTSButton.Image = Properties.Resources.plus_blue_24;
+        dokuPlusTSButton.Image = (Image)resources.GetObject("dokuPlusTSButton.Image");
         dokuPlusTSButton.ImageTransparentColor = Color.Magenta;
         dokuPlusTSButton.Name = "dokuPlusTSButton";
         dokuPlusTSButton.Size = new Size(97, 28);
@@ -845,7 +939,7 @@ partial class FrmAdressen
         // dokuMinusTSButton
         // 
         dokuMinusTSButton.Enabled = false;
-        dokuMinusTSButton.Image = Properties.Resources.minus_blue_24;
+        dokuMinusTSButton.Image = (Image)resources.GetObject("dokuMinusTSButton.Image");
         dokuMinusTSButton.ImageTransparentColor = Color.Magenta;
         dokuMinusTSButton.Name = "dokuMinusTSButton";
         dokuMinusTSButton.Size = new Size(86, 28);
@@ -862,7 +956,7 @@ partial class FrmAdressen
         // dokuShowTSButton
         // 
         dokuShowTSButton.Enabled = false;
-        dokuShowTSButton.Image = Properties.Resources.UpArrow_Blue_24;
+        dokuShowTSButton.Image = (Image)resources.GetObject("dokuShowTSButton.Image");
         dokuShowTSButton.ImageTransparentColor = Color.Magenta;
         dokuShowTSButton.Name = "dokuShowTSButton";
         dokuShowTSButton.Size = new Size(72, 28);
@@ -939,7 +1033,6 @@ partial class FrmAdressen
         tabControl.Controls.Add(addressTabPage);
         tabControl.Controls.Add(contactTabPage);
         tabControl.Dock = DockStyle.Fill;
-        tabControl.ImageList = imageList;
         tabControl.ItemSize = new Size(150, 30);
         tabControl.Location = new Point(0, 0);
         tabControl.Multiline = true;
@@ -957,7 +1050,6 @@ partial class FrmAdressen
         addressTabPage.BackColor = Color.Transparent;
         addressTabPage.Controls.Add(addressDGV);
         addressTabPage.Font = new Font("Segoe UI", 10F);
-        addressTabPage.ImageIndex = 0;
         addressTabPage.Location = new Point(4, 4);
         addressTabPage.Name = "addressTabPage";
         addressTabPage.Padding = new Padding(3);
@@ -1030,7 +1122,6 @@ partial class FrmAdressen
         // 
         contactTabPage.BackColor = Color.Transparent;
         contactTabPage.Controls.Add(contactDGV);
-        contactTabPage.ImageIndex = 1;
         contactTabPage.Location = new Point(4, 4);
         contactTabPage.Name = "contactTabPage";
         contactTabPage.Padding = new Padding(3);
@@ -1083,17 +1174,6 @@ partial class FrmAdressen
         contactDGV.KeyDown += ContactDGV_KeyDown;
         contactDGV.MouseDown += ContactDGV_MouseDown;
         // 
-        // imageList
-        // 
-        imageList.ColorDepth = ColorDepth.Depth32Bit;
-        imageList.ImageStream = (ImageListStreamer)resources.GetObject("imageList.ImageStream");
-        imageList.TransparentColor = Color.Transparent;
-        imageList.Images.SetKeyName(0, "address-book.png");
-        imageList.Images.SetKeyName(1, "address-book-blue.png");
-        imageList.Images.SetKeyName(2, "universal_24.png");
-        imageList.Images.SetKeyName(3, "inbox_24.png");
-        imageList.Images.SetKeyName(4, "document_inbox_24.png");
-        // 
         // tabulation
         // 
         tabulation.Alignment = TabAlignment.Bottom;
@@ -1114,7 +1194,6 @@ partial class FrmAdressen
         // tabPageDetail
         // 
         tabPageDetail.Controls.Add(editSplitContainer);
-        tabPageDetail.ImageIndex = 2;
         tabPageDetail.Location = new Point(4, 4);
         tabPageDetail.Name = "tabPageDetail";
         tabPageDetail.Padding = new Padding(3);
@@ -1812,7 +1891,7 @@ partial class FrmAdressen
         btnEditContact.FlatAppearance.MouseDownBackColor = SystemColors.GradientActiveCaption;
         btnEditContact.FlatAppearance.MouseOverBackColor = SystemColors.GradientInactiveCaption;
         btnEditContact.FlatStyle = FlatStyle.Flat;
-        btnEditContact.Image = Properties.Resources.contacts_24;
+        btnEditContact.Image = (Image)resources.GetObject("btnEditContact.Image");
         btnEditContact.Location = new Point(3, 457);
         btnEditContact.Name = "btnEditContact";
         btnEditContact.Size = new Size(45, 26);
@@ -1936,7 +2015,7 @@ partial class FrmAdressen
         btnCalendar.FlatAppearance.MouseDownBackColor = SystemColors.GradientActiveCaption;
         btnCalendar.FlatAppearance.MouseOverBackColor = SystemColors.GradientInactiveCaption;
         btnCalendar.FlatStyle = FlatStyle.Flat;
-        btnCalendar.Image = Properties.Resources.calendar_small16;
+        btnCalendar.Image = (Image)resources.GetObject("btnCalendar.Image");
         btnCalendar.Location = new Point(79, 0);
         btnCalendar.Margin = new Padding(0);
         btnCalendar.Name = "btnCalendar";
@@ -1965,7 +2044,6 @@ partial class FrmAdressen
         // 
         tabPageDoku.Controls.Add(dokuListView);
         tabPageDoku.Controls.Add(dokuTopPanel);
-        tabPageDoku.ImageIndex = 3;
         tabPageDoku.Location = new Point(4, 4);
         tabPageDoku.Name = "tabPageDoku";
         tabPageDoku.Padding = new Padding(3);
@@ -2034,9 +2112,9 @@ partial class FrmAdressen
         // searchPictureBox
         // 
         searchPictureBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        searchPictureBox.ErrorImage = Properties.Resources.Search_16;
-        searchPictureBox.Image = Properties.Resources.Search_16;
-        searchPictureBox.InitialImage = Properties.Resources.Search_16;
+        searchPictureBox.ErrorImage = (Image)resources.GetObject("searchPictureBox.ErrorImage");
+        searchPictureBox.Image = (Image)resources.GetObject("searchPictureBox.Image");
+        searchPictureBox.InitialImage = (Image)resources.GetObject("searchPictureBox.InitialImage");
         searchPictureBox.Location = new Point(535, 9);
         searchPictureBox.Name = "searchPictureBox";
         searchPictureBox.Size = new Size(25, 25);
@@ -2061,6 +2139,12 @@ partial class FrmAdressen
         searchTextBox.KeyDown += SearchTextBox_KeyDown;
         searchTextBox.Leave += SearchTextBox_Leave;
         // 
+        // imageList
+        // 
+        imageList.ColorDepth = ColorDepth.Depth32Bit;
+        imageList.ImageSize = new Size(24, 24);
+        imageList.TransparentColor = Color.Transparent;
+        // 
         // contextMenu
         // 
         contextMenu.Items.AddRange(new ToolStripItem[] { newTSMenuItem, dupTSMenuItem, delTSMenuItem, addressTSSeparator, clipTSMenuItem, copy2OtherDGVSeparator, copy2OtherDGVMenuItem, toolStripSeparator15, wordTSMenuItem, envelopeTSMenuItem });
@@ -2070,7 +2154,7 @@ partial class FrmAdressen
         // 
         // newTSMenuItem
         // 
-        newTSMenuItem.Image = Properties.Resources.add_contact16;
+        newTSMenuItem.Image = (Image)resources.GetObject("newTSMenuItem.Image");
         newTSMenuItem.Name = "newTSMenuItem";
         newTSMenuItem.Size = new Size(239, 22);
         newTSMenuItem.Text = "Adresse hinzufügen";
@@ -2078,7 +2162,7 @@ partial class FrmAdressen
         // 
         // dupTSMenuItem
         // 
-        dupTSMenuItem.Image = Properties.Resources.copy_contact16;
+        dupTSMenuItem.Image = (Image)resources.GetObject("dupTSMenuItem.Image");
         dupTSMenuItem.Name = "dupTSMenuItem";
         dupTSMenuItem.Size = new Size(239, 22);
         dupTSMenuItem.Text = "Adresse duplizieren";
@@ -2086,7 +2170,7 @@ partial class FrmAdressen
         // 
         // delTSMenuItem
         // 
-        delTSMenuItem.Image = Properties.Resources.delete_contact16;
+        delTSMenuItem.Image = (Image)resources.GetObject("delTSMenuItem.Image");
         delTSMenuItem.Name = "delTSMenuItem";
         delTSMenuItem.Size = new Size(239, 22);
         delTSMenuItem.Text = "Adresse löschen";
@@ -2099,7 +2183,7 @@ partial class FrmAdressen
         // 
         // clipTSMenuItem
         // 
-        clipTSMenuItem.Image = Properties.Resources.clipboard_plus16;
+        clipTSMenuItem.Image = (Image)resources.GetObject("clipTSMenuItem.Image");
         clipTSMenuItem.Name = "clipTSMenuItem";
         clipTSMenuItem.Size = new Size(239, 22);
         clipTSMenuItem.Text = "In Zwischenablage kopieren…";
@@ -2113,7 +2197,7 @@ partial class FrmAdressen
         // 
         // copy2OtherDGVMenuItem
         // 
-        copy2OtherDGVMenuItem.Image = Properties.Resources.copy_contact16;
+        copy2OtherDGVMenuItem.Image = (Image)resources.GetObject("copy2OtherDGVMenuItem.Image");
         copy2OtherDGVMenuItem.Name = "copy2OtherDGVMenuItem";
         copy2OtherDGVMenuItem.Size = new Size(239, 22);
         copy2OtherDGVMenuItem.Text = "Nach Lokale Adressen kopieren";
@@ -2127,7 +2211,7 @@ partial class FrmAdressen
         // 
         // wordTSMenuItem
         // 
-        wordTSMenuItem.Image = Properties.Resources.word16;
+        wordTSMenuItem.Image = (Image)resources.GetObject("wordTSMenuItem.Image");
         wordTSMenuItem.Name = "wordTSMenuItem";
         wordTSMenuItem.Size = new Size(239, 22);
         wordTSMenuItem.Text = "In Word-Dokument einfügen";
@@ -2135,7 +2219,7 @@ partial class FrmAdressen
         // 
         // envelopeTSMenuItem
         // 
-        envelopeTSMenuItem.Image = Properties.Resources.envelope16;
+        envelopeTSMenuItem.Image = (Image)resources.GetObject("envelopeTSMenuItem.Image");
         envelopeTSMenuItem.Name = "envelopeTSMenuItem";
         envelopeTSMenuItem.Size = new Size(239, 22);
         envelopeTSMenuItem.Text = "Briefumschlag adressieren…";
@@ -2189,6 +2273,7 @@ partial class FrmAdressen
         Controls.Add(statusStrip);
         Controls.Add(toolStrip);
         Controls.Add(menuStrip);
+        DoubleBuffered = true;
         Font = new Font("Segoe UI", 10F);
         Icon = (Icon)resources.GetObject("$this.Icon");
         MainMenuStrip = menuStrip;
@@ -2300,7 +2385,6 @@ partial class FrmAdressen
     private LinkLabel mail2LinkLabel;
     private TextBox tbSuffix;
     private LinkLabel tel2LinkLabel;
-    private TextBox textBox6;
     private ComboBox cbOrt;
     private ToolStripMenuItem aboutToolStripMenuItem;
     private ToolStripButton copyTSButton;
@@ -2413,4 +2497,15 @@ partial class FrmAdressen
     private ToolStripMenuItem privacypolicyToolStripMenuItem;
     private ToolStripSeparator toolStripSeparator19;
     private ToolStripMenuItem licenseTxtToolStripMenuItem;
+    private ToolStripMenuItem filterlToolStripMenuItem;
+    private ToolStripMenuItem adressenMitBriefToolStripMenuItem;
+    private ToolStripSeparator toolStripSeparator20;
+    private ToolStripMenuItem adressenSelResetToolStripMenuItem;
+    private ToolStripMenuItem mailPlusFilterToolStripMenuItem;
+    private ToolStripMenuItem mailMinusFilterToolStripMenuItem;
+    private ToolStripMenuItem telephonePlusFilterToolStripMenuItem;
+    private ToolStripMenuItem telephoneMinusFilterToolStripMenuItem;
+    private ToolStripMenuItem mobilePlusFilterToolStripMenuItem;
+    private ToolStripMenuItem mobileMinusFilterToolStripMenuItem;
+    private ToolStripSeparator toolStripSeparator21;
 }

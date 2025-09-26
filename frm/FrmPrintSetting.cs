@@ -119,6 +119,8 @@ public partial class FrmPrintSetting : Form
     private void PrintDocument_PrintPage(object sender, PrintPageEventArgs e)
     {
         using var g = e.Graphics;
+        if (g == null) { return; }
+        g.PageUnit = GraphicsUnit.Display; // 0.01 inch, 1/ 
         float lineH;
         if (ckbPrintSender.Checked)
         {
@@ -404,6 +406,46 @@ public partial class FrmPrintSetting : Form
     private void CkbPrintSender_CheckedChanged(object sender, EventArgs e)
     {
         if (ckbPrintSender.Visible && ckbPrintSender.Focused) { printPreviewControl.Document = printDocument; }
+    }
+
+    private void TcSender_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (tcSender.Visible && tcSender.Focused) { printPreviewControl.Document = printDocument; }
+    }
+
+    private void NudOffset_ValueChanged(object sender, EventArgs e)
+    {
+        if (sender is NumericUpDown nud && nud.Visible && nud.Focused) { printPreviewControl.Document = printDocument; }
+    }
+
+    //private void NudRecipOffsetX_ValueChanged(object sender, EventArgs e)
+    //{
+    //    if (nudRecipOffsetX.Visible && nudRecipOffsetX.Focused) { printPreviewControl.Document = printDocument; }
+    //}
+
+    //private void NudRecipOffsetY_ValueChanged(object sender, EventArgs e)
+    //{
+    //    if (nudRecipOffsetY.Visible && nudRecipOffsetY.Focused) { printPreviewControl.Document = printDocument; }
+    //}
+
+    //private void NudSenderOffsetX_ValueChanged(object sender, EventArgs e)
+    //{
+    //    if (nudSenderOffsetX.Visible && nudSenderOffsetX.Focused) { printPreviewControl.Document = printDocument; }
+    //}
+
+    //private void NudSenderOffsetY_ValueChanged(object sender, EventArgs e)
+    //{
+    //    if (nudSenderOffsetY.Visible && nudSenderOffsetY.Focused) { printPreviewControl.Document = printDocument; }
+    //}
+
+    private void CkbBoldRecipient_CheckedChanged(object sender, EventArgs e)
+    {
+
+    }
+
+    private void CkbBoldSender_CheckedChanged(object sender, EventArgs e)
+    {
+
     }
 }
 
