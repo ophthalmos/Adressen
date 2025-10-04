@@ -27,7 +27,7 @@ public partial class FrmAdressen : Form
     private SQLiteConnection? liteConnection;
     private DataTable? dataTable;
     private string databaseFilePath = string.Empty; // Path.ChangeExtension(appPath, ".adb");
-    private bool sAskBeforeSaveSQL = false; // Änderungen automatisch speichern
+    private bool sAskBeforeSaveSQL = true; // false = Änderungen automatisch speichern
     private readonly string xmlPath;
     private readonly string tokenDir;
     private readonly string secretPath;
@@ -81,15 +81,19 @@ public partial class FrmAdressen : Form
     private string[]? copyPattern4 = [];
     private string[]? copyPattern5 = [];
     private string[]? copyPattern6 = [];
-    private readonly bool[] hideColumnStd = [true, true, false, false, true, true, true, false, false, false, false, false, true, true, true, false, false, false, false, false, false, false, false, true, true];
-    private bool[] hideColumnArr = new bool[25];
+
+    private readonly string[] dataFields = ["Anrede", "Präfix", "Nachname", "Vorname", "Zwischenname", "Nickname",
+        "Suffix", "Firma", "Straße", "PLZ", "Ort", "Land", "Betreff", "Grußformel", "Schlussformel", "Geburtstag",
+        "Mail1", "Mail2", "Telefon1", "Telefon2", "Mobil", "Fax", "Internet", "Notizen", "Dokumente"]; // Id fehlt absichtlich  
+    private bool[] hideColumnArr = new bool[26]; // muss angepasst werden, wenn Felder/Spalten hinzugefügt werden
+    private readonly bool[] hideColumnStd = [true, true, false, false, true, true, true, false, false, false, false, false, true, true, true, false, false, false, false, false, false, false, false, true, true, true]; // muss angepasst werden, wenn Felder/Spalten hinzugefügt werden
+    private string columnWidths = "100,100,200,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100"; // muss angepasst werden, wenn Felder/Spalten hinzugefügt werden 
+
     private int splitterPosition;
     private string windowPosition = string.Empty;
     private bool windowMaximized = false;
     private readonly bool argsPath = false;
-    private string columnWidths = "100,100,200,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100";
     private SQLiteCommandBuilder? builder;
-    //private delegate void MyDelegate(ComboBox myControl);
     private Word.Document? wordDoc;
     private dynamic? wordApp; // Word.Application
     private int contactNewRowIndex = -1;
@@ -163,9 +167,6 @@ public partial class FrmAdressen : Form
     private static readonly Dictionary<string, bool> nameGenderMap = new(StringComparer.OrdinalIgnoreCase);
     private bool isFilteredAddress = false;
     private bool isFilteredContact = false;
-    private readonly string[] dataFields = ["Anrede", "Präfix", "Nachname", "Vorname", "Zwischenname", "Nickname",
-        "Suffix", "Firma", "Straße", "PLZ", "Ort", "Land", "Betreff", "Grußformel", "Schlussformel", "Geburtstag",
-        "Mail1", "Mail2", "Telefon1", "Telefon2", "Mobil", "Fax", "Internet", "Notizen", "Dokumente"];
 
     public FrmAdressen(string[] args)
     {
@@ -342,9 +343,12 @@ public partial class FrmAdressen : Form
             }
         }
         else { Directory.CreateDirectory(Path.GetDirectoryName(xmlPath)!); } // If the folder exists already, the line will be ignored.     
-
-        hideColumnArr = string.IsNullOrEmpty(hideColumns) ? hideColumnStd : Utilities.FromBase64String(hideColumns) ?? hideColumnStd;
-
+        hideColumnArr = string.IsNullOrEmpty(hideColumns) || !hideColumns.All(c => c is ',' or '0' or '1') ? hideColumnStd : [.. hideColumns.Split(',').Select(s => s == "1")];
+        if (!new int[] { hideColumnArr.Length, hideColumnStd.Length, columnWidths.Split(',').Length }.All(len => len == dataFields.Length + 1))
+        {
+            var text = $"Datenfelder: {dataFields.Length + 1}\nhideColumnArr: {hideColumnArr.Length}\nhideColumnStd: {hideColumnStd.Length}\ncolumnWidths: {columnWidths.Split(',').Length}";
+            Utilities.ErrorMsgTaskDlg(Handle, "Fehler bei der Initialisierung", "Nicht alle Arrays haben die gleiche Länge.\n" + text);
+        }
         if (windowMaximized) { WindowState = FormWindowState.Maximized; }
         else if (!string.IsNullOrEmpty(windowPosition))
         {
@@ -440,7 +444,9 @@ public partial class FrmAdressen : Form
         element.Add(new XElement("CopyPattern6", copyPattern6 != null ? string.Join('|', copyPattern6) : string.Empty));
         element.Add(new XElement("DefaultSplitter", splitterAutomaticToolStripMenuItem.Checked.ToString()));
         element.Add(new XElement("SplitterPosition", splitContainer.SplitterDistance));
-        element.Add(new XElement("HideColumns", Utilities.BoolArray2Base64String(hideColumnArr)));
+        //element.Add(new XElement("HideColumns", Utilities.BoolArray2Base64String(hideColumnArr)));
+        element.Add(new XElement("HideColumns", string.Join(",", hideColumnArr.Select(static b => b ? "1" : "0"))));
+
         element.Add(new XElement("WindowMaximized", WindowState == FormWindowState.Maximized));
         element.Add(new XElement("WindowPosition", string.Join(",", point.X, point.Y, size.Width, size.Height)));
         element.Add(new XElement("BirthdayRemindLimit", birthdayRemindLimit));
@@ -454,8 +460,7 @@ public partial class FrmAdressen : Form
 
     private void FrmAdressen_Shown(object sender, EventArgs e)
     {
-        if (birthdayAutoShow) { BirthdaysToolStripMenuItem_Click(birthdayAutoShow, EventArgs.Empty); }
-
+        if (birthdayAutoShow) { BirthdayReminder(); }
         if (sContactsAutoload) { backgroundWorker.RunWorkerAsync(); }
 
         splitContainer.SplitterDistance = splitterPosition;
@@ -479,6 +484,15 @@ public partial class FrmAdressen : Form
             liteConnection = new SQLiteConnection((string?)$"Data Source={databaseFilePath};FailIfMissing=True"); //Create a SqliteConnection object called Connection
             liteConnection.Open(); //open a connection to the database
             dataAdapter = new SQLiteDataAdapter("SELECT * FROM Adressen", liteConnection);  // Create a SQLiteDataAdapter to retrieve data
+
+            //using (var builder = new SQLiteCommandBuilder(dataAdapter))
+            //{
+            //    dataAdapter.InsertCommand = builder.GetInsertCommand();
+            //    dataAdapter.UpdateCommand = builder.GetUpdateCommand();
+            //    dataAdapter.DeleteCommand = builder.GetDeleteCommand();
+            //}
+
+
             dataTable = new DataTable(); // Create a DataTable to hold the data
             dataAdapter.Fill(dataTable);           // Use the Fill method to retrieve data into the DataTable
             var sortedRows = from row in dataTable.AsEnumerable() orderby row.Field<string>("Vorname") ascending orderby row.Field<string>("Nachname") ascending select row; // alphabetisch 
@@ -489,6 +503,7 @@ public partial class FrmAdressen : Form
                 dataTable = sortedDT;
             }
             addressDGV.SuspendLayout();
+
             addressDGV.DataSource = dataTable;
             if (!string.IsNullOrEmpty(columnWidths)) { Utilities.SetColumnWidths(columnWidths, addressDGV); }
             foreach (DataGridViewColumn column in addressDGV.Columns) { column.SortMode = DataGridViewColumnSortMode.NotSortable; }
@@ -502,20 +517,32 @@ public partial class FrmAdressen : Form
                 {
                     //MessageBox.Show(emptyRow.Cells[^1].Value.ToString());
                     if (emptyRow.DataBoundItem is DataRowView drv) { drv.Row.Delete(); }
-                    using (var changes = dataTable.GetChanges(DataRowState.Deleted))
-                    {
-                        if (changes != null)
-                        {
-                            builder = new SQLiteCommandBuilder(dataAdapter); // Automatically generates single-table commands used to reconcile changes
-                            dataAdapter.Update(changes);
-                        }
-                    }
+                    //using (var changes = dataTable.GetChanges(DataRowState.Deleted))
+                    //{
+                    //    if (changes != null)
+                    //    {
+                    //        builder = new SQLiteCommandBuilder(dataAdapter); // Automatically generates single-table commands used to reconcile changes
+                    //        dataAdapter.Update(changes);
+                    //    }
+                    //}
 
-                    dataTable.AcceptChanges();
+                    //dataTable.AcceptChanges();
                 }
+                using (var changes = dataTable.GetChanges(DataRowState.Deleted))
+                {
+                    if (changes != null)
+                    {
+                        builder = new SQLiteCommandBuilder(dataAdapter); // Automatically generates single-table commands used to reconcile changes
+                        dataAdapter.Update(changes);
+                    }
+                }
+                //dataAdapter.Update(dataTable);
+                dataTable.AcceptChanges();
+
             }
             liteConnection.Close();
             addressDGV.ResumeLayout(false);
+
             cbAnrede.Items.Clear();
             cbPräfix.Items.Clear();
             cbPLZ.Items.Clear();
@@ -534,6 +561,7 @@ public partial class FrmAdressen : Form
             addressCbItems_Ort = [.. cbOrt.Items.Cast<string>()];
             addressCbItems_Land = [.. cbLand.Items.Cast<string>()];
             addressCbItems_Schlussformel = [.. cbSchlussformel.Items.Cast<string>()];
+
             recentFiles.Remove(databaseFilePath);
             recentFiles.Insert(0, databaseFilePath);
             if (recentFiles.Count > maxRecentFiles) { recentFiles = [.. recentFiles.Take(maxRecentFiles)]; }
@@ -549,85 +577,9 @@ public partial class FrmAdressen : Form
         catch (Exception ex) { Utilities.ErrorMsgTaskDlg(Handle, "ConnectSQLDatabase: " + ex.GetType().ToString(), ex.Message); }
     }
 
-    //private void DataTable_RowEvents(object sender, DataRowChangeEventArgs e)
-    //{
-    //    //Console.Beep();
-    //    saveTSButton.Enabled = true;
-    //}
-
-    //private void DataTable_TableNewRow(object sender, DataTableNewRowEventArgs e) => saveTSButton.Enabled = true;
-    private List<string> FillComboBoxFromAddressDataTable()
-    {
-        HashSet<string> uniqueValues = []; // HashSet, um Duplikate zu vermeiden
-        foreach (DataRow row in dataTable!.Rows)
-        {
-            var foo = row.Field<string>("Grußformel");
-            if (!string.IsNullOrEmpty(foo))
-            {
-                var bar = row.Field<string>("Nachname");
-                if (!string.IsNullOrEmpty(bar)) { foo = foo.Replace(bar, "#nachname"); }
-                var baz = row.Field<string>("Zwischenname");
-                if (!string.IsNullOrEmpty(baz)) { foo = foo.Replace(baz, "#zwischenname"); }
-                var qux = row.Field<string>("Vorname");
-                if (!string.IsNullOrEmpty(qux))
-                {
-                    var array = qux.Split(' ');
-                    for (var i = 0; i < array.Length; i++)
-                    {
-                        var wort = array[i];
-                        if (string.IsNullOrEmpty(wort)) { continue; }
-                        foo = foo.Replace(wort, "#vorname" + i);
-                    }
-                }
-                uniqueValues.Add(foo);
-                //uniqueValues.Add(Regex.Replace(foo, @"#\w+", "")); // restliche Ersetzungen (Wörter die mit # beginnen) entfernen
-            }
-        }
-        //List<string> sortedList = [.. uniqueValues];
-        //sortedList.Sort();
-
-        //MessageBox.Show(string.Join(Environment.NewLine, uniqueValues));
-        return [.. uniqueValues];
-    }
-
-    private List<string> FillComboBoxFromContactDGV()
-    {
-        HashSet<string> uniqueValues = []; // Duplikate vermeiden
-        foreach (DataGridViewRow row in contactDGV.Rows)
-        {
-            if (row.IsNewRow) { continue; }
-            var foo = row.Cells["Grußformel"].Value?.ToString();
-            if (!string.IsNullOrEmpty(foo))
-            {
-                var bar = row.Cells["Nachname"].Value?.ToString();
-                if (!string.IsNullOrEmpty(bar)) { foo = foo.Replace(bar, "#nachname"); }
-                var baz = row.Cells["Zwischenname"].Value?.ToString();
-                if (!string.IsNullOrEmpty(baz)) { foo = foo.Replace(baz, "#zwischenname"); }
-                var qux = row.Cells["Vorname"].Value?.ToString();
-                if (!string.IsNullOrEmpty(qux))
-                {
-                    var array = qux.Split(' ');
-                    for (var i = 0; i < array.Length; i++)
-                    {
-                        var wort = array[i];
-                        if (string.IsNullOrEmpty(wort)) { continue; }
-                        foo = foo.Replace(wort, "#vorname" + i);
-                    }
-                }
-                uniqueValues.Add(Regex.Replace(foo, @"#\w+", ""));
-            }
-        }
-        return [.. uniqueValues];
-    }
-
     private void SaveSQLDatabase(bool closeDB = false, bool askNever = false) // askNever: wenn auch Speichern-Icon geklickt wird, soll in jedem Fall keine Abfrage erfolgen
     {
         if (dataTable == null || dataTable.Rows.Count <= 0) { return; } // Verhindert nebenbei, dass alle Rows gelöscht werden bzw. wenn, dann wird es nicht gespeichert.
-
-        //dataTable.RowChanged -= DataTable_RowEvents;
-        //dataTable.RowDeleted -= DataTable_RowEvents;
-        //dataTable.TableNewRow -= DataTable_TableNewRow;
-
         addressDGV.EndEdit();  // Schritt 1: Beenden Sie alle laufenden Bearbeitungen im DataGridView
         if (addressDGV.DataSource != null && BindingContext != null) { BindingContext[addressDGV.DataSource].EndCurrentEdit(); } // Zusätzlicher Schutz, um Änderungen zu übernehmen
         using var changes = dataTable?.GetChanges(DataRowState.Added | DataRowState.Modified | DataRowState.Deleted);
@@ -635,7 +587,7 @@ public partial class FrmAdressen : Form
         {
             if (tabControl.SelectedTab != addressTabPage) { tabControl.SelectTab(addressTabPage); }
             if (!askNever && sAskBeforeSaveSQL && !Utilities.YesNo_TaskDialog(Handle, appName, "Möchten Sie die Änderungen speichern?",
-                changes.Rows.Count == 1 ? "An einer Adresse wurden Änderungen vorgenommen." : $"Änderungen wurden an {changes.Rows.Count} Adressen vorgenommen.", TaskDialogIcon.ShieldGrayBar)) { return; }
+                changes.Rows.Count == 1 ? "An einer Adresse wurden Änderungen vorgenommen." : $"Änderungen wurden an {changes.Rows.Count} Adressen vorgenommen.", TaskDialogIcon.ShieldGrayBar, "&Speichern", "&Ignorieren")) { return; }
             {
                 try
                 {
@@ -689,8 +641,6 @@ public partial class FrmAdressen : Form
         if (tabControl.SelectedTab == contactTabPage && contactDGV.SelectedRows.Count > 0)
         {
             if (contactNewRowIndex >= 0 && contactDGV.SelectedRows[0].Index == contactNewRowIndex && CheckNewContactTidyUp()) { await CreateContactAsync(); }
-            //var ressource = CheckContactDataChange() ?? string.Empty;
-            //if (!string.IsNullOrEmpty(ressource)) { ShowMultiPageTaskDialog(ressource); }
             if (CheckContactDataChange()) { ShowMultiPageTaskDialog(); }
         }
         var fileName = Path.GetFileName(Utilities.CorrectUNC(databaseFilePath)) ?? string.Empty;
@@ -704,6 +654,7 @@ public partial class FrmAdressen : Form
             ignoreSearchChange = true;
             searchTSTextBox.TextBox.Clear();
             ignoreSearchChange = false;
+            if (birthdayAutoShow) { BirthdayReminder(); }
         }
     }
 
@@ -837,7 +788,7 @@ public partial class FrmAdressen : Form
 
     private void AddressDGV_DataSourceChanged(object sender, EventArgs e)
     {
-        if (addressDGV.DataSource != null)
+        if (addressDGV.DataSource != null && hideColumnArr.Length == addressDGV.Columns.Count)
         {
             for (var i = 0; i < addressDGV.Columns.Count; i++) { addressDGV.Columns[i].Visible = !hideColumnArr[i]; }
             Text = appName + " – " + (string?)(string.IsNullOrEmpty(databaseFilePath) ? "unbenannt" : Utilities.CorrectUNC(databaseFilePath));  // Workaround for UNC-Path
@@ -962,8 +913,6 @@ public partial class FrmAdressen : Form
         else if (tabControl.SelectedTab == contactTabPage && contactDGV.SelectedRows.Count > 0)
         {
             if (contactNewRowIndex >= 0 && contactDGV.SelectedRows[0].Index == contactNewRowIndex && CheckNewContactTidyUp()) { await CreateContactAsync(); }
-            //var ressource = CheckContactDataChange() ?? string.Empty;
-            //if (!string.IsNullOrEmpty(ressource)) { ShowMultiPageTaskDialog(ressource); }
             if (CheckContactDataChange()) { ShowMultiPageTaskDialog(); }
         }
         else { Console.Beep(); }
@@ -1018,8 +967,8 @@ public partial class FrmAdressen : Form
         var ressource = contactDGV.Rows[prevSelectedContactRowIndex].Cells["Ressource"]?.Value?.ToString() ?? string.Empty;
         var message = "";
         foreach (var pair in changedContactData) { message += pair.Key + ": " + pair.Value + "\n"; }
-        var initialButtonYes = TaskDialogButton.Yes;
-        var initialButtonNo = TaskDialogButton.No;
+        var initialButtonYes = new TaskDialogButton("Hochladen");
+        var initialButtonNo = TaskDialogButton.Cancel;
         initialButtonYes.AllowCloseDialog = false; // don't close the dialog when this button is clicked
         var initialPage = new TaskDialogPage()
         {
@@ -1105,8 +1054,6 @@ public partial class FrmAdressen : Form
             if (contactDGV.SelectedRows[0] != null)
             {
                 if (contactNewRowIndex >= 0 && contactDGV.SelectedRows[0].Index == contactNewRowIndex && CheckNewContactTidyUp()) { await CreateContactAsync(); }
-                //var ressource = CheckContactDataChange() ?? string.Empty;
-                //if (!string.IsNullOrEmpty(ressource)) { ShowMultiPageTaskDialog(ressource); }
                 if (CheckContactDataChange()) { ShowMultiPageTaskDialog(); }
             }
             contactNewRowIndex = contactDGV.Rows.Add();
@@ -1245,7 +1192,7 @@ public partial class FrmAdressen : Form
                 {
                     ignoreSearchChange = true;
                     searchTextBox.Clear();
-                    ignoreSearchChange = false; 
+                    ignoreSearchChange = false;
                     AdressEditFields(-1);
                     return;
                 }
@@ -1365,7 +1312,7 @@ public partial class FrmAdressen : Form
             AllowCancel = true,
             Buttons = { btnCreateCSV, TaskDialogButton.Continue }
         };
-        var result = TaskDialog.ShowDialog(this, firstPage);    
+        var result = TaskDialog.ShowDialog(this, firstPage);
         if (result == btnCreateCSV)
         {
             var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
@@ -1397,8 +1344,53 @@ public partial class FrmAdressen : Form
         openFileDialog.Title = "CSV-Datei zum Importieren auswählen";
         openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
-        if (openFileDialog.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(openFileDialog.FileName) && dataTable != null)
+        if (openFileDialog.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(openFileDialog.FileName))
         {
+            if (dataTable == null)
+            {
+                try
+                {   //If the database file doesn't exist, the default behaviour is to create a new database file. Use 'FailIfMissing=True' to raise an error instead.
+                    databaseFilePath = Path.ChangeExtension(openFileDialog.FileName, ".adb");
+                    if (File.Exists(databaseFilePath))
+                    { //Overwrite=true im SaveFileDialog bewirkt MessageBox "Datei existiert bereits. Überschreiben?"   
+                        File.Delete(databaseFilePath); // File.Delete method will throw an exception in case of failure
+                        Thread.Sleep(100); // Windows muss mitbekommen, dass die Datei gelöscht wurde
+                    }
+                    using (var connection = new SQLiteConnection((string?)$"Data Source={databaseFilePath};FailIfMissing=False;"))
+                    {
+                        connection.Open();
+                        var columnDefinitions = string.Join(", ", dataFields.Select(field => $"{field} TEXT"));
+                        var createTableQuery = $@"CREATE TABLE Adressen ({columnDefinitions}, Id INTEGER PRIMARY KEY AUTOINCREMENT)";
+                        using var command = new SQLiteCommand(createTableQuery, connection);
+                        command.ExecuteNonQuery();
+                        connection.Close(); // not really necessary, because of using   
+                    }
+                    liteConnection = new SQLiteConnection((string?)$"Data Source={databaseFilePath};FailIfMissing=True");
+                    liteConnection.Open(); //open a connection to the database
+                    dataAdapter = new SQLiteDataAdapter("SELECT * FROM Adressen", liteConnection);
+                    dataTable = new DataTable();
+                    //using (var builder = new SQLiteCommandBuilder(dataAdapter))
+                    //{
+                    //    dataAdapter.InsertCommand = builder.GetInsertCommand();
+                    //    dataAdapter.UpdateCommand = builder.GetUpdateCommand();
+                    //    dataAdapter.DeleteCommand = builder.GetDeleteCommand();
+                    //}
+                    dataAdapter.Fill(dataTable);
+                    liteConnection.Close();
+                    addressDGV.DataSource = dataTable;
+                    Text = $"Adressen - {databaseFilePath}";
+                }
+                catch (Exception ex)
+                {
+                    Utilities.ErrorMsgTaskDlg(Handle, "ImportToolStripMenuItem_Click: " + ex.GetType().ToString(), ex.Message);
+                    dataTable = null;
+                    if (liteConnection?.State == ConnectionState.Open) { liteConnection.Close(); }
+                    liteConnection = null;
+                    databaseFilePath = string.Empty;
+                    return;
+                }
+            }
+
             var allowedColumns = new HashSet<string>(dataFields.SkipLast(1)); // HashSet, Dokumente ausgenommen
             if (allowedColumns == null) { return; }
             var reader = Utilities.ReadAsLines(openFileDialog.FileName);
@@ -1542,7 +1534,7 @@ public partial class FrmAdressen : Form
                 OpenTSButton_Click(null!, null!);
                 return true;
             case Keys.B | Keys.Control:
-                BirthdaysToolStripMenuItem_Click(null!, null!);
+                BirthdayReminder();
                 return true;
             case Keys.G | Keys.Control:
                 GoogleTSButton_Click(null!, null!);
@@ -2310,30 +2302,31 @@ public partial class FrmAdressen : Form
             var people = response.Connections;
             if (people != null && people.Count > 0)
             {
-                contactDGV.Columns.Add("Anrede", "Anrede"); // ColumnName, HeaderText   
-                contactDGV.Columns.Add("Präfix", "Präfix");
-                contactDGV.Columns.Add("Nachname", "Nachname");
-                contactDGV.Columns.Add("Vorname", "Vorname");
-                contactDGV.Columns.Add("Zwischenname", "Zwischenname");
-                contactDGV.Columns.Add("Nickname", "Nickname");
-                contactDGV.Columns.Add("Suffix", "Suffix");
-                contactDGV.Columns.Add("Firma", "Firma");
-                contactDGV.Columns.Add("Straße", "Straße");
-                contactDGV.Columns.Add("PLZ", "PLZ");
-                contactDGV.Columns.Add("Ort", "Ort");
-                contactDGV.Columns.Add("Land", "Land");
-                contactDGV.Columns.Add("Betreff", "Betreff");
-                contactDGV.Columns.Add("Grußformel", "Grußformel");
-                contactDGV.Columns.Add("Schlussformel", "Schlussformel");
-                contactDGV.Columns.Add("Geburtstag", "Geburtstag");
-                contactDGV.Columns.Add("Mail1", "Mail1");
-                contactDGV.Columns.Add("Mail2", "Mail2");
-                contactDGV.Columns.Add("Telefon1", "Telefon1");
-                contactDGV.Columns.Add("Telefon2", "Telefon2");
-                contactDGV.Columns.Add("Mobil", "Mobil");
-                contactDGV.Columns.Add("Fax", "Fax");
-                contactDGV.Columns.Add("Internet", "Internet");
-                contactDGV.Columns.Add("Notizen", "Notizen");
+                foreach (var field in dataFields) { contactDGV.Columns.Add(field, field); } // ColumnName, HeaderText
+                //contactDGV.Columns.Add("Anrede", "Anrede"); // ColumnName, HeaderText   
+                //contactDGV.Columns.Add("Präfix", "Präfix");
+                //contactDGV.Columns.Add("Nachname", "Nachname");
+                //contactDGV.Columns.Add("Vorname", "Vorname");
+                //contactDGV.Columns.Add("Zwischenname", "Zwischenname");
+                //contactDGV.Columns.Add("Nickname", "Nickname");
+                //contactDGV.Columns.Add("Suffix", "Suffix");
+                //contactDGV.Columns.Add("Firma", "Firma");
+                //contactDGV.Columns.Add("Straße", "Straße");
+                //contactDGV.Columns.Add("PLZ", "PLZ");
+                //contactDGV.Columns.Add("Ort", "Ort");
+                //contactDGV.Columns.Add("Land", "Land");
+                //contactDGV.Columns.Add("Betreff", "Betreff");
+                //contactDGV.Columns.Add("Grußformel", "Grußformel");
+                //contactDGV.Columns.Add("Schlussformel", "Schlussformel");
+                //contactDGV.Columns.Add("Geburtstag", "Geburtstag");
+                //contactDGV.Columns.Add("Mail1", "Mail1");
+                //contactDGV.Columns.Add("Mail2", "Mail2");
+                //contactDGV.Columns.Add("Telefon1", "Telefon1");
+                //contactDGV.Columns.Add("Telefon2", "Telefon2");
+                //contactDGV.Columns.Add("Mobil", "Mobil");
+                //contactDGV.Columns.Add("Fax", "Fax");
+                //contactDGV.Columns.Add("Internet", "Internet");
+                //contactDGV.Columns.Add("Notizen", "Notizen");
                 contactDGV.Columns.Add("Ressource", "Ressource");
                 for (var i = 0; i < contactDGV.Columns.Count - 1; i++) { contactDGV.Columns[i].Visible = !hideColumnArr[i]; }
                 foreach (var person in people)
@@ -2398,6 +2391,7 @@ public partial class FrmAdressen : Form
                         person.PhoneNumbers != null ? Utilities.GetGooglePhoneByType(person, "fax") ?? string.Empty : "",
                         person.Urls != null ? person.Urls[0].Value ?? string.Empty : "",
                         person.Biographies != null ? person.Biographies[0].Value.ReplaceLineEndings() ?? string.Empty : "",
+                        string.Empty, // Platzhalter für Dokumente, werden nicht in DataGridView angezeigt  
                         person.ResourceName ?? string.Empty
                      );
                     //if (!string.IsNullOrEmpty(dokumente) && !string.IsNullOrEmpty(person.ResourceName)) { allDocumentsByRessourcename.Add(person.ResourceName, dokumente); }
@@ -2438,7 +2432,7 @@ public partial class FrmAdressen : Form
                 ContactEditFields(0);
                 //Invoke(() =>
                 //{
-                if (birthdayShow && birthdayAutoShow) { BirthdaysToolStripMenuItem_Click(birthdaysToolStripMenuItem, EventArgs.Empty); }
+                if (birthdayShow && birthdayAutoShow) { BirthdayReminder(); }
                 //});
                 birthdayShow = true;
             }
@@ -3443,7 +3437,9 @@ public partial class FrmAdressen : Form
         }
     }
 
-    private void BirthdaysToolStripMenuItem_Click(object sender, EventArgs e)
+    private void BirthdaysToolStripMenuItem_Click(object sender, EventArgs e) => BirthdayReminder(true);
+
+    private void BirthdayReminder(bool showIfEmpty = false)
     {
         DataGridView? dgv;
         string idRessource;
@@ -3480,7 +3476,7 @@ public partial class FrmAdressen : Form
                 }
             }
             bevorstehendeGeburtstage = [.. bevorstehendeGeburtstage.OrderBy(g => g.Tage)];
-            if (bevorstehendeGeburtstage.Count > 0)
+            if (bevorstehendeGeburtstage.Count > 0 || showIfEmpty)
             {
                 using var frm = new FrmBirthdays(sColorScheme, bevorstehendeGeburtstage, birthdayRemindLimit, isLocal);
                 if (frm.ShowDialog() == DialogResult.OK)
@@ -3504,25 +3500,25 @@ public partial class FrmAdressen : Form
                 }
                 else if (frm.DialogResult == DialogResult.Continue) { birthdayRemindLimit = frm.BirthdayRemindLimit; }
             }
-            else
-            {
-                TaskDialogButton showButton = new TaskDialogCommandLinkButton("Anstehende-Geburtstage öffnen");
-                var page = new TaskDialogPage()
-                {
-                    Caption = appName,
-                    Heading = $"Keine Geburtstage innerhalb der nächsten {birthdayRemindLimit} Tage",
-                    Text = "Sie können das Limit ändern (max. Anzahl der Tage vor dem Geburtstagstermin).",
-                    Icon = TaskDialogIcon.ShieldWarningYellowBar,
-                    AllowCancel = true,
-                    SizeToContent = true,
-                    Buttons = { showButton, TaskDialogButton.OK },
-                };
-                if (TaskDialog.ShowDialog(Handle, page) == showButton)
-                {
-                    using var frm = new FrmBirthdays(sColorScheme, [], birthdayRemindLimit, false);
-                    if (frm.ShowDialog() == DialogResult.Continue) { birthdayRemindLimit = frm.BirthdayRemindLimit; }
-                }
-            }
+            //else
+            //{
+            //    TaskDialogButton showButton = new TaskDialogCommandLinkButton("Anstehende-Geburtstage öffnen");
+            //    var page = new TaskDialogPage()
+            //    {
+            //        Caption = appName,
+            //        Heading = $"Keine Geburtstage innerhalb der nächsten {birthdayRemindLimit} Tage",
+            //        Text = "Sie können das Limit ändern (max. Anzahl der Tage vor dem Geburtstagstermin).",
+            //        Icon = TaskDialogIcon.ShieldWarningYellowBar,
+            //        AllowCancel = true,
+            //        SizeToContent = true,
+            //        Buttons = { showButton, TaskDialogButton.OK },
+            //    };
+            //    if (TaskDialog.ShowDialog(Handle, page) == showButton)
+            //    {
+            //        using var frm = new FrmBirthdays(sColorScheme, [], birthdayRemindLimit, false);
+            //        if (frm.ShowDialog() == DialogResult.Continue) { birthdayRemindLimit = frm.BirthdayRemindLimit; }
+            //    }
+            //}
         }
     }
 

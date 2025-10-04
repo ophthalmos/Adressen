@@ -248,7 +248,7 @@ internal static class Utilities
         };
 
         var result = TaskDialog.ShowDialog(hwnd, initialPage);
-        if (result == paypalButton) { StartLink(hwnd, "https://www.paypal.com/donate/?hosted_button_id=9YUZ3SLQZP6ZN"); }
+        if (result == paypalButton) { StartLink(hwnd, "https://www.paypal.com/donate/?hosted_button_id=3HRQZCUW37BQ6"); }
         else if (result == downloadButton) { StartLink(hwnd, urlString); }
     }
 
@@ -288,8 +288,10 @@ internal static class Utilities
         return null;
     }
 
-    internal static bool YesNo_TaskDialog(nint hwnd, string caption, string heading, string text, TaskDialogIcon? dialogIcon)
+    internal static bool YesNo_TaskDialog(nint hwnd, string caption, string heading, string text, TaskDialogIcon? dialogIcon, string yes = "", string no = "")
     {
+        var yesButton = string.IsNullOrEmpty(yes) ? TaskDialogButton.Yes : new TaskDialogButton(yes);
+        var noButton = string.IsNullOrEmpty(no) ? TaskDialogButton.No : new TaskDialogButton(no);
         using TaskDialogIcon questionDialogIcon = new(Properties.Resources.question32);
         var page = new TaskDialogPage
         {
@@ -297,11 +299,11 @@ internal static class Utilities
             Heading = heading, // "Möchten Sie die Änderungen speichern?",
             Text = text, // changesCount == 1 ? "An einer Adresse wurden Änderungen vorgenommen." : $"Änderungen wurden an {changesCount} Adressen vorgenommen.",
             Icon = dialogIcon ?? questionDialogIcon,
-            Buttons = { TaskDialogButton.Yes, TaskDialogButton.No },
+            Buttons = { yesButton, noButton },
             AllowCancel = true,
             SizeToContent = true
         };
-        return TaskDialog.ShowDialog(hwnd, page) == TaskDialogButton.Yes;
+        return TaskDialog.ShowDialog(hwnd, page) == yesButton;
     }
 
     public static string BuildMask(params string[] fields) => string.Join(",", fields.Where(f => !string.IsNullOrWhiteSpace(f)).Select(f => f.Trim()));
