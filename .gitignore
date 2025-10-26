@@ -378,3 +378,5 @@ FodyWeavers.xsd
 /Papierkorb/LICENSE.txt
 /Adressen.zip
 /frm/FrmAdressen.zip
+*.psd
+/AdressenKontakte.docx
