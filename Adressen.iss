@@ -1,10 +1,11 @@
+#define MyAppLong "Adressen & Kontakte"
 #define MyAppName "Adressen"
-#define MyAppVersion "1.0.4"
+#define MyAppVersion "1.0.6"
 
 [Setup]
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
-AppVerName={#MyAppName} {#MyAppVersion}
+AppVerName={#MyAppLong} {#MyAppVersion}
 VersionInfoVersion={#MyAppVersion}
 ArchitecturesAllowed=x64os
 ArchitecturesInstallIn64BitMode=x64os
@@ -22,7 +23,7 @@ DisableReadyPage=yes
 CloseApplications=yes
 WizardStyle=modern
 WizardSizePercent=100
-SetupIconFile=img\Journal.ico
+SetupIconFile=Adressen.ico
 UninstallDisplayIcon={app}\Adressen.exe
 DefaultGroupName=Adressen
 AppId=Adressen
@@ -39,10 +40,10 @@ ChangesAssociations=yes
 Name: "German"; MessagesFile: "compiler:Languages\German.isl"
 
 [Files]
-Source: "bin\x64\Release\net8.0-windows7.0\Adressen.exe"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
+Source: "bin\x64\Release\net8.0-windows7.0\{#MyAppName}.exe"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "bin\x64\Release\net8.0-windows7.0\{#MyAppName}.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "bin\x64\Release\net8.0-windows7.0\{#MyAppName}.runtimeconfig.json"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
-Source: "Adressen.pdf"; DestDir: "{app}"; Permissions: users-modify;
+Source: "AdressenKontakte.pdf"; DestDir: "{app}"; Permissions: users-modify;
 Source: "Lizenzvereinbarung.txt"; DestDir: "{app}"; Permissions: users-modify;
 Source: "bin\x64\Release\net8.0-windows7.0\System.Data.SQLite.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "bin\x64\Release\net8.0-windows7.0\SQLite.Interop.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
@@ -50,6 +51,7 @@ Source: "bin\x64\Release\net8.0-windows7.0\Google.Apis.dll"; DestDir: "{app}"; P
 Source: "bin\x64\Release\net8.0-windows7.0\Google.Apis.Auth.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "bin\x64\Release\net8.0-windows7.0\Google.Apis.Core.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "bin\x64\Release\net8.0-windows7.0\Google.Apis.PeopleService.v1.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
+Source: "bin\x64\Release\net8.0-windows7.0\Google.Apis.Oauth2.v2.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "bin\x64\Release\net8.0-windows7.0\Microsoft.Office.Interop.Word.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "bin\x64\Release\net8.0-windows7.0\Newtonsoft.Json.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "bin\x64\Release\net8.0-windows7.0\System.Management.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
@@ -60,7 +62,7 @@ Source: "MännlicheVornamen.txt"; DestDir: "{userappdata}\{#MyAppName}"; Flags: o
 Source: "WeiblicheVornamen.txt"; DestDir: "{userappdata}\{#MyAppName}"; Flags: onlyifdoesntexist
 
 [Icons]
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppName}.exe"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppLong}"; Filename: "{app}\{#MyAppName}.exe"; Tasks: desktopicon
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppName}.exe"
 
 [Registry]
@@ -74,9 +76,11 @@ Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppName}.exe\SupportedType
 Name: fileassoc; Description: {cm:AssocFileExtension,{#MyAppName},.adb}
 Name: desktopicon; Description: {cm:CreateDesktopIcon}
 
+[InstallDelete]
+Type: filesandordirs; Name: "{userappdata}\{#MyAppName}\token.json";
 
 [Run]
-Filename: "{app}\{#MyAppName}.exe"; Description: "Starte {#MyAppName}"; Flags: postinstall nowait skipifsilent shellexec
+Filename: "{app}\{#MyAppName}.exe"; Description: "Starte Adressen && Kontakte"; Flags: postinstall nowait skipifsilent shellexec
 
 [Messages]
 BeveledLabel=
@@ -115,7 +119,7 @@ begin
         if mres = IDYES then
           begin
           DelTree(ExpandConstant('{userappdata}\{#MyAppName}'), True, True, True);
-          RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, 'Software\Adressen');
+          RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, 'Software\{#MyAppName}');
           end;
       end;
   end;

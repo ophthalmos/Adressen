@@ -105,19 +105,13 @@ public partial class FrmProgSettings : Form
         set => tbDatabaseFolder.Text = value;
     }
 
-    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Visible)]
-    public decimal SuccessDuration
-    {
-        get => numUpDownSuccess.Value;
-        set => numUpDownSuccess.Value = value;
-    }
-
-    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Visible)]
-    public bool BirthdayAutoShow
-    {
-        get => ckbBirthdayAutoShow.Checked;
-        set => ckbBirthdayAutoShow.Checked = value;
-    }
+    //[System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Visible)]
+    //public decimal SuccessDuration
+    //{
+    //    get => numUpDownSuccess.Value;
+    //    set => numUpDownSuccess.Value = value;
+    //}
+    public NumericUpDown NumUpDownSuccess => numUpDownSuccess;
 
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Visible)]
     public bool AskBeforeSaveSQL

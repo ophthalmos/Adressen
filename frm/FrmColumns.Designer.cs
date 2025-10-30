@@ -52,7 +52,9 @@ partial class FrmColumns
         var listViewItem22 = new ListViewItem("Fax");
         var listViewItem23 = new ListViewItem("Internet");
         var listViewItem24 = new ListViewItem("Notizen");
-        var listViewItem25 = new ListViewItem("Id");
+        var listViewItem25 = new ListViewItem("Gruppen");
+        var listViewItem26 = new ListViewItem("Dokumente");
+        var listViewItem27 = new ListViewItem("Id");
         listView = new ListView();
         columnHeader = new ColumnHeader();
         btnClose = new Button();
@@ -90,37 +92,38 @@ partial class FrmColumns
         listViewItem23.StateImageIndex = 0;
         listViewItem24.StateImageIndex = 0;
         listViewItem25.StateImageIndex = 0;
-        listView.Items.AddRange(new ListViewItem[] { listViewItem1, listViewItem2, listViewItem3, listViewItem4, listViewItem5, listViewItem6, listViewItem7, listViewItem8, listViewItem9, listViewItem10, listViewItem11, listViewItem12, listViewItem13, listViewItem14, listViewItem15, listViewItem16, listViewItem17, listViewItem18, listViewItem19, listViewItem20, listViewItem21, listViewItem22, listViewItem23, listViewItem24, listViewItem25 });
+        listViewItem26.StateImageIndex = 0;
+        listViewItem27.StateImageIndex = 0;
+        listView.Items.AddRange(new ListViewItem[] { listViewItem1, listViewItem2, listViewItem3, listViewItem4, listViewItem5, listViewItem6, listViewItem7, listViewItem8, listViewItem9, listViewItem10, listViewItem11, listViewItem12, listViewItem13, listViewItem14, listViewItem15, listViewItem16, listViewItem17, listViewItem18, listViewItem19, listViewItem20, listViewItem21, listViewItem22, listViewItem23, listViewItem24, listViewItem25, listViewItem26, listViewItem27 });
         listView.LabelWrap = false;
         listView.Location = new Point(12, 12);
         listView.MultiSelect = false;
         listView.Name = "listView";
-        listView.Scrollable = false;
         listView.ShowGroups = false;
-        listView.Size = new Size(165, 528);
+        listView.Size = new Size(159, 571);
         listView.TabIndex = 0;
         listView.UseCompatibleStateImageBehavior = false;
         listView.View = View.Details;
         // 
         // columnHeader
         // 
-        columnHeader.Width = 160;
+        columnHeader.Width = 155;
         // 
         // btnClose
         // 
         btnClose.DialogResult = DialogResult.OK;
-        btnClose.Location = new Point(98, 546);
+        btnClose.Location = new Point(93, 589);
         btnClose.Name = "btnClose";
-        btnClose.Size = new Size(79, 26);
+        btnClose.Size = new Size(78, 26);
         btnClose.TabIndex = 1;
         btnClose.Text = "Schließen";
         btnClose.UseVisualStyleBackColor = true;
         // 
         // btnStandard
         // 
-        btnStandard.Location = new Point(12, 546);
+        btnStandard.Location = new Point(12, 589);
         btnStandard.Name = "btnStandard";
-        btnStandard.Size = new Size(80, 26);
+        btnStandard.Size = new Size(75, 26);
         btnStandard.TabIndex = 2;
         btnStandard.Text = "Standard";
         btnStandard.UseVisualStyleBackColor = true;
@@ -131,11 +134,12 @@ partial class FrmColumns
         AcceptButton = btnClose;
         AutoScaleDimensions = new SizeF(7F, 17F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(186, 579);
+        ClientSize = new Size(183, 627);
         Controls.Add(btnStandard);
         Controls.Add(btnClose);
         Controls.Add(listView);
         Font = new Font("Segoe UI", 10F);
+        FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
         Name = "FrmColumns";

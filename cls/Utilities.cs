@@ -1,12 +1,14 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Drawing.Printing;
 using System.Globalization;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
+using System.Text.Json;
 using System.Xml.Linq;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.PeopleService.v1;
@@ -21,9 +23,6 @@ namespace Adressen.cls;
 
 internal static class Utilities
 {
-    internal static HttpClient? MainHttpClient => httpClient;
-    private static HttpClient? httpClient;
-
     internal static void ErrorMsgTaskDlg(nint hwnd, string error, string message, TaskDialogIcon? icon = null)
     {
         TaskDialog.ShowDialog(hwnd, new TaskDialogPage() { Caption = Application.ProductName, SizeToContent = true, Heading = error, Text = message, Icon = icon ?? TaskDialogIcon.Error, AllowCancel = true, Buttons = { TaskDialogButton.OK } });
@@ -87,14 +86,105 @@ internal static class Utilities
         });
     }
 
-    internal static string CleanTemporaryWordPrefix(string fullPath)
+    internal static void WendeExifOrientierungAn(Image bild)
     {
-        if (string.IsNullOrEmpty(fullPath)) { return fullPath; }
-        var directory = Path.GetDirectoryName(fullPath);
-        var fileName = Path.GetFileName(fullPath);
-        if (fileName.StartsWith("~$")) { fileName = fileName[2..]; }
-        return Path.Combine(directory ?? string.Empty, fileName);
+        const int ExifOrientationId = 0x112;  // PropertyTagOrientation (ID: 0x0112 = 274)
+        if (bild.PropertyIdList.Contains(ExifOrientationId))
+        {
+            var item = bild.GetPropertyItem(ExifOrientationId);
+            if (item is null || item.Value is null || item.Value.Length == 0) { return; } // Frühzeitiger Abbruch, falls null oder leer
+            var rotation = RotateFlipType.RotateNoneFlipNone; // Standardwert   
+            switch (item.Value[0])
+            {
+                case 1: rotation = RotateFlipType.RotateNoneFlipNone; break;
+                case 2: rotation = RotateFlipType.RotateNoneFlipX; break;
+                case 3: rotation = RotateFlipType.Rotate180FlipNone; break;
+                case 4: rotation = RotateFlipType.Rotate180FlipX; break;
+                case 5: rotation = RotateFlipType.Rotate90FlipX; break;
+                case 6: rotation = RotateFlipType.Rotate90FlipNone; break; // Hochkant-Foto
+                case 7: rotation = RotateFlipType.Rotate270FlipX; break;
+                case 8: rotation = RotateFlipType.Rotate270FlipNone; break; // Hochkant-Foto
+            }
+            if (item.Value[0] != 1) { bild.RotateFlip(rotation); }  // Wir drehen nur, wenn es nicht der normale Zustand (1) ist
+            bild.RemovePropertyItem(ExifOrientationId); // Orientierungs-Tag wird entfernt, sicherer falls noch als JPEG gespeichert wird
+        }
     }
+
+    internal static Image SkaliereBildDaten(Image originalBild, int neueBreite)
+    {
+        var originalBreite = originalBild.Width;
+        if (originalBreite <= neueBreite) { return (Image)originalBild.Clone(); }
+        var originalHoehe = originalBild.Height;
+        var neueHoehe = (int)((double)originalHoehe / originalBreite * neueBreite);
+        var neuesBild = new Bitmap(neueBreite, neueHoehe);
+        using (var graphics = Graphics.FromImage(neuesBild))
+        {
+            graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            graphics.SmoothingMode = SmoothingMode.HighQuality;
+            graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            graphics.DrawImage(originalBild, new Rectangle(0, 0, neueBreite, neueHoehe));
+        }
+        return neuesBild; // Rückgabe der neuen Bitmap
+    }
+
+    internal static Image BeschneideZuQuadrat(Image originalBild, bool? priority = false)  // null = Oben, true = Unten, false = Mitte 
+    {
+        var breite = originalBild.Width;
+        var hoehe = originalBild.Height;
+        if (hoehe <= breite) { return (Image)originalBild.Clone(); }
+        var yOffset = priority == null ? 0 : priority == true ? hoehe - breite : (hoehe - breite) / 2;
+        var rechteck = new Rectangle(0, yOffset, breite, breite); // Ausschnittsquadrat, Höhe = Breite, yOffset je nach Priorität
+        var quadratischesBild = new Bitmap(breite, breite); // Korrekt: Kein 'using'
+        using (var graphics = Graphics.FromImage(quadratischesBild))
+        {
+            graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            graphics.SmoothingMode = SmoothingMode.HighQuality;
+            graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            graphics.DrawImage(originalBild, new Rectangle(0, 0, breite, breite), rechteck, GraphicsUnit.Pixel);
+        }
+        return quadratischesBild; // Rückgabe der neuen Bitmap
+    }
+
+    internal static Image ReduziereWieGoogle(Image originalBild, int newHeight)
+    {
+        var originalHeight = originalBild.Height;
+        if (originalHeight <= newHeight) { return (Image)originalBild.Clone(); }
+        var originalWidth = originalBild.Width;
+        var newWidth = (int)((double)originalWidth / originalHeight * newHeight);
+        var neuesBild = new Bitmap(newWidth, newHeight); // KEIN 'using'
+        using (var graphics = Graphics.FromImage(neuesBild))
+        {
+            graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            graphics.SmoothingMode = SmoothingMode.HighQuality;
+            graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            graphics.DrawImage(originalBild, new Rectangle(0, 0, newWidth, newHeight));
+        }
+        return neuesBild; // Rückgabe der neuen Bitmap
+    }
+
+
+    internal static string FormatBytes(long bytes)  // Effizienter (Loop statt Logarithmen)
+    {
+        string[] suffix = { "Bytes", "KB", "MB", "GB", "TB" };
+        if (bytes == 0) { return "0 " + suffix[0]; }
+        var i = 0;
+        double dBytes = bytes;
+        while (dBytes >= 1024 && i < suffix.Length - 1)
+        {
+            dBytes /= 1024;
+            i++;
+        }
+        return $"{dBytes.ToString("F2", CultureInfo.GetCultureInfo("de-DE"))} {suffix[i]}";  // Verwendet die de-DE Kultur für das Komma
+    }
+
+    //internal static string CleanTemporaryWordPrefix(string fullPath)
+    //{
+    //    if (string.IsNullOrEmpty(fullPath)) { return fullPath; }
+    //    var directory = Path.GetDirectoryName(fullPath);
+    //    var fileName = Path.GetFileName(fullPath);
+    //    if (fileName.StartsWith("~$")) { fileName = fileName[2..]; }
+    //    return Path.Combine(directory ?? string.Empty, fileName);
+    //}
 
     internal static void StartDir(nint handle, string dirPath)
     {
@@ -184,7 +274,7 @@ internal static class Utilities
         var updatePage = new TaskDialogPage()
         {
             Caption = appName,
-            Heading = "Adressen ist auf dem neuesten Stand.",
+            Heading = $"{appName} ist auf dem neuesten Stand.",
             Text = $"Version {threeVersion} (Offizielles Build, 64-Bit)", //\n\nAutomatische Suche nach Updates:",
             Icon = TaskDialogIcon.Information,
             AllowCancel = true,
@@ -213,10 +303,10 @@ internal static class Utilities
             var dateString = string.Empty;
             try
             {
-                httpClient ??= new HttpClient();
-                httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", "application/xml; charset=utf-8");
-                using var response = await httpClient.GetAsync(xmlURL);
-                response.EnsureSuccessStatusCode();
+                using var requestMessage = new HttpRequestMessage(HttpMethod.Get, xmlURL);
+                requestMessage.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/xml"));
+                using var response = await HttpService.Client.SendAsync(requestMessage);
+                response.EnsureSuccessStatusCode(); // Wirft eine Exception bei Fehlern wie 404 oder 500
                 var xmlContent = await response.Content.ReadAsStringAsync();
                 var doc = XDocument.Parse(xmlContent);
                 var versionString = doc.Element("adressen")?.Element("version")?.Value;
@@ -275,8 +365,7 @@ internal static class Utilities
         var page = new TaskDialogPage
         {
             Caption = Application.ProductName,
-            Heading = "Wählen Sie das Textverarbeitungsprogramm",
-            Text = "In welchem Programm möchten Sie Lesezeichen ersetzen?",
+            Heading = "Wählen Sie die Textverarbeitung",
             Icon = TaskDialogIcon.ShieldBlueBar,
             Buttons = { wordButton, libreButton, TaskDialogButton.Cancel },
             AllowCancel = true,
@@ -288,7 +377,7 @@ internal static class Utilities
         return null;
     }
 
-    internal static bool YesNo_TaskDialog(nint hwnd, string caption, string heading, string text, TaskDialogIcon? dialogIcon, string yes = "", string no = "")
+    internal static bool YesNo_TaskDialog(nint hwnd, string caption, string heading, string text, TaskDialogIcon? dialogIcon, bool defBtn = true, string yes = "", string no = "")
     {
         var yesButton = string.IsNullOrEmpty(yes) ? TaskDialogButton.Yes : new TaskDialogButton(yes);
         var noButton = string.IsNullOrEmpty(no) ? TaskDialogButton.No : new TaskDialogButton(no);
@@ -300,10 +389,30 @@ internal static class Utilities
             Text = text, // changesCount == 1 ? "An einer Adresse wurden Änderungen vorgenommen." : $"Änderungen wurden an {changesCount} Adressen vorgenommen.",
             Icon = dialogIcon ?? questionDialogIcon,
             Buttons = { yesButton, noButton },
+            DefaultButton = defBtn ? yesButton : noButton,
             AllowCancel = true,
             SizeToContent = true
         };
         return TaskDialog.ShowDialog(hwnd, page) == yesButton;
+    }
+
+    internal static bool ValuesEqual(object? a, object? b)
+    {
+        if (a is DBNull) { a = string.Empty; }
+        if (b is DBNull) { b = string.Empty; }
+        if (a is string sa && b is string sb) { return string.Equals(sa, sb, StringComparison.Ordinal); }
+        return string.Equals(a?.ToString(), b?.ToString(), StringComparison.Ordinal); // Fallback: ToString-Vergleich
+    }
+
+
+    internal static IEnumerable<string> DeserializeGroups(nint hwnd, string json, JsonSerializerOptions options)
+    {
+        try { return JsonSerializer.Deserialize<List<string>>(json, options) ?? Enumerable.Empty<string>(); }
+        catch (JsonException ex)
+        {
+            ErrorMsgTaskDlg(hwnd, "PopulateMemberships: " + ex.GetType().Name, ex.Message);
+            return [];
+        }
     }
 
     public static string BuildMask(params string[] fields) => string.Join(",", fields.Where(f => !string.IsNullOrWhiteSpace(f)).Select(f => f.Trim()));
@@ -619,25 +728,12 @@ internal static class Utilities
         return default;
     }
 
-    internal static string FormatDateigröße(long bytes)
+    internal static void SetColumnWidths(int[] columnWidths, DataGridView dgv)
     {
-        string[] einheiten = ["B", "KB", "MB", "GB", "TB"];
-        double size = bytes;
-        var index = 0;
-        while (size >= 1024 && index < einheiten.Length - 1)
+        var widths = columnWidths ?? [];
+        if (widths.Length == 0) // noch keine Einstellungen vorhanden
         {
-            size /= 1024;
-            index++;
-        }
-        return $"{size:0.##} {einheiten[index]}";
-    }
-
-    internal static void SetColumnWidths(string columnWidths, DataGridView dgv)
-    {
-        var widths = columnWidths.Split(',');
-        if (string.IsNullOrEmpty(columnWidths) || widths.Length == 0) // noch keine Einstellungen vorhanden
-        {
-            for (var i = 0; i < widths.Length && i < dgv.Columns.Count; i++)
+            for (var i = 0; i < dgv.Columns.Count; i++)
             {
                 if (dgv.Columns[i].Name == "Nachname") { dgv.Columns[i].Width = 200; }
                 else { dgv.Columns[i].Width = 100; }
@@ -645,18 +741,8 @@ internal static class Utilities
         }
         else
         {
-            for (var i = 0; i < widths.Length && i < dgv.Columns.Count; i++)
-            {
-                if (int.TryParse(widths[i], out var width)) { dgv.Columns[i].Width = width; }
-            }
+            for (var i = 0; i < widths.Length && i < dgv.Columns.Count; i++) { dgv.Columns[i].Width = widths[i]; }
         }
-    }
-
-    internal static string GetColumnWidths(DataGridView dgv)
-    {
-        var sb = new StringBuilder();
-        foreach (DataGridViewColumn column in dgv.Columns) { sb.Append(column.Width).Append(','); }
-        return sb.ToString().TrimEnd(',');
     }
 
     internal static string GetGooglePhoneByType(Person person, string type)  //home* work * mobile* homeFax * workFax* otherFax * pager* workMobile * workPager* main * googleVoice*
@@ -705,7 +791,7 @@ internal static class Utilities
         while (!reader.EndOfStream) { yield return reader.ReadLine()!; }
     }
 
-    internal static void DailyBackup(string filePath, string backupDir, bool success, decimal duration, nint handle)
+    internal static void DailyBackup(string filePath, string backupDir, bool success, decimal duration)
     {
         try
         {
@@ -735,10 +821,10 @@ internal static class Utilities
                     page.BoundDialog?.Close();
                     timer.Enabled = false;
                 };
-                TaskDialog.ShowDialog(handle, page);
+                TaskDialog.ShowDialog(page);
             }
         }
-        catch (Exception ex) { ErrorMsgTaskDlg(handle, "DailyBackup: " + ex.GetType().ToString(), ex.Message); }
+        catch (Exception ex) { ErrorMsgTaskDlg(IntPtr.Zero, "DailyBackup: " + ex.GetType().ToString(), ex.Message); }
     }
 
 }

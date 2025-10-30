@@ -418,35 +418,16 @@ public partial class FrmPrintSetting : Form
         if (sender is NumericUpDown nud && nud.Visible && nud.Focused) { printPreviewControl.Document = printDocument; }
     }
 
-    //private void NudRecipOffsetX_ValueChanged(object sender, EventArgs e)
-    //{
-    //    if (nudRecipOffsetX.Visible && nudRecipOffsetX.Focused) { printPreviewControl.Document = printDocument; }
-    //}
-
-    //private void NudRecipOffsetY_ValueChanged(object sender, EventArgs e)
-    //{
-    //    if (nudRecipOffsetY.Visible && nudRecipOffsetY.Focused) { printPreviewControl.Document = printDocument; }
-    //}
-
-    //private void NudSenderOffsetX_ValueChanged(object sender, EventArgs e)
-    //{
-    //    if (nudSenderOffsetX.Visible && nudSenderOffsetX.Focused) { printPreviewControl.Document = printDocument; }
-    //}
-
-    //private void NudSenderOffsetY_ValueChanged(object sender, EventArgs e)
-    //{
-    //    if (nudSenderOffsetY.Visible && nudSenderOffsetY.Focused) { printPreviewControl.Document = printDocument; }
-    //}
-
     private void CkbBoldRecipient_CheckedChanged(object sender, EventArgs e)
     {
-
+            if (ckbBoldRecipient.Visible && ckbBoldRecipient.Focused) { printPreviewControl.Document = printDocument; }
     }
 
     private void CkbBoldSender_CheckedChanged(object sender, EventArgs e)
     {
-
+        if (ckbBoldSender.Visible && ckbBoldSender.Focused) { printPreviewControl.Document = printDocument; }
     }
+
 }
 
 

@@ -31,8 +31,6 @@ partial class FrmProgSettings
         var resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmProgSettings));
         tabControl = new TabControl();
         tpAllgemein = new TabPage();
-        gbxBirthdayContact = new GroupBox();
-        ckbBirthdayAutoShow = new CheckBox();
         gbTextProcessing = new GroupBox();
         rbManualSelect = new RadioButton();
         rbLibreOffice = new RadioButton();
@@ -79,7 +77,6 @@ partial class FrmProgSettings
         openFileDialog = new OpenFileDialog();
         tabControl.SuspendLayout();
         tpAllgemein.SuspendLayout();
-        gbxBirthdayContact.SuspendLayout();
         gbTextProcessing.SuspendLayout();
         gbxColorScheme.SuspendLayout();
         tpAdressen.SuspendLayout();
@@ -116,7 +113,6 @@ partial class FrmProgSettings
         // 
         tpAllgemein.BackColor = Color.White;
         tpAllgemein.BorderStyle = BorderStyle.FixedSingle;
-        tpAllgemein.Controls.Add(gbxBirthdayContact);
         tpAllgemein.Controls.Add(gbTextProcessing);
         tpAllgemein.Controls.Add(gbxColorScheme);
         tpAllgemein.Location = new Point(114, 4);
@@ -125,32 +121,12 @@ partial class FrmProgSettings
         tpAllgemein.TabIndex = 3;
         tpAllgemein.Text = " Allgemein";
         // 
-        // gbxBirthdayContact
-        // 
-        gbxBirthdayContact.Controls.Add(ckbBirthdayAutoShow);
-        gbxBirthdayContact.Location = new Point(3, 67);
-        gbxBirthdayContact.Name = "gbxBirthdayContact";
-        gbxBirthdayContact.Size = new Size(263, 55);
-        gbxBirthdayContact.TabIndex = 7;
-        gbxBirthdayContact.TabStop = false;
-        gbxBirthdayContact.Text = "Erinnerung";
-        // 
-        // ckbBirthdayAutoShow
-        // 
-        ckbBirthdayAutoShow.AutoSize = true;
-        ckbBirthdayAutoShow.Location = new Point(10, 24);
-        ckbBirthdayAutoShow.Name = "ckbBirthdayAutoShow";
-        ckbBirthdayAutoShow.Size = new Size(242, 23);
-        ckbBirthdayAutoShow.TabIndex = 3;
-        ckbBirthdayAutoShow.Text = "Beim Öffnen Geburtstage anzeigen";
-        ckbBirthdayAutoShow.UseVisualStyleBackColor = true;
-        // 
         // gbTextProcessing
         // 
         gbTextProcessing.Controls.Add(rbManualSelect);
         gbTextProcessing.Controls.Add(rbLibreOffice);
         gbTextProcessing.Controls.Add(rbMSWord);
-        gbTextProcessing.Location = new Point(3, 128);
+        gbTextProcessing.Location = new Point(3, 67);
         gbTextProcessing.Name = "gbTextProcessing";
         gbTextProcessing.Size = new Size(263, 113);
         gbTextProcessing.TabIndex = 6;
@@ -630,8 +606,6 @@ partial class FrmProgSettings
         Load += FrmProgSettings_Load;
         tabControl.ResumeLayout(false);
         tpAllgemein.ResumeLayout(false);
-        gbxBirthdayContact.ResumeLayout(false);
-        gbxBirthdayContact.PerformLayout();
         gbTextProcessing.ResumeLayout(false);
         gbTextProcessing.PerformLayout();
         gbxColorScheme.ResumeLayout(false);
@@ -695,8 +669,6 @@ partial class FrmProgSettings
     private GroupBox gbxContactsAutoload;
     private CheckBox ckbAskBeforeSaveSQL;
     private CheckBox ckbAskBeforeDelete;
-    private GroupBox gbxBirthdayContact;
-    private CheckBox ckbBirthdayAutoShow;
     private TabPage tpWatchFolder;
     private Label lblWatchFolder;
     private CheckBox ckbWatchFolder;

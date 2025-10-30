@@ -2,13 +2,21 @@
 public partial class FrmBirthdays : Form
 {
     public int SelectionIndex => listView.SelectedIndices.Count > 0 ? listView.SelectedIndices[0] : -1;
-    public int BirthdayRemindLimit => (int)numericUpDown.Value; // >= 0 ? (int)numericUpDown.Value : -1;
+    public int BirthdayRemindLimit => (int)beforeNumUpDown.Value; // >= 0 ? (int)numericUpDown.Value : -1;
+    public int BirthdayRemindAfter => (int)afterNumUpDown.Value; // >= 0 ? (int)numericUpDown.Value : -1;
+
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Visible)]
+    public bool BirthdayAutoShow
+    {
+        get => chkBxBirthdayAutoShow.Checked;
+        set => chkBxBirthdayAutoShow.Checked = value;
+    }
 
     private readonly List<int> _birthdayTodayList = [];
     private readonly Image partyHat = Properties.Resources.FavoriteStar16;
     private readonly bool isLocal;
 
-    public FrmBirthdays(string colorScheme, List<(DateTime Datum, string Name, int Alter, int Tage, string Id)> geburtstage, int reminderDays, bool localAdr) // , string colorSheme
+    public FrmBirthdays(string colorScheme, List<(DateTime Datum, string Name, int Alter, int Tage, string Id)> geburtstage, int reminderBefore, int reminderAfter, bool localAdr) // , string colorSheme
     {
         InitializeComponent();
         isLocal = localAdr;
@@ -19,7 +27,10 @@ public partial class FrmBirthdays : Form
             "dark" => SystemColors.ControlDark,
             _ => SystemColors.Control,
         };
-        numericUpDown.Value = reminderDays <= numericUpDown.Maximum && reminderDays >= numericUpDown.Minimum ? reminderDays : numericUpDown.Value;
+        beforeNumUpDown.Value = reminderBefore <= beforeNumUpDown.Maximum && reminderBefore >= beforeNumUpDown.Minimum ? reminderBefore : beforeNumUpDown.Value;
+        afterNumUpDown.Value = reminderAfter <= afterNumUpDown.Maximum && reminderAfter >= afterNumUpDown.Minimum ? reminderAfter : afterNumUpDown.Value;
+        var nextBirthdayIndex = -1; // -1 bedeutet "noch nicht gefunden"
+        var minDays = int.MaxValue; // Startwert so hoch wie möglich setzen
         var index = 0;
         foreach (var info in geburtstage)
         {
@@ -27,16 +38,29 @@ public partial class FrmBirthdays : Form
             item.SubItems.Add(info.Name);
             item.SubItems.Add(info.Alter.ToString());
             item.SubItems.Add(info.Tage.ToString());
+            if (info.Tage >= 0 && info.Tage < minDays)
+            {
+                minDays = info.Tage; // Kleinste Tagesdifferenz speichern
+                nextBirthdayIndex = index; // Zugehörigen Index speichern
+            }
+
             if (info.Tage == 0) { _birthdayTodayList.Add(index); }
             listView.Items.Add(item);
             index++;
         }
-        if (listView.Items.Count > 0)
+        if (nextBirthdayIndex != -1) // Prüfen, ob ein nächster Geburtstag gefunden wurde
+        {
+            listView.Items[nextBirthdayIndex].Selected = true;
+            listView.Items[nextBirthdayIndex].Focused = true;
+            listView.EnsureVisible(nextBirthdayIndex); // Scrollt zur selektierten Zeile
+            AcceptButton = btnShowAddress; // Setzt die Schaltfläche, die bei Enter gedrückt wird
+        }
+        else if (listView.Items.Count > 0)
         {
             listView.Items[0].Selected = true;
             listView.Items[0].Focused = true;
-            listView.EnsureVisible(0); // Scrollt zur ersten Zeile
-            AcceptButton = btnShowAddress; // Setzt die Schaltfläche, die bei Enter gedrückt wird
+            listView.EnsureVisible(0);
+            AcceptButton = btnShowAddress;
         }
     }
 
