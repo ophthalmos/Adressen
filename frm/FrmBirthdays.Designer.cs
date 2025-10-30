@@ -33,11 +33,15 @@ partial class FrmBirthdays
         chName = new ColumnHeader();
         chAge = new ColumnHeader();
         chSpan = new ColumnHeader();
-        numericUpDown = new NumericUpDown();
-        label = new Label();
+        beforeNumUpDown = new NumericUpDown();
+        label1 = new Label();
         btnShowAddress = new Button();
         btnCancel = new Button();
-        ((System.ComponentModel.ISupportInitialize)numericUpDown).BeginInit();
+        label2 = new Label();
+        afterNumUpDown = new NumericUpDown();
+        chkBxBirthdayAutoShow = new CheckBox();
+        ((System.ComponentModel.ISupportInitialize)beforeNumUpDown).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)afterNumUpDown).BeginInit();
         SuspendLayout();
         // 
         // listView
@@ -49,7 +53,7 @@ partial class FrmBirthdays
         listView.Location = new Point(0, 0);
         listView.Name = "listView";
         listView.OwnerDraw = true;
-        listView.Size = new Size(409, 218);
+        listView.Size = new Size(409, 250);
         listView.TabIndex = 0;
         listView.UseCompatibleStateImageBehavior = false;
         listView.View = View.Details;
@@ -79,29 +83,29 @@ partial class FrmBirthdays
         chSpan.Text = "Noch";
         chSpan.Width = 50;
         // 
-        // numericUpDown
+        // beforeNumUpDown
         // 
-        numericUpDown.Location = new Point(352, 224);
-        numericUpDown.Maximum = new decimal(new int[] { 99, 0, 0, 0 });
-        numericUpDown.Name = "numericUpDown";
-        numericUpDown.Size = new Size(45, 25);
-        numericUpDown.TabIndex = 1;
-        numericUpDown.TextAlign = HorizontalAlignment.Center;
+        beforeNumUpDown.Location = new Point(352, 256);
+        beforeNumUpDown.Maximum = new decimal(new int[] { 99, 0, 0, 0 });
+        beforeNumUpDown.Name = "beforeNumUpDown";
+        beforeNumUpDown.Size = new Size(45, 25);
+        beforeNumUpDown.TabIndex = 1;
+        beforeNumUpDown.TextAlign = HorizontalAlignment.Center;
         // 
-        // label
+        // label1
         // 
-        label.AutoSize = true;
-        label.Location = new Point(5, 226);
-        label.Name = "label";
-        label.Size = new Size(344, 19);
-        label.TabIndex = 2;
-        label.Text = "Maximale Anzahl der Tage vor dem Geburtstagstermin:";
+        label1.AutoSize = true;
+        label1.Location = new Point(5, 258);
+        label1.Name = "label1";
+        label1.Size = new Size(344, 19);
+        label1.TabIndex = 2;
+        label1.Text = "Maximale Anzahl der Tage vor dem Geburtstagstermin:";
         // 
         // btnShowAddress
         // 
         btnShowAddress.DialogResult = DialogResult.OK;
         btnShowAddress.Enabled = false;
-        btnShowAddress.Location = new Point(117, 255);
+        btnShowAddress.Location = new Point(117, 318);
         btnShowAddress.Name = "btnShowAddress";
         btnShowAddress.Size = new Size(164, 27);
         btnShowAddress.TabIndex = 3;
@@ -111,23 +115,54 @@ partial class FrmBirthdays
         // btnCancel
         // 
         btnCancel.DialogResult = DialogResult.Continue;
-        btnCancel.Location = new Point(287, 255);
+        btnCancel.Location = new Point(287, 318);
         btnCancel.Name = "btnCancel";
         btnCancel.Size = new Size(110, 27);
         btnCancel.TabIndex = 4;
         btnCancel.Text = "Schließen";
         btnCancel.UseVisualStyleBackColor = true;
         // 
+        // label2
+        // 
+        label2.AutoSize = true;
+        label2.Location = new Point(5, 289);
+        label2.Name = "label2";
+        label2.Size = new Size(344, 19);
+        label2.TabIndex = 6;
+        label2.Text = "Tage nach den Geburtstag, die mit einbezogen werden:";
+        // 
+        // afterNumUpDown
+        // 
+        afterNumUpDown.Location = new Point(352, 287);
+        afterNumUpDown.Maximum = new decimal(new int[] { 99, 0, 0, 0 });
+        afterNumUpDown.Name = "afterNumUpDown";
+        afterNumUpDown.Size = new Size(45, 25);
+        afterNumUpDown.TabIndex = 5;
+        afterNumUpDown.TextAlign = HorizontalAlignment.Center;
+        // 
+        // chkBxBirthdayAutoShow
+        // 
+        chkBxBirthdayAutoShow.AutoSize = true;
+        chkBxBirthdayAutoShow.Location = new Point(10, 321);
+        chkBxBirthdayAutoShow.Name = "chkBxBirthdayAutoShow";
+        chkBxBirthdayAutoShow.Size = new Size(86, 23);
+        chkBxBirthdayAutoShow.TabIndex = 7;
+        chkBxBirthdayAutoShow.Text = "Autostart";
+        chkBxBirthdayAutoShow.UseVisualStyleBackColor = true;
+        // 
         // FrmBirthdays
         // 
         AcceptButton = btnCancel;
         AutoScaleDimensions = new SizeF(7F, 17F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(409, 294);
+        ClientSize = new Size(409, 357);
+        Controls.Add(chkBxBirthdayAutoShow);
+        Controls.Add(label2);
+        Controls.Add(afterNumUpDown);
         Controls.Add(btnCancel);
         Controls.Add(btnShowAddress);
-        Controls.Add(label);
-        Controls.Add(numericUpDown);
+        Controls.Add(label1);
+        Controls.Add(beforeNumUpDown);
         Controls.Add(listView);
         Font = new Font("Segoe UI", 10F);
         FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -138,7 +173,8 @@ partial class FrmBirthdays
         StartPosition = FormStartPosition.CenterParent;
         Text = "Anstehende Geburtstage";
         Shown += FrmBirthdays_Shown;
-        ((System.ComponentModel.ISupportInitialize)numericUpDown).EndInit();
+        ((System.ComponentModel.ISupportInitialize)beforeNumUpDown).EndInit();
+        ((System.ComponentModel.ISupportInitialize)afterNumUpDown).EndInit();
         ResumeLayout(false);
         PerformLayout();
     }
@@ -146,12 +182,15 @@ partial class FrmBirthdays
     #endregion
 
     private ListView listView;
-    private NumericUpDown numericUpDown;
-    private Label label;
+    private NumericUpDown beforeNumUpDown;
+    private Label label1;
     private Button btnShowAddress;
     private Button btnCancel;
     private ColumnHeader chDate;
     private ColumnHeader chName;
     private ColumnHeader chAge;
     private ColumnHeader chSpan;
+    private Label label2;
+    private NumericUpDown afterNumUpDown;
+    private CheckBox chkBxBirthdayAutoShow;
 }

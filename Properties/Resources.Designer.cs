@@ -63,6 +63,16 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Add_8x16 {
+            get {
+                object obj = ResourceManager.GetObject("Add_8x16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap add_contact {
             get {
                 object obj = ResourceManager.GetObject("add-contact", resourceCulture);
@@ -76,6 +86,16 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap add_contact16 {
             get {
                 object obj = ResourceManager.GetObject("add-contact16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap AddDataSource16 {
+            get {
+                object obj = ResourceManager.GetObject("AddDataSource16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -123,9 +143,39 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap AddressBild100 {
+            get {
+                object obj = ResourceManager.GetObject("AddressBild100", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap arrow_previous16 {
+            get {
+                object obj = ResourceManager.GetObject("arrow_previous16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap calendar_small16 {
             get {
                 object obj = ResourceManager.GetObject("calendar-small16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap checkBoxGroup16 {
+            get {
+                object obj = ResourceManager.GetObject("checkBoxGroup16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -186,6 +236,16 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap CompareFiles_16 {
             get {
                 object obj = ResourceManager.GetObject("CompareFiles_16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap ContactBild100 {
+            get {
+                object obj = ResourceManager.GetObject("ContactBild100", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -256,6 +316,16 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap delete_contact16 {
             get {
                 object obj = ResourceManager.GetObject("delete-contact16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap delete12 {
+            get {
+                object obj = ResourceManager.GetObject("delete12", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -373,9 +443,59 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap GroupOfUsers16x {
+            get {
+                object obj = ResourceManager.GetObject("GroupOfUsers16x", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap help_word16 {
             get {
                 object obj = ResourceManager.GetObject("help-word16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Byte[].
+        /// </summary>
+        internal static byte[] Icon32 {
+            get {
+                object obj = ResourceManager.GetObject("Icon32", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap image_minus16 {
+            get {
+                object obj = ResourceManager.GetObject("image-minus16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap image_plus16 {
+            get {
+                object obj = ResourceManager.GetObject("image-plus16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap image_plus161 {
+            get {
+                object obj = ResourceManager.GetObject("image-plus161", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -513,6 +633,16 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap minus_white16 {
+            get {
+                object obj = ResourceManager.GetObject("minus-white16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap mobile_minus16 {
             get {
                 object obj = ResourceManager.GetObject("mobile-minus16", resourceCulture);
@@ -533,6 +663,16 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap mouse_plus16 {
+            get {
+                object obj = ResourceManager.GetObject("mouse-plus16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap options16 {
             get {
                 object obj = ResourceManager.GetObject("options16", resourceCulture);
@@ -546,6 +686,16 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap plus_blue_24 {
             get {
                 object obj = ResourceManager.GetObject("plus_blue_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap plus_white16 {
+            get {
+                object obj = ResourceManager.GetObject("plus-white16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -673,9 +823,29 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap SplashScreen {
+            get {
+                object obj = ResourceManager.GetObject("SplashScreen", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap splitter16x {
             get {
                 object obj = ResourceManager.GetObject("splitter16x", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap tag_arrow16 {
+            get {
+                object obj = ResourceManager.GetObject("tag-arrow16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -716,6 +886,16 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap UpArrow_Blue_24 {
             get {
                 object obj = ResourceManager.GetObject("UpArrow_Blue_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap User_16 {
+            get {
+                object obj = ResourceManager.GetObject("User_16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

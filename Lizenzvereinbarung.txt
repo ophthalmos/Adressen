@@ -1,11 +1,11 @@
 Lizenzvereinbarung
 
-Das Copyright an "Adressen" liegt bei dem Autor dieser Software, Wilhelm Happe.
+Das Copyright an "Adressen & Kontakte" liegt bei dem Autor dieser Software, Wilhelm Happe.
 
-Mit der Installation, der Vervielfältigung oder anderweitigen Verwendung von "Adressen" stimmen Sie dieser Lizenzvereinbarung zu.
+Mit der Installation, der Vervielfältigung oder anderweitigen Verwendung von "Adressen & Kontakte" stimmen Sie dieser Lizenzvereinbarung zu.
 
 1. Nutzungserlaubnis
-"Adressen" ist Freeware. Sie sind berechtigt, das Programm kostenlos und zeitlich uneingeschränkt sowohl privat als auch geschäftlich zu nutzen.
+"Adressen & Kontakte" ist Freeware. Sie sind berechtigt, das Programm kostenlos und zeitlich uneingeschränkt sowohl privat als auch geschäftlich zu nutzen.
 
 2. Vervielfältigung
 Sie sind berechtigt, dieses Programm inklusive aller zugehörigen Dateien an Dritte weiterzugeben, solange Sie exakte Kopien ohne Veränderung (Weglassen oder Hinzufügen von Dateien, Änderungen an den Dateien) anfertigen und keinerlei Gebühren für die Weitergabe verlangen, außer gegebenenfalls einer angemessenen Kostenpauschale für den Datenträger. Sie dürfen dieses Programm keinem kommerziellen Programm oder einer Programmsammlung beilegen, außer mit schriftlicher Erlaubnis des Autors.
@@ -14,7 +14,7 @@ Sie sind berechtigt, dieses Programm inklusive aller zugehörigen Dateien an Drit
 Sie haben keinen Anspruch auf Produktunterstützung ("Support") durch den Autor. Der Autor ist aber bemüht, Supportanfragen zu beantworten. Produktunterstützung wird ausschließlich per Email angeboten.
 
 4. Haftungsausschluss
-Die Benutzung des Programms „Adressen“ erfolgt auf eigene Gefahr! Der Autor Wilhelm Happe ist nicht für Schäden verantwortlich, die durch Verwendung oder Verbreitung der Software „Adressen“ verursacht werden. In keinem Fall ist der Autor verantwortlich für entgangenen Umsatz oder Gewinn, den Verlust von Daten sowie unmittelbare oder mittelbare Folgeschäden an Hard- und Software, die durch den Gebrauch oder die Unmöglichkeit des Gebrauchs der Software verursacht wurden.
+Die Benutzung des Programms „Adressen & Kontakte“ erfolgt auf eigene Gefahr! Der Autor Wilhelm Happe ist nicht für Schäden verantwortlich, die durch Verwendung oder Verbreitung der Software „Adressen & Kontakte“ verursacht werden. In keinem Fall ist der Autor verantwortlich für entgangenen Umsatz oder Gewinn, den Verlust von Daten sowie unmittelbare oder mittelbare Folgeschäden an Hard- und Software, die durch den Gebrauch oder die Unmöglichkeit des Gebrauchs der Software verursacht wurden.
 
 5. Verwendete Drittanbieter-Komponenten:
 •  SQLite

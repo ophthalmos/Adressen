@@ -3,12 +3,13 @@ public partial class FrmColumns : Form
 {
     public ListView GetColumnList() => listView;
     public void SetColumnList(ListView value) => listView = value;
-    private readonly bool[] hideColumnArr = new bool[24];
+    private readonly bool[] hideColumnArr; // = new bool[24];
 
-    public FrmColumns(bool[] boolArray)
+    public FrmColumns(bool[] boolArray, string photoDoku)
     {
         InitializeComponent();
         hideColumnArr = boolArray;
+        listView.Items[^2].Text = photoDoku;
     }
 
     private void BtnStandard_Click(object sender, EventArgs e)

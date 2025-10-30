@@ -7,13 +7,14 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Platforms>AnyCPU;x64</Platforms>
-    <ApplicationIcon>img\Book_JournalwPen.ico</ApplicationIcon>
+    <ApplicationIcon>Adressen.ico</ApplicationIcon>
     <SourceRevisionId>build$([System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss"))</SourceRevisionId>
     <NeutralLanguage>de</NeutralLanguage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion>1.0.4</AssemblyVersion>
-    <FileVersion>1.0.4</FileVersion>
+    <AssemblyVersion>1.0.6</AssemblyVersion>
+    <FileVersion>1.0.6</FileVersion>
     <StartupObject>Adressen.Program</StartupObject>
+    <Product>$(AssemblyName) &amp; Kontakte</Product>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -49,12 +50,20 @@
   <ItemGroup>
     <None Remove="Adressen.db" />
     <None Remove="Adressen.sqbpro" />
+    <None Remove="Adressen96.png" />
     <None Remove="AdressenSetup.exe" />
     <None Remove="client_secret.json.old" />
     <None Remove="FrmAdressen.zip" />
+    <None Remove="frm\FrmAdressen.zip" />
+    <None Remove="Icon16.png" />
+    <None Remove="Icon255.psd" />
+    <None Remove="Icon256.png" />
+    <None Remove="Icon32.png" />
+    <None Remove="Icon48.png" />
     <None Remove="img\Book_JournalwPen.ico" />
     <None Remove="img\word.ico" />
     <None Remove="privat-adressen.csv" />
+    <None Remove="SplashScreen.psd" />
   </ItemGroup>
 
   <ItemGroup>
@@ -71,6 +80,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Adressen.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Apis.Oauth2.v2" Version="1.68.0.1869" />
     <PackageReference Include="Google.Apis.PeopleService.v1" Version="1.69.0.3785" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
   </ItemGroup>
@@ -94,6 +108,9 @@
     <None Update="adb_file.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="AdressenKontakte.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="client_secret.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -109,7 +126,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="&quot;C:\Program Files\7-Zip\7z.exe&quot; u -tzip Adressen.zip *.cs *.resx&#xD;&#xA;xcopy &quot;$(TargetPath)&quot; &quot;C:\Program Files\$(AssemblyName)\&quot; /y&#xD;&#xA;xcopy &quot;$(TargetDir)\*.exe&quot; &quot;C:\Program Files\$(AssemblyName)\&quot; /y" />
+    <Exec Command="&quot;C:\Program Files\7-Zip\7z.exe&quot; u -tzip Adressen.zip frm\*.cs frm\*.resx&#xD;&#xA;xcopy &quot;$(TargetPath)&quot; &quot;C:\Program Files\$(AssemblyName)\&quot; /y&#xD;&#xA;xcopy &quot;$(TargetDir)\*.exe&quot; &quot;C:\Program Files\$(AssemblyName)\&quot; /y" />
   </Target>
 
 </Project>
