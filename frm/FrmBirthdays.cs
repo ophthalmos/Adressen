@@ -1,4 +1,5 @@
 ﻿namespace Adressen;
+
 public partial class FrmBirthdays : Form
 {
     public int SelectionIndex => listView.SelectedIndices.Count > 0 ? listView.SelectedIndices[0] : -1;
@@ -15,8 +16,9 @@ public partial class FrmBirthdays : Form
     private readonly List<int> _birthdayTodayList = [];
     private readonly Image partyHat = Properties.Resources.FavoriteStar16;
     private readonly bool isLocal;
+    private readonly int _initialIndex = -1;
 
-    public FrmBirthdays(string colorScheme, List<(DateTime Datum, string Name, int Alter, int Tage, string Id)> geburtstage, int reminderBefore, int reminderAfter, bool localAdr) // , string colorSheme
+    public FrmBirthdays(string colorScheme, List<(DateOnly Datum, string Name, int Alter, int Tage, string Id)> geburtstage, int reminderBefore, int reminderAfter, bool localAdr) // , string colorSheme
     {
         InitializeComponent();
         isLocal = localAdr;
@@ -48,19 +50,17 @@ public partial class FrmBirthdays : Form
             listView.Items.Add(item);
             index++;
         }
-        if (nextBirthdayIndex != -1) // Prüfen, ob ein nächster Geburtstag gefunden wurde
+        if (nextBirthdayIndex != -1)
         {
-            listView.Items[nextBirthdayIndex].Selected = true;
-            listView.Items[nextBirthdayIndex].Focused = true;
-            listView.EnsureVisible(nextBirthdayIndex); // Scrollt zur selektierten Zeile
-            AcceptButton = btnShowAddress; // Setzt die Schaltfläche, die bei Enter gedrückt wird
+            _initialIndex = nextBirthdayIndex;
+            AcceptButton = btnShowAddress;
         }
         else if (listView.Items.Count > 0)
         {
+            AcceptButton = btnShowAddress;
             listView.Items[0].Selected = true;
             listView.Items[0].Focused = true;
             listView.EnsureVisible(0);
-            AcceptButton = btnShowAddress;
         }
     }
 
@@ -113,6 +113,16 @@ public partial class FrmBirthdays : Form
     {
         BringToFront();
         Activate();
+        if (_initialIndex >= 0 && _initialIndex < listView.Items.Count)
+        {
+            listView.Focus();
+            var item = listView.Items[_initialIndex];
+            item.Selected = true;
+            item.Focused = true;
+            listView.FocusedItem = item;
+            listView.EnsureVisible(_initialIndex);
+        }
+        else { listView.Focus(); }
     }
 
     private void ListView_KeyDown(object sender, KeyEventArgs e)

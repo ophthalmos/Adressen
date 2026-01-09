@@ -355,9 +355,9 @@ partial class FrmPrintSetting
         senderPage.BorderStyle = BorderStyle.FixedSingle;
         senderPage.Controls.Add(tcSender);
         senderPage.Controls.Add(ckbPrintSender);
-        senderPage.Location = new Point(4, 24);
+        senderPage.Location = new Point(4, 26);
         senderPage.Name = "senderPage";
-        senderPage.Size = new Size(316, 173);
+        senderPage.Size = new Size(316, 171);
         senderPage.TabIndex = 3;
         senderPage.Text = "Absender";
         // 
@@ -398,8 +398,9 @@ partial class FrmPrintSetting
         // 
         tbSender1.AcceptsReturn = true;
         tbSender1.AcceptsTab = true;
-        tbSender1.BackColor = Color.FloralWhite;
+        tbSender1.BackColor = SystemColors.Info;
         tbSender1.Dock = DockStyle.Fill;
+        tbSender1.ForeColor = SystemColors.InfoText;
         tbSender1.Location = new Point(3, 3);
         tbSender1.Multiline = true;
         tbSender1.Name = "tbSender1";
@@ -421,8 +422,9 @@ partial class FrmPrintSetting
         // 
         tbSender2.AcceptsReturn = true;
         tbSender2.AcceptsTab = true;
-        tbSender2.BackColor = Color.FloralWhite;
+        tbSender2.BackColor = SystemColors.Info;
         tbSender2.Dock = DockStyle.Fill;
+        tbSender2.ForeColor = SystemColors.InfoText;
         tbSender2.Location = new Point(3, 3);
         tbSender2.Multiline = true;
         tbSender2.Name = "tbSender2";
@@ -444,8 +446,9 @@ partial class FrmPrintSetting
         // 
         tbSender3.AcceptsReturn = true;
         tbSender3.AcceptsTab = true;
-        tbSender3.BackColor = Color.FloralWhite;
+        tbSender3.BackColor = SystemColors.Info;
         tbSender3.Dock = DockStyle.Fill;
+        tbSender3.ForeColor = SystemColors.InfoText;
         tbSender3.Location = new Point(3, 3);
         tbSender3.Multiline = true;
         tbSender3.Name = "tbSender3";
@@ -467,8 +470,9 @@ partial class FrmPrintSetting
         // 
         tbSender4.AcceptsReturn = true;
         tbSender4.AcceptsTab = true;
-        tbSender4.BackColor = Color.FloralWhite;
+        tbSender4.BackColor = SystemColors.Info;
         tbSender4.Dock = DockStyle.Fill;
+        tbSender4.ForeColor = SystemColors.InfoText;
         tbSender4.Location = new Point(3, 3);
         tbSender4.Multiline = true;
         tbSender4.Name = "tbSender4";
@@ -490,8 +494,9 @@ partial class FrmPrintSetting
         // 
         tbSender5.AcceptsReturn = true;
         tbSender5.AcceptsTab = true;
-        tbSender5.BackColor = Color.FloralWhite;
+        tbSender5.BackColor = SystemColors.Info;
         tbSender5.Dock = DockStyle.Fill;
+        tbSender5.ForeColor = SystemColors.InfoText;
         tbSender5.Location = new Point(3, 3);
         tbSender5.Multiline = true;
         tbSender5.Name = "tbSender5";
@@ -513,8 +518,9 @@ partial class FrmPrintSetting
         // 
         tbSender6.AcceptsReturn = true;
         tbSender6.AcceptsTab = true;
-        tbSender6.BackColor = Color.FloralWhite;
+        tbSender6.BackColor = SystemColors.Info;
         tbSender6.Dock = DockStyle.Fill;
+        tbSender6.ForeColor = SystemColors.InfoText;
         tbSender6.Location = new Point(3, 3);
         tbSender6.Multiline = true;
         tbSender6.Name = "tbSender6";
@@ -595,9 +601,9 @@ partial class FrmPrintSetting
         tuningPage.Controls.Add(lblRecipOffsetX);
         tuningPage.Controls.Add(lblAddressOffset);
         tuningPage.Controls.Add(nudRecipOffsetX);
-        tuningPage.Location = new Point(4, 26);
+        tuningPage.Location = new Point(4, 24);
         tuningPage.Name = "tuningPage";
-        tuningPage.Size = new Size(316, 171);
+        tuningPage.Size = new Size(316, 173);
         tuningPage.TabIndex = 2;
         tuningPage.Text = "Tuning";
         // 

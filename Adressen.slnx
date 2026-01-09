@@ -1,0 +1,11 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
+  <Project Path="Adressen.csproj">
+    <Platform Solution="Debug|*" Project="x64" />
+    <Build Solution="Debug|*" Project="true" />
+    <Platform Solution="Release|*" Project="x64" />
+    <Build Solution="Release|*" Project="true" />
+  </Project>
+</Solution>

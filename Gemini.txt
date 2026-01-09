@@ -1,0 +1,28 @@
+Das Filtern der Adressen nach dem Vorhandensein von Dokumenten funktioniert nicht.
+
+private void AdressenMitBriefToolStripMenuItem_Click(object sender, EventArgs e)
+{
+    if (tabControl.SelectedTab == addressTabPage) { ApplyAddressPredicate(a => a.Dokumente != null, "… mit Briefverweis"); }
+}
+
+private void ApplyAddressPredicate(Func<Adresse, bool> filterBedingung, string statusText)
+{
+    if (_context == null) { return; }
+    var currencyManager = BindingContext?[addressBindingSource] as CurrencyManager;
+    try
+    {
+        currencyManager?.SuspendBinding();
+        addressDGV.CurrentCell = null;
+        var filteredList = _context.Adressen.Local.Where(filterBedingung).ToList();
+        addressBindingSource.DataSource = filteredList;
+        filterRemoveToolStripMenuItem.Visible = true;
+        flexiTSStatusLabel.Text = statusText;
+    }
+    catch (Exception ex) { Debug.WriteLine(ex.Message); }
+    finally { currencyManager?.ResumeBinding(); }
+    var totalCount = _context.Adressen.Local.Count;
+    var visibleCount = addressBindingSource.Count;
+    toolStripStatusLabel.Text = $"{visibleCount}/{totalCount} Adressen";
+    if (visibleCount > 0) { addressDGV.Rows[0].Selected = true; }
+}
+

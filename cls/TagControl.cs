@@ -1,8 +1,9 @@
-﻿using System.ComponentModel;
+﻿using Adressen.Properties;
+using System.ComponentModel;
 using System.Drawing.Drawing2D;
-using Adressen.Properties;
 
 namespace Adressen.cls;
+
 internal class TagControl : Control
 {
     private Rectangle deleteRect;

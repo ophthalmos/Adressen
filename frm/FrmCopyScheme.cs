@@ -1,8 +1,9 @@
-﻿using System.Data;
+﻿using Adressen.cls;
+using System.Data;
 using System.Text.RegularExpressions;
-using Adressen.cls;
 
 namespace Adressen;
+
 public partial class FrmCopyScheme : Form
 {
     public string[] GetPattern1() => tbPattern1.Lines;
@@ -102,7 +103,7 @@ public partial class FrmCopyScheme : Form
         if (tabControl.Visible && tabControl.Focused) { TbPattern_TextChanged(sender, EventArgs.Empty); }
     }
 
-    private void BtnCopy_Click(object sender, EventArgs e) => Utilities.SetClipboardText(tbResult.Text.Trim());
+    private void BtnCopy_Click(object sender, EventArgs e) => Utils.SetClipboardText(tbResult.Text.Trim());
 
     private void FrmCopyScheme_Shown(object sender, EventArgs e)
     {

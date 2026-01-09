@@ -3,6 +3,7 @@ using System.Runtime.Versioning;
 using System.Security;
 
 namespace Adressen.cls;
+
 internal static class Marshal2
 {
     internal const string OLEAUT32 = "oleaut32.dll";
