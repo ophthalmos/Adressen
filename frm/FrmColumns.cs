@@ -1,15 +1,16 @@
 ﻿namespace Adressen;
+
 public partial class FrmColumns : Form
 {
     public ListView GetColumnList() => listView;
     public void SetColumnList(ListView value) => listView = value;
     private readonly bool[] hideColumnArr; // = new bool[24];
 
-    public FrmColumns(bool[] boolArray, string photoDoku)
+    public FrmColumns(bool[] boolArray)
     {
         InitializeComponent();
         hideColumnArr = boolArray;
-        listView.Items[^2].Text = photoDoku;
+        //listView.Items[^1].Text = RessourceName;
     }
 
     private void BtnStandard_Click(object sender, EventArgs e)

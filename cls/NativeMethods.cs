@@ -2,6 +2,7 @@
 using System.Text;
 
 namespace Adressen.cls;
+
 internal static class NativeMethods
 {
     internal const int EC_LEFTMARGIN = 1;
@@ -10,6 +11,8 @@ internal static class NativeMethods
     internal const int VK_CONTROL = 0x11;
     internal const int EM_SETCUEBANNER = 0x1501;
     private const uint GW_HWNDNEXT = 2;
+    internal const int WM_SETTINGCHANGE = 0x001A;
+
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     internal static extern int SendMessage(nint hWnd, int msg, int wParam, [MarshalAs(UnmanagedType.LPWStr)] string lParam);

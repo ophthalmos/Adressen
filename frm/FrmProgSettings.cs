@@ -1,7 +1,9 @@
 ﻿using System.Diagnostics;
 using System.Drawing.Drawing2D;
+using Adressen.cls;
 
 namespace Adressen;
+
 public partial class FrmProgSettings : Form
 {
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Visible)]
@@ -125,14 +127,14 @@ public partial class FrmProgSettings : Form
     {
         get => ckbWatchFolder.Checked;
         set => ckbWatchFolder.Checked = value;
-    }   
+    }
 
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Visible)]
     public string LetterDirectory
     {
         get => tbWatchFolder.Text;
         set => tbWatchFolder.Text = value;
-    }   
+    }
 
     public FrmProgSettings()
     {
@@ -141,33 +143,39 @@ public partial class FrmProgSettings : Form
 
     private void TabControl_DrawItem(object sender, DrawItemEventArgs e)
     {
-        var g = e.Graphics; //e.DrawBackground();
+        var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.HighQuality; //.AntiAlias;
         var tabPage = tabControl.TabPages[e.Index];
-        var tabBounds = tabControl.GetTabRect(e.Index); // Get the real bounds for the tab rectangle.
-        Brush textBrush;
-        if (e.State == DrawItemState.Selected)
-        {
-            textBrush = new SolidBrush(Color.White);  // Draw a different background color, and don't paint a focus rectangle.
-            g.FillRectangle(SystemBrushes.GradientActiveCaption, e.Bounds);
-        }
-        else
-        {
-            textBrush = new SolidBrush(e.ForeColor);
-            g.FillRectangle(SystemBrushes.GradientInactiveCaption, e.Bounds);
-        }
-        var tabFont = new Font("Segoe UI", (float)10.0, FontStyle.Regular, GraphicsUnit.Point);
-        using var stringFlags = new StringFormat  // Draw string. Center the text.
+        var tabBounds = tabControl.GetTabRect(e.Index);
+        var backBrush = e.State == DrawItemState.Selected ? SystemBrushes.GradientActiveCaption : SystemBrushes.GradientInactiveCaption;
+        var textBrush = e.State == DrawItemState.Selected ? SystemBrushes.HighlightText : SystemBrushes.ControlText;
+        g.FillRectangle(backBrush, e.Bounds);
+        using var tabFont = new Font("Segoe UI", 10f);
+        using var stringFlags = new StringFormat
         {
             Alignment = StringAlignment.Near,
             LineAlignment = StringAlignment.Center
         };
-        g.DrawString(tabPage.Text, tabFont, textBrush, tabBounds, new StringFormat(stringFlags));
-        g.FillRectangle(new SolidBrush(Color.FromArgb(250, 250, 251)), new Rectangle(0, (tabBounds.Height * tabControl.TabPages.Count) + 3, tabBounds.Width + 2, tabPage.Height - (tabBounds.Height * tabControl.TabPages.Count))); // TabControl.BackColor
-        g.DrawLine(new Pen(Color.FromArgb(240, 244, 249)), 0, tabPage.Height + 4, tabBounds.Width + 2, tabPage.Height + 5);
-        g.DrawLine(new Pen(Color.FromArgb(160, 160, 160)), 0, tabPage.Height + 6, tabBounds.Width + 2, tabPage.Height + 6);
-        g.DrawLine(new Pen(Color.FromArgb(105, 105, 105)), 0, tabPage.Height + 7, tabBounds.Width + 2, tabPage.Height + 7);
+        g.DrawString(tabPage.Text, tabFont, textBrush, tabBounds, stringFlags); // Text mit Systemfarben zeichnen
+        using var linePen = new Pen(SystemColors.ControlDark);
+        if (e.Index == tabControl.TabCount - 1) // Nur beim letzten Tab den Rest füllen
+        {
+            var totalTabHeight = tabBounds.Height * tabControl.TabCount;
+            var remainingRect = new Rectangle(0, totalTabHeight, tabBounds.Width + 2, tabControl.Height - totalTabHeight);
+            g.FillRectangle(SystemBrushes.Control, remainingRect);
+        }
     }
+
+    //protected override void WndProc(ref Message m) // funktioniert unvollständig
+    //{
+    //    base.WndProc(ref m);
+    //    if (m.Msg == NativeMethods.WM_SETTINGCHANGE) // DarkMode oder andere Systemeinstellungen geändert
+    //    {
+    //        Invalidate(true);
+    //        tabControl.Invalidate(); // Da das TabControl OwnerDraw nutzt, muss es explizit neu gezeichnet werden
+    //        foreach (TabPage page in tabControl.TabPages) { page.Invalidate(); }
+    //    }
+    //}
 
     private void FrmProgSettings_Load(object sender, EventArgs e)
     {

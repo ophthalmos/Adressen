@@ -1,6 +1,6 @@
 #define MyAppLong "Adressen & Kontakte"
 #define MyAppName "Adressen"
-#define MyAppVersion "1.0.6"
+#define MyAppVersion "1.1.0"
 
 [Setup]
 AppName={#MyAppName}
@@ -11,7 +11,7 @@ ArchitecturesAllowed=x64os
 ArchitecturesInstallIn64BitMode=x64os
 PrivilegesRequired=admin
 AppPublisher=Wilhelm Happe
-VersionInfoCopyright=(C) 2025, W. Happe
+VersionInfoCopyright=(C) 2026, W. Happe
 AppPublisherURL=https://www.netradio.info/
 AppSupportURL=https://www.netradio.info/
 AppUpdatesURL=https://www.netradio.info/
@@ -33,31 +33,52 @@ OutputBaseFilename={#MyAppName}Setup
 Compression=lzma2/max
 SolidCompression=yes
 DirExistsWarning=no
-MinVersion=0,10.0
+MinVersion=10.0.17763
 ChangesAssociations=yes
 
 [Languages]
 Name: "German"; MessagesFile: "compiler:Languages\German.isl"
 
 [Files]
-Source: "bin\x64\Release\net8.0-windows7.0\{#MyAppName}.exe"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
-Source: "bin\x64\Release\net8.0-windows7.0\{#MyAppName}.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
-Source: "bin\x64\Release\net8.0-windows7.0\{#MyAppName}.runtimeconfig.json"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\{#MyAppName}.exe"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\{#MyAppName}.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\{#MyAppName}.runtimeconfig.json"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "AdressenKontakte.pdf"; DestDir: "{app}"; Permissions: users-modify;
 Source: "Lizenzvereinbarung.txt"; DestDir: "{app}"; Permissions: users-modify;
-Source: "bin\x64\Release\net8.0-windows7.0\System.Data.SQLite.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
-Source: "bin\x64\Release\net8.0-windows7.0\SQLite.Interop.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
-Source: "bin\x64\Release\net8.0-windows7.0\Google.Apis.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
-Source: "bin\x64\Release\net8.0-windows7.0\Google.Apis.Auth.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
-Source: "bin\x64\Release\net8.0-windows7.0\Google.Apis.Core.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
-Source: "bin\x64\Release\net8.0-windows7.0\Google.Apis.PeopleService.v1.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
-Source: "bin\x64\Release\net8.0-windows7.0\Google.Apis.Oauth2.v2.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
-Source: "bin\x64\Release\net8.0-windows7.0\Microsoft.Office.Interop.Word.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
-Source: "bin\x64\Release\net8.0-windows7.0\Newtonsoft.Json.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
-Source: "bin\x64\Release\net8.0-windows7.0\System.Management.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
-Source: "bin\x64\Release\net8.0-windows7.0\client_secret.json"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion  
-Source: "bin\x64\Release\net8.0-windows7.0\adb_file.ico"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
-Source: "bin\x64\Release\net8.0-windows7.0\LibreHelper\*.*"; DestDir: "{app}\LibreHelper"; Permissions: users-modify; Flags: ignoreversion  
+
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Google.Apis.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Google.Apis.Auth.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Google.Apis.Core.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Google.Apis.PeopleService.v1.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Google.Apis.Oauth2.v2.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
+
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\runtimes\win-x64\native\e_sqlite3.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.Data.Sqlite.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.EntityFrameworkCore.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.EntityFrameworkCore.Abstractions.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.EntityFrameworkCore.Relational.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.EntityFrameworkCore.Sqlite.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.Extensions.Caching.Abstractions.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.Extensions.Caching.Memory.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.Extensions.Configuration.Abstractions.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.Extensions.DependencyInjection.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.Extensions.DependencyModel.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.Extensions.Logging.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.Extensions.Logging.Abstractions.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.Extensions.Options.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.Extensions.Primitives.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Microsoft.Office.Interop.Word.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Newtonsoft.Json.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\SQLitePCLRaw.batteries_v2.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\SQLitePCLRaw.core.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\SQLitePCLRaw.provider.e_sqlite3.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\System.Management.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\WinRT.Runtime.dll"; DestDir: "{app}"; Flags: ignoreversion
+
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\client_secret.json"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion  
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\adb_file.ico"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\LibreHelper\*.*"; DestDir: "{app}\LibreHelper"; Permissions: users-modify; Flags: ignoreversion  
 Source: "MännlicheVornamen.txt"; DestDir: "{userappdata}\{#MyAppName}"; Flags: onlyifdoesntexist
 Source: "WeiblicheVornamen.txt"; DestDir: "{userappdata}\{#MyAppName}"; Flags: onlyifdoesntexist
 
@@ -78,6 +99,8 @@ Name: desktopicon; Description: {cm:CreateDesktopIcon}
 
 [InstallDelete]
 Type: filesandordirs; Name: "{userappdata}\{#MyAppName}\token.json";
+Type: files; Name: "{app}\System.Data.SQLite.dll"
+Type: files; Name: "{app}\SQLite.Interop.dll"
 
 [Run]
 Filename: "{app}\{#MyAppName}.exe"; Description: "Starte Adressen && Kontakte"; Flags: postinstall nowait skipifsilent shellexec
@@ -92,22 +115,6 @@ RemoveSettings=Möchten Sie die Einstellungsdateien ebenfalls entfernen?
 Description=Adressen-Datenbank
 
 [Code]
-const
-  SetupMutexName = 'AdressenSetupMutex';
-  
-function InitializeSetup(): Boolean; // only one instance of Inno Setup without prompting
-begin
-  Result := True;
-  if CheckForMutexes(SetupMutexName) then
-  begin
-    Result := False; // Mutex exists, setup is running already, silently aborting
-  end
-    else
-  begin
-    CreateMutex(SetupMutexName); 
-  end;
-end;
-
 procedure CurUninstallStepChanged (CurUninstallStep: TUninstallStep);
 var
   mres : integer;

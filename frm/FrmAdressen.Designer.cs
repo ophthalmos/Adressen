@@ -44,8 +44,6 @@ partial class FrmAdressen
         googleToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator8 = new ToolStripSeparator();
         importToolStripMenuItem = new ToolStripMenuItem();
-        impOldVersionToolStripMenuItem = new ToolStripMenuItem();
-        toolStripSeparator21 = new ToolStripSeparator();
         exportToolStripMenuItem = new ToolStripMenuItem();
         googlebackupToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator6 = new ToolStripSeparator();
@@ -86,6 +84,9 @@ partial class FrmAdressen
         toolStripSeparator24 = new ToolStripSeparator();
         mobilePlusFilterToolStripMenuItem = new ToolStripMenuItem();
         mobileMinusFilterToolStripMenuItem = new ToolStripMenuItem();
+        toolStripSeparator25 = new ToolStripSeparator();
+        datePlusFilterMenuItem = new ToolStripMenuItem();
+        dateMinusFilterMenuItem = new ToolStripMenuItem();
         extraToolStripMenuItem = new ToolStripMenuItem();
         birthdaysToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator17 = new ToolStripSeparator();
@@ -236,6 +237,11 @@ partial class FrmAdressen
         saveFileDialog = new SaveFileDialog();
         debounceTimer = new System.Windows.Forms.Timer(components);
         fileSystemWatcher = new FileSystemWatcher();
+        addressBindingSource = new BindingSource(components);
+        bindingSource1 = new BindingSource(components);
+        contactBindingSource = new BindingSource(components);
+        searchTimer = new System.Windows.Forms.Timer(components);
+        scrollTimer = new System.Windows.Forms.Timer(components);
         menuStrip.SuspendLayout();
         toolStrip.SuspendLayout();
         statusStrip.SuspendLayout();
@@ -266,6 +272,9 @@ partial class FrmAdressen
         ((System.ComponentModel.ISupportInitialize)searchPictureBox).BeginInit();
         contextDgvMenu.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)fileSystemWatcher).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)addressBindingSource).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)bindingSource1).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)contactBindingSource).BeginInit();
         SuspendLayout();
         // 
         // menuStrip
@@ -278,7 +287,7 @@ partial class FrmAdressen
         // 
         // fileToolStripMenuItem
         // 
-        fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newDBToolStripMenuItem, toolStripSeparator10, openToolStripMenuItem, recentToolStripMenuItem, googleToolStripMenuItem, toolStripSeparator8, importToolStripMenuItem, impOldVersionToolStripMenuItem, toolStripSeparator21, exportToolStripMenuItem, googlebackupToolStripMenuItem, toolStripSeparator6, exitToolStripMenuItem });
+        fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newDBToolStripMenuItem, toolStripSeparator10, openToolStripMenuItem, recentToolStripMenuItem, googleToolStripMenuItem, toolStripSeparator8, importToolStripMenuItem, exportToolStripMenuItem, googlebackupToolStripMenuItem, toolStripSeparator6, exitToolStripMenuItem });
         fileToolStripMenuItem.Name = "fileToolStripMenuItem";
         fileToolStripMenuItem.Size = new Size(46, 20);
         fileToolStripMenuItem.Text = "Datei";
@@ -289,20 +298,20 @@ partial class FrmAdressen
         // 
         newDBToolStripMenuItem.Image = (Image)resources.GetObject("newDBToolStripMenuItem.Image");
         newDBToolStripMenuItem.Name = "newDBToolStripMenuItem";
-        newDBToolStripMenuItem.Size = new Size(250, 22);
+        newDBToolStripMenuItem.Size = new Size(229, 22);
         newDBToolStripMenuItem.Text = "&Neue Datenbank erstellen";
         newDBToolStripMenuItem.Click += NewDBToolStripMenuItem_Click;
         // 
         // toolStripSeparator10
         // 
         toolStripSeparator10.Name = "toolStripSeparator10";
-        toolStripSeparator10.Size = new Size(247, 6);
+        toolStripSeparator10.Size = new Size(226, 6);
         // 
         // openToolStripMenuItem
         // 
         openToolStripMenuItem.Image = (Image)resources.GetObject("openToolStripMenuItem.Image");
         openToolStripMenuItem.Name = "openToolStripMenuItem";
-        openToolStripMenuItem.Size = new Size(250, 22);
+        openToolStripMenuItem.Size = new Size(229, 22);
         openToolStripMenuItem.Text = "Lokale &Datenbank öffnen";
         openToolStripMenuItem.Click += OpenToolStripMenuItem_Click;
         // 
@@ -310,7 +319,7 @@ partial class FrmAdressen
         // 
         recentToolStripMenuItem.Image = (Image)resources.GetObject("recentToolStripMenuItem.Image");
         recentToolStripMenuItem.Name = "recentToolStripMenuItem";
-        recentToolStripMenuItem.Size = new Size(250, 22);
+        recentToolStripMenuItem.Size = new Size(229, 22);
         recentToolStripMenuItem.Text = "Zu&letzt geöffnet…";
         recentToolStripMenuItem.DropDownOpening += RecentToolStripMenuItem_DropDownOpening;
         // 
@@ -318,41 +327,28 @@ partial class FrmAdressen
         // 
         googleToolStripMenuItem.Image = (Image)resources.GetObject("googleToolStripMenuItem.Image");
         googleToolStripMenuItem.Name = "googleToolStripMenuItem";
-        googleToolStripMenuItem.Size = new Size(250, 22);
+        googleToolStripMenuItem.Size = new Size(229, 22);
         googleToolStripMenuItem.Text = "&Google-Kontakte laden";
         googleToolStripMenuItem.Click += GoogleToolStripMenuItem_ClickAsync;
         // 
         // toolStripSeparator8
         // 
         toolStripSeparator8.Name = "toolStripSeparator8";
-        toolStripSeparator8.Size = new Size(247, 6);
+        toolStripSeparator8.Size = new Size(226, 6);
         // 
         // importToolStripMenuItem
         // 
         importToolStripMenuItem.Image = (Image)resources.GetObject("importToolStripMenuItem.Image");
         importToolStripMenuItem.Name = "importToolStripMenuItem";
-        importToolStripMenuItem.Size = new Size(250, 22);
+        importToolStripMenuItem.Size = new Size(229, 22);
         importToolStripMenuItem.Text = "&CSV-Datei lokal importieren…";
         importToolStripMenuItem.Click += ImportToolStripMenuItem_Click;
-        // 
-        // impOldVersionToolStripMenuItem
-        // 
-        impOldVersionToolStripMenuItem.Image = Properties.Resources.AddDataSource16;
-        impOldVersionToolStripMenuItem.Name = "impOldVersionToolStripMenuItem";
-        impOldVersionToolStripMenuItem.Size = new Size(250, 22);
-        impOldVersionToolStripMenuItem.Text = "Ältere Adressen-DB importieren…";
-        impOldVersionToolStripMenuItem.Visible = false;
-        // 
-        // toolStripSeparator21
-        // 
-        toolStripSeparator21.Name = "toolStripSeparator21";
-        toolStripSeparator21.Size = new Size(247, 6);
         // 
         // exportToolStripMenuItem
         // 
         exportToolStripMenuItem.Image = (Image)resources.GetObject("exportToolStripMenuItem.Image");
         exportToolStripMenuItem.Name = "exportToolStripMenuItem";
-        exportToolStripMenuItem.Size = new Size(250, 22);
+        exportToolStripMenuItem.Size = new Size(229, 22);
         exportToolStripMenuItem.Text = "&Export der lokalen Adressen";
         exportToolStripMenuItem.Click += ExportToolStripMenuItem_Click;
         // 
@@ -360,20 +356,20 @@ partial class FrmAdressen
         // 
         googlebackupToolStripMenuItem.Image = (Image)resources.GetObject("googlebackupToolStripMenuItem.Image");
         googlebackupToolStripMenuItem.Name = "googlebackupToolStripMenuItem";
-        googlebackupToolStripMenuItem.Size = new Size(250, 22);
+        googlebackupToolStripMenuItem.Size = new Size(229, 22);
         googlebackupToolStripMenuItem.Text = "&Backup der Google-Kontakte";
         googlebackupToolStripMenuItem.Click += GooglebackupToolStripMenuItem_Click;
         // 
         // toolStripSeparator6
         // 
         toolStripSeparator6.Name = "toolStripSeparator6";
-        toolStripSeparator6.Size = new Size(247, 6);
+        toolStripSeparator6.Size = new Size(226, 6);
         // 
         // exitToolStripMenuItem
         // 
         exitToolStripMenuItem.Image = (Image)resources.GetObject("exitToolStripMenuItem.Image");
         exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-        exitToolStripMenuItem.Size = new Size(250, 22);
+        exitToolStripMenuItem.Size = new Size(229, 22);
         exitToolStripMenuItem.Text = "&Beenden";
         exitToolStripMenuItem.Click += ExitToolStripMenuItem_Click;
         // 
@@ -538,7 +534,7 @@ partial class FrmAdressen
         // 
         // filterlToolStripMenuItem
         // 
-        filterlToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { groupFilterToolStripMenuItem, toolStripSeparator9, adressenMitBriefToolStripMenuItem, toolStripSeparator20, photoPlusFilterToolStripMenuItem, photoMinusFilterToolStripMenuItem, toolStripSeparator22, mailPlusFilterToolStripMenuItem, mailMinusFilterToolStripMenuItem, toolStripSeparator23, telephonePlusFilterToolStripMenuItem, telephoneMinusFilterToolStripMenuItem, toolStripSeparator24, mobilePlusFilterToolStripMenuItem, mobileMinusFilterToolStripMenuItem });
+        filterlToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { groupFilterToolStripMenuItem, toolStripSeparator9, adressenMitBriefToolStripMenuItem, toolStripSeparator20, photoPlusFilterToolStripMenuItem, photoMinusFilterToolStripMenuItem, toolStripSeparator22, mailPlusFilterToolStripMenuItem, mailMinusFilterToolStripMenuItem, toolStripSeparator23, telephonePlusFilterToolStripMenuItem, telephoneMinusFilterToolStripMenuItem, toolStripSeparator24, mobilePlusFilterToolStripMenuItem, mobileMinusFilterToolStripMenuItem, toolStripSeparator25, datePlusFilterMenuItem, dateMinusFilterMenuItem });
         filterlToolStripMenuItem.Name = "filterlToolStripMenuItem";
         filterlToolStripMenuItem.Size = new Size(45, 20);
         filterlToolStripMenuItem.Text = "Filter";
@@ -649,6 +645,28 @@ partial class FrmAdressen
         mobileMinusFilterToolStripMenuItem.Size = new Size(251, 22);
         mobileMinusFilterToolStripMenuItem.Text = "Alle ohne Mobiltelefonnummer";
         mobileMinusFilterToolStripMenuItem.Click += MobileMinusFilterToolStripMenuItem_Click;
+        // 
+        // toolStripSeparator25
+        // 
+        toolStripSeparator25.Name = "toolStripSeparator25";
+        toolStripSeparator25.Size = new Size(248, 6);
+        // 
+        // datePlusFilterMenuItem
+        // 
+        datePlusFilterMenuItem.Image = Properties.Resources.date_plus;
+        datePlusFilterMenuItem.Name = "datePlusFilterMenuItem";
+        datePlusFilterMenuItem.RightToLeftAutoMirrorImage = true;
+        datePlusFilterMenuItem.Size = new Size(251, 22);
+        datePlusFilterMenuItem.Text = "Alle mit Geburtsdatum";
+        datePlusFilterMenuItem.Click += DatePlusFilterMenuItem_Click;
+        // 
+        // dateMinusFilterMenuItem
+        // 
+        dateMinusFilterMenuItem.Image = Properties.Resources.date_minus;
+        dateMinusFilterMenuItem.Name = "dateMinusFilterMenuItem";
+        dateMinusFilterMenuItem.Size = new Size(251, 22);
+        dateMinusFilterMenuItem.Text = "Alle ohne Geburtsdatum";
+        dateMinusFilterMenuItem.Click += DateMinusFilterMenuItem_Click;
         // 
         // extraToolStripMenuItem
         // 
@@ -1146,6 +1164,7 @@ partial class FrmAdressen
         addressDGV.AllowUserToDeleteRows = false;
         addressDGV.AllowUserToResizeRows = false;
         addressDGV.BorderStyle = BorderStyle.None;
+        addressDGV.CellBorderStyle = DataGridViewCellBorderStyle.None;
         addressDGV.ClipboardCopyMode = DataGridViewClipboardCopyMode.Disable;
         dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
         dataGridViewCellStyle1.BackColor = SystemColors.Control;
@@ -1174,7 +1193,7 @@ partial class FrmAdressen
         addressDGV.RowHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
         dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
         dataGridViewCellStyle3.BackColor = SystemColors.Control;
-        dataGridViewCellStyle3.Font = new Font("Segoe UI", 10F);
+        dataGridViewCellStyle3.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
         dataGridViewCellStyle3.ForeColor = SystemColors.WindowText;
         dataGridViewCellStyle3.SelectionBackColor = Color.FromArgb(176, 125, 71);
         dataGridViewCellStyle3.SelectionForeColor = SystemColors.HighlightText;
@@ -1190,9 +1209,9 @@ partial class FrmAdressen
         addressDGV.TabStop = false;
         addressDGV.DataSourceChanged += AddressDGV_DataSourceChanged;
         addressDGV.CellClick += AddressDGV_CellClick;
-        addressDGV.CellFormatting += AddressDGV_CellFormatting;
-        addressDGV.CellMouseDown += AddressDGV_CellMouseDown;
+        addressDGV.CellMouseDown += DGV_CellMouseDown_SelectRow;
         addressDGV.ColumnHeaderMouseClick += AddressDGV_ColumnHeaderMouseClick;
+        addressDGV.DataError += AddressDGV_DataError;
         addressDGV.RowContextMenuStripNeeded += AddressDGV_RowContextMenuStripNeeded;
         addressDGV.RowPrePaint += AddressDGV_RowPrePaint;
         addressDGV.RowsAdded += AddressDGV_RowsAdded;
@@ -1218,6 +1237,7 @@ partial class FrmAdressen
         contactDGV.AllowUserToDeleteRows = false;
         contactDGV.AllowUserToResizeRows = false;
         contactDGV.BorderStyle = BorderStyle.None;
+        contactDGV.CellBorderStyle = DataGridViewCellBorderStyle.None;
         contactDGV.ClipboardCopyMode = DataGridViewClipboardCopyMode.Disable;
         contactDGV.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
         dataGridViewCellStyle5.Alignment = DataGridViewContentAlignment.MiddleLeft;
@@ -1234,17 +1254,18 @@ partial class FrmAdressen
         contactDGV.Location = new Point(3, 3);
         contactDGV.MultiSelect = false;
         contactDGV.Name = "contactDGV";
+        contactDGV.ReadOnly = true;
         contactDGV.RowHeadersWidth = 26;
         contactDGV.RowHeadersWidthSizeMode = DataGridViewRowHeadersWidthSizeMode.DisableResizing;
         contactDGV.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         contactDGV.Size = new Size(640, 693);
         contactDGV.TabIndex = 0;
         contactDGV.CellClick += ContactDGV_CellClick;
-        contactDGV.CellMouseDown += ContactDGV_CellMouseDown;
+        contactDGV.CellMouseDown += DGV_CellMouseDown_SelectRow;
         contactDGV.ColumnHeaderMouseClick += ContactDGV_ColumnHeaderMouseClick;
         contactDGV.RowPrePaint += ContactDGV_RowPrePaint;
+        contactDGV.RowValidating += ContactDGV_RowValidating;
         contactDGV.SelectionChanged += ContactDGV_SelectionChanged;
-        contactDGV.Enter += ContactDGV_Enter;
         contactDGV.KeyDown += ContactDGV_KeyDown;
         contactDGV.MouseDown += ContactDGV_MouseDown;
         // 
@@ -1396,7 +1417,7 @@ partial class FrmAdressen
         tbNickname.PlaceholderText = "Nickname";
         tbNickname.Size = new Size(99, 25);
         tbNickname.TabIndex = 5;
-        tbNickname.TextChanged += DictEditField_TextChanged;
+        tbNickname.TextChanged += EditControlsFromDict_TextChanged;
         tbNickname.Enter += TextBox_Enter;
         tbNickname.KeyDown += Edit_KeyDown;
         tbNickname.Leave += TextBox_Leave;
@@ -1412,7 +1433,7 @@ partial class FrmAdressen
         tbZwischenname.PlaceholderText = "Zwischenname";
         tbZwischenname.Size = new Size(114, 25);
         tbZwischenname.TabIndex = 4;
-        tbZwischenname.TextChanged += DictEditField_TextChanged;
+        tbZwischenname.TextChanged += EditControlsFromDict_TextChanged;
         tbZwischenname.Enter += TextBox_Enter;
         tbZwischenname.KeyDown += Edit_KeyDown;
         tbZwischenname.Leave += TextBox_Leave;
@@ -1443,7 +1464,7 @@ partial class FrmAdressen
         cbAnrede.Sorted = true;
         cbAnrede.TabIndex = 1;
         cbAnrede.DrawItem += ComboBox_DrawItem;
-        cbAnrede.TextChanged += DictEditField_TextChanged;
+        cbAnrede.TextChanged += EditControlsFromDict_TextChanged;
         cbAnrede.Enter += ComboBox_Enter;
         cbAnrede.KeyDown += Edit_KeyDown;
         cbAnrede.Leave += ComboBox_Leave;
@@ -1461,7 +1482,7 @@ partial class FrmAdressen
         cbPräfix.Size = new Size(219, 26);
         cbPräfix.TabIndex = 2;
         cbPräfix.DrawItem += ComboBox_DrawItem;
-        cbPräfix.TextChanged += DictEditField_TextChanged;
+        cbPräfix.TextChanged += EditControlsFromDict_TextChanged;
         cbPräfix.Enter += ComboBox_Enter;
         cbPräfix.KeyDown += Edit_KeyDown;
         cbPräfix.Leave += ComboBox_Leave;
@@ -1489,7 +1510,7 @@ partial class FrmAdressen
         tbVorname.PlaceholderText = "Vorname";
         tbVorname.Size = new Size(218, 25);
         tbVorname.TabIndex = 3;
-        tbVorname.TextChanged += DictEditField_TextChanged;
+        tbVorname.TextChanged += EditControlsFromDict_TextChanged;
         tbVorname.Enter += TextBox_Enter;
         tbVorname.KeyDown += Edit_KeyDown;
         tbVorname.Leave += TextBox_Leave;
@@ -1517,7 +1538,7 @@ partial class FrmAdressen
         tbNachname.PlaceholderText = "Nachname";
         tbNachname.Size = new Size(298, 25);
         tbNachname.TabIndex = 6;
-        tbNachname.TextChanged += DictEditField_TextChanged;
+        tbNachname.TextChanged += EditControlsFromDict_TextChanged;
         tbNachname.Enter += TextBox_Enter;
         tbNachname.KeyDown += Edit_KeyDown;
         tbNachname.Leave += TextBox_Leave;
@@ -1533,7 +1554,7 @@ partial class FrmAdressen
         tbSuffix.PlaceholderText = "Suffix";
         tbSuffix.Size = new Size(139, 25);
         tbSuffix.TabIndex = 7;
-        tbSuffix.TextChanged += DictEditField_TextChanged;
+        tbSuffix.TextChanged += EditControlsFromDict_TextChanged;
         tbSuffix.Enter += TextBox_Enter;
         tbSuffix.KeyDown += Edit_KeyDown;
         tbSuffix.Leave += TextBox_Leave;
@@ -1561,7 +1582,7 @@ partial class FrmAdressen
         tbFirma.PlaceholderText = "Firma";
         tbFirma.Size = new Size(443, 25);
         tbFirma.TabIndex = 8;
-        tbFirma.TextChanged += DictEditField_TextChanged;
+        tbFirma.TextChanged += EditControlsFromDict_TextChanged;
         tbFirma.Enter += TextBox_Enter;
         tbFirma.KeyDown += Edit_KeyDown;
         tbFirma.Leave += TextBox_Leave;
@@ -1589,7 +1610,7 @@ partial class FrmAdressen
         tbStraße.PlaceholderText = "Straße Hausnummer";
         tbStraße.Size = new Size(443, 25);
         tbStraße.TabIndex = 9;
-        tbStraße.TextChanged += DictEditField_TextChanged;
+        tbStraße.TextChanged += EditControlsFromDict_TextChanged;
         tbStraße.Enter += TextBox_Enter;
         tbStraße.KeyDown += Edit_KeyDown;
         tbStraße.Leave += TextBox_Leave;
@@ -1618,7 +1639,7 @@ partial class FrmAdressen
         cbPLZ.Size = new Size(106, 26);
         cbPLZ.TabIndex = 10;
         cbPLZ.DrawItem += ComboBox_DrawItem;
-        cbPLZ.TextChanged += DictEditField_TextChanged;
+        cbPLZ.TextChanged += EditControlsFromDict_TextChanged;
         cbPLZ.Enter += ComboBox_Enter;
         cbPLZ.KeyDown += Edit_KeyDown;
         cbPLZ.Leave += ComboBox_Leave;
@@ -1637,7 +1658,7 @@ partial class FrmAdressen
         cbOrt.Size = new Size(331, 26);
         cbOrt.TabIndex = 11;
         cbOrt.DrawItem += ComboBox_DrawItem;
-        cbOrt.TextChanged += DictEditField_TextChanged;
+        cbOrt.TextChanged += EditControlsFromDict_TextChanged;
         cbOrt.Enter += ComboBox_Enter;
         cbOrt.KeyDown += Edit_KeyDown;
         cbOrt.Leave += ComboBox_Leave;
@@ -1668,7 +1689,7 @@ partial class FrmAdressen
         cbLand.Size = new Size(443, 26);
         cbLand.TabIndex = 12;
         cbLand.DrawItem += ComboBox_DrawItem;
-        cbLand.TextChanged += DictEditField_TextChanged;
+        cbLand.TextChanged += EditControlsFromDict_TextChanged;
         cbLand.Enter += ComboBox_Enter;
         cbLand.KeyDown += Edit_KeyDown;
         cbLand.Leave += ComboBox_Leave;
@@ -1697,7 +1718,7 @@ partial class FrmAdressen
         tbBetreff.PlaceholderText = "Betreff";
         tbBetreff.Size = new Size(443, 25);
         tbBetreff.TabIndex = 13;
-        tbBetreff.TextChanged += DictEditField_TextChanged;
+        tbBetreff.TextChanged += EditControlsFromDict_TextChanged;
         tbBetreff.Enter += TextBox_Enter;
         tbBetreff.KeyDown += Edit_KeyDown;
         tbBetreff.Leave += TextBox_Leave;
@@ -1727,7 +1748,7 @@ partial class FrmAdressen
         cbGrußformel.Size = new Size(443, 26);
         cbGrußformel.TabIndex = 14;
         cbGrußformel.DrawItem += ComboBox_DrawItem;
-        cbGrußformel.TextChanged += DictEditField_TextChanged;
+        cbGrußformel.TextChanged += EditControlsFromDict_TextChanged;
         cbGrußformel.KeyDown += Edit_KeyDown;
         cbGrußformel.Leave += ComboBox_Leave;
         cbGrußformel.Resize += ComboBox_Resize;
@@ -1756,7 +1777,7 @@ partial class FrmAdressen
         cbSchlussformel.Size = new Size(443, 26);
         cbSchlussformel.TabIndex = 15;
         cbSchlussformel.DrawItem += ComboBox_DrawItem;
-        cbSchlussformel.TextChanged += DictEditField_TextChanged;
+        cbSchlussformel.TextChanged += EditControlsFromDict_TextChanged;
         cbSchlussformel.Enter += ComboBox_Enter;
         cbSchlussformel.KeyDown += Edit_KeyDown;
         cbSchlussformel.Leave += ComboBox_Leave;
@@ -1816,7 +1837,7 @@ partial class FrmAdressen
         tbMail1.PlaceholderText = "E-Mail-Adresse";
         tbMail1.Size = new Size(218, 25);
         tbMail1.TabIndex = 17;
-        tbMail1.TextChanged += DictEditField_TextChanged;
+        tbMail1.TextChanged += EditControlsFromDict_TextChanged;
         tbMail1.Enter += TextBox_Enter;
         tbMail1.KeyDown += Edit_KeyDown;
         tbMail1.Leave += TextBox_Leave;
@@ -1832,7 +1853,7 @@ partial class FrmAdressen
         tbMail2.PlaceholderText = "E-Mail-Adresse";
         tbMail2.Size = new Size(219, 25);
         tbMail2.TabIndex = 18;
-        tbMail2.TextChanged += DictEditField_TextChanged;
+        tbMail2.TextChanged += EditControlsFromDict_TextChanged;
         tbMail2.Enter += TextBox_Enter;
         tbMail2.KeyDown += Edit_KeyDown;
         tbMail2.Leave += TextBox_Leave;
@@ -1880,7 +1901,7 @@ partial class FrmAdressen
         tbTelefon1.PlaceholderText = "Telefonnummer";
         tbTelefon1.Size = new Size(218, 25);
         tbTelefon1.TabIndex = 19;
-        tbTelefon1.TextChanged += DictEditField_TextChanged;
+        tbTelefon1.TextChanged += EditControlsFromDict_TextChanged;
         tbTelefon1.Enter += TextBox_Enter;
         tbTelefon1.KeyDown += Edit_KeyDown;
         tbTelefon1.Leave += TextBox_Leave;
@@ -1896,7 +1917,7 @@ partial class FrmAdressen
         tbTelefon2.PlaceholderText = "Telefonnummer";
         tbTelefon2.Size = new Size(219, 25);
         tbTelefon2.TabIndex = 20;
-        tbTelefon2.TextChanged += DictEditField_TextChanged;
+        tbTelefon2.TextChanged += EditControlsFromDict_TextChanged;
         tbTelefon2.Enter += TextBox_Enter;
         tbTelefon2.KeyDown += Edit_KeyDown;
         tbTelefon2.Leave += TextBox_Leave;
@@ -1939,7 +1960,7 @@ partial class FrmAdressen
         tbMobil.PlaceholderText = "Mobilfunknummer";
         tbMobil.Size = new Size(218, 25);
         tbMobil.TabIndex = 21;
-        tbMobil.TextChanged += DictEditField_TextChanged;
+        tbMobil.TextChanged += EditControlsFromDict_TextChanged;
         tbMobil.Enter += TextBox_Enter;
         tbMobil.KeyDown += Edit_KeyDown;
         tbMobil.Leave += TextBox_Leave;
@@ -1955,7 +1976,7 @@ partial class FrmAdressen
         tbFax.PlaceholderText = "Faxnummer";
         tbFax.Size = new Size(219, 25);
         tbFax.TabIndex = 22;
-        tbFax.TextChanged += DictEditField_TextChanged;
+        tbFax.TextChanged += EditControlsFromDict_TextChanged;
         tbFax.Enter += TextBox_Enter;
         tbFax.KeyDown += Edit_KeyDown;
         tbFax.Leave += TextBox_Leave;
@@ -2005,7 +2026,7 @@ partial class FrmAdressen
         tbInternet.PlaceholderText = "Webseite";
         tbInternet.Size = new Size(443, 25);
         tbInternet.TabIndex = 23;
-        tbInternet.TextChanged += DictEditField_TextChanged;
+        tbInternet.TextChanged += EditControlsFromDict_TextChanged;
         tbInternet.Enter += TextBox_Enter;
         tbInternet.KeyDown += TbInternet_KeyDown;
         tbInternet.Leave += TextBox_Leave;
@@ -2070,6 +2091,7 @@ partial class FrmAdressen
         // maskedTextBox
         // 
         maskedTextBox.BorderStyle = BorderStyle.None;
+        maskedTextBox.CausesValidation = false;
         maskedTextBox.Dock = DockStyle.Fill;
         maskedTextBox.InsertKeyMode = InsertKeyMode.Overwrite;
         maskedTextBox.Location = new Point(0, 3);
@@ -2082,9 +2104,9 @@ partial class FrmAdressen
         maskedTextBox.TextChanged += MaskedTextBox_TextChanged;
         maskedTextBox.Enter += MaskedTextBox_Enter;
         maskedTextBox.KeyDown += MaskedTextBox_KeyDown;
+        maskedTextBox.KeyPress += MaskedTextBox_KeyPress;
         maskedTextBox.Leave += MaskedTextBox_Leave;
         maskedTextBox.MouseDown += MaskedTextBox_MouseDown;
-        maskedTextBox.PreviewKeyDown += MaskedTextBox_PreviewKeyDown;
         // 
         // btnCalendar
         // 
@@ -2152,6 +2174,8 @@ partial class FrmAdressen
         // 
         // tagComboBox
         // 
+        tagComboBox.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+        tagComboBox.AutoCompleteSource = AutoCompleteSource.ListItems;
         tagComboBox.Dock = DockStyle.Fill;
         tagComboBox.FormattingEnabled = true;
         tagComboBox.Location = new Point(0, 3);
@@ -2173,7 +2197,7 @@ partial class FrmAdressen
         tbNotizen.Size = new Size(443, 134);
         tbNotizen.TabIndex = 26;
         tbNotizen.SizeChanged += TbNotizen_SizeChanged;
-        tbNotizen.TextChanged += TbNotizen_TextChanged;
+        tbNotizen.TextChanged += EditControlsFromDict_TextChanged;
         tbNotizen.Enter += TbNotizen_Enter;
         tbNotizen.Leave += TextBox_Leave;
         // 
@@ -2202,7 +2226,7 @@ partial class FrmAdressen
         pictboxToolStrip.GripMargin = new Padding(0);
         pictboxToolStrip.GripStyle = ToolStripGripStyle.Hidden;
         pictboxToolStrip.Items.AddRange(new ToolStripItem[] { addPictboxToolStripButton, delPictboxToolStripButton });
-        pictboxToolStrip.Location = new Point(0, 100);
+        pictboxToolStrip.Location = new Point(0, 0);
         pictboxToolStrip.Name = "pictboxToolStrip";
         pictboxToolStrip.Size = new Size(100, 25);
         pictboxToolStrip.Stretch = true;
@@ -2236,13 +2260,12 @@ partial class FrmAdressen
         // topAlignZoomPictureBox
         // 
         topAlignZoomPictureBox.Dock = DockStyle.Top;
-        topAlignZoomPictureBox.Image = Properties.Resources.AddressBild100;
+        topAlignZoomPictureBox.Image = null;
         topAlignZoomPictureBox.Location = new Point(0, 0);
         topAlignZoomPictureBox.Name = "topAlignZoomPictureBox";
-        topAlignZoomPictureBox.Size = new Size(100, 100);
-        topAlignZoomPictureBox.TabIndex = 24;
+        topAlignZoomPictureBox.Size = new Size(100, 0);
+        topAlignZoomPictureBox.TabIndex = 26;
         topAlignZoomPictureBox.TabStop = false;
-        topAlignZoomPictureBox.DoubleClick += TopAlignZoomPictureBox_DoubleClick;
         // 
         // tabPageDoku
         // 
@@ -2473,6 +2496,26 @@ partial class FrmAdressen
         fileSystemWatcher.Created += FileSystemWatcher_OnChanged;
         fileSystemWatcher.Renamed += FileSystemWatcher_OnRenamed;
         // 
+        // addressBindingSource
+        // 
+        addressBindingSource.CurrentChanged += AddressBindingSource_CurrentChanged;
+        addressBindingSource.ListChanged += AddressBindingSource_ListChanged;
+        // 
+        // contactBindingSource
+        // 
+        contactBindingSource.CurrentChanged += ContactBindingSource_CurrentChanged;
+        contactBindingSource.ListChanged += ContactBindingSource_ListChanged;
+        // 
+        // searchTimer
+        // 
+        searchTimer.Interval = 300;
+        searchTimer.Tick += SearchTimer_Tick;
+        // 
+        // scrollTimer
+        // 
+        scrollTimer.Interval = 50;
+        scrollTimer.Tick += ScrollTimer_Tick;
+        // 
         // FrmAdressen
         // 
         AutoScaleDimensions = new SizeF(7F, 17F);
@@ -2533,6 +2576,9 @@ partial class FrmAdressen
         ((System.ComponentModel.ISupportInitialize)searchPictureBox).EndInit();
         contextDgvMenu.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)fileSystemWatcher).EndInit();
+        ((System.ComponentModel.ISupportInitialize)addressBindingSource).EndInit();
+        ((System.ComponentModel.ISupportInitialize)bindingSource1).EndInit();
+        ((System.ComponentModel.ISupportInitialize)contactBindingSource).EndInit();
         ResumeLayout(false);
         PerformLayout();
     }
@@ -2718,8 +2764,6 @@ partial class FrmAdressen
     private ToolStripMenuItem telephoneMinusFilterToolStripMenuItem;
     private ToolStripMenuItem mobilePlusFilterToolStripMenuItem;
     private ToolStripMenuItem mobileMinusFilterToolStripMenuItem;
-    private ToolStripSeparator toolStripSeparator21;
-    private cls.TopAlignZoomPictureBox topAlignZoomPictureBox;
     private Panel spacerPanel;
     private ToolStripMenuItem photoPlusFilterToolStripMenuItem;
     private ToolStripSeparator toolStripSeparator22;
@@ -2737,9 +2781,17 @@ partial class FrmAdressen
     private Button tagButton;
     private ToolStripMenuItem groupFilterToolStripMenuItem;
     private ToolStripSeparator toolStripSeparator9;
-    private ToolStripMenuItem impOldVersionToolStripMenuItem;
     private ToolStripMenuItem manageGroupsToolStripMenuItem;
     private ToolStripMenuItem photoMinusFilterToolStripMenuItem;
     private ToolStripSeparator toolStripSeparator20;
     private ToolStripMenuItem copyCellToolStripMenuItem;
+    private BindingSource addressBindingSource;
+    private BindingSource bindingSource1;
+    private BindingSource contactBindingSource;
+    private System.Windows.Forms.Timer searchTimer;
+    private ToolStripMenuItem datePlusFilterMenuItem;
+    private ToolStripMenuItem dateMinusFilterMenuItem;
+    private ToolStripSeparator toolStripSeparator25;
+    private cls.TopAlignZoomPictureBox topAlignZoomPictureBox;
+    private System.Windows.Forms.Timer scrollTimer;
 }

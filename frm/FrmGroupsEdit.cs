@@ -1,6 +1,7 @@
 ﻿using System.Data;
 
 namespace Adressen.frm;
+
 public partial class FrmGroupsEdit : Form
 {
     public Dictionary<string, string> groupNameMap = [];

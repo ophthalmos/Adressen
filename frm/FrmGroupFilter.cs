@@ -1,9 +1,10 @@
 ﻿using System.Data;
 
 namespace Adressen.frm;
+
 public partial class FrmGroupFilter : Form
 {
-    private readonly Dictionary<string, (CheckBox Include, CheckBox Exclude)> _groupControls = new();
+    private readonly Dictionary<string, (CheckBox Include, CheckBox Exclude)> _groupControls = [];
     public List<string> IncludedGroups { get; private set; } = [];
     public List<string> ExcludedGroups { get; private set; } = [];
 
@@ -20,7 +21,7 @@ public partial class FrmGroupFilter : Form
         {
             tableLayoutPanel.RowCount++;
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            var text = groupName == "★" ? $"{ groupName} (Favoriten)" : groupName;
+            var text = groupName == "★" ? $"{groupName} (Favoriten)" : groupName;
             var groupLabel = new Label { Text = text, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
             var includeCheckBox = new CheckBoxNoFocus { Text = "", Dock = DockStyle.Fill, CheckAlign = ContentAlignment.MiddleCenter };
             var excludeCheckBox = new CheckBoxNoFocus { Text = "", Dock = DockStyle.Fill, CheckAlign = ContentAlignment.MiddleCenter };

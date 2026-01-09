@@ -111,7 +111,7 @@ partial class FrmProgSettings
         // 
         // tpAllgemein
         // 
-        tpAllgemein.BackColor = Color.White;
+        tpAllgemein.BackColor = SystemColors.ControlLightLight;
         tpAllgemein.BorderStyle = BorderStyle.FixedSingle;
         tpAllgemein.Controls.Add(gbTextProcessing);
         tpAllgemein.Controls.Add(gbxColorScheme);
@@ -225,7 +225,7 @@ partial class FrmProgSettings
         // 
         // tpAdressen
         // 
-        tpAdressen.BackColor = Color.White;
+        tpAdressen.BackColor = SystemColors.ControlLightLight;
         tpAdressen.BorderStyle = BorderStyle.FixedSingle;
         tpAdressen.Controls.Add(ckbAskBeforeDelete);
         tpAdressen.Controls.Add(ckbAskBeforeSaveSQL);
@@ -357,7 +357,7 @@ partial class FrmProgSettings
         // 
         // tpKontakte
         // 
-        tpKontakte.BackColor = Color.White;
+        tpKontakte.BackColor = SystemColors.ControlLightLight;
         tpKontakte.BorderStyle = BorderStyle.FixedSingle;
         tpKontakte.Controls.Add(gbxContactsAutoload);
         tpKontakte.Location = new Point(114, 4);
@@ -389,7 +389,7 @@ partial class FrmProgSettings
         // 
         // tpWatchFolder
         // 
-        tpWatchFolder.BackColor = Color.White;
+        tpWatchFolder.BackColor = SystemColors.ControlLightLight;
         tpWatchFolder.BorderStyle = BorderStyle.FixedSingle;
         tpWatchFolder.Controls.Add(lblWatcherInfo);
         tpWatchFolder.Controls.Add(lblWatchFolder);
@@ -449,7 +449,7 @@ partial class FrmProgSettings
         // 
         // tpSicherung
         // 
-        tpSicherung.BackColor = Color.White;
+        tpSicherung.BackColor = SystemColors.ControlLightLight;
         tpSicherung.BorderStyle = BorderStyle.FixedSingle;
         tpSicherung.Controls.Add(labelMS);
         tpSicherung.Controls.Add(numUpDownSuccess);

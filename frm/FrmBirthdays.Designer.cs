@@ -55,6 +55,7 @@ partial class FrmBirthdays
         listView.OwnerDraw = true;
         listView.Size = new Size(409, 250);
         listView.TabIndex = 0;
+        listView.TabStop = true;
         listView.UseCompatibleStateImageBehavior = false;
         listView.View = View.Details;
         listView.DrawColumnHeader += ListView_DrawColumnHeader;
@@ -108,7 +109,7 @@ partial class FrmBirthdays
         btnShowAddress.Location = new Point(117, 318);
         btnShowAddress.Name = "btnShowAddress";
         btnShowAddress.Size = new Size(164, 27);
-        btnShowAddress.TabIndex = 3;
+        btnShowAddress.TabIndex = 4;
         btnShowAddress.Text = "Gehe zu Adresse";
         btnShowAddress.UseVisualStyleBackColor = true;
         // 
@@ -118,7 +119,7 @@ partial class FrmBirthdays
         btnCancel.Location = new Point(287, 318);
         btnCancel.Name = "btnCancel";
         btnCancel.Size = new Size(110, 27);
-        btnCancel.TabIndex = 4;
+        btnCancel.TabIndex = 5;
         btnCancel.Text = "Schließen";
         btnCancel.UseVisualStyleBackColor = true;
         // 
@@ -137,7 +138,7 @@ partial class FrmBirthdays
         afterNumUpDown.Maximum = new decimal(new int[] { 99, 0, 0, 0 });
         afterNumUpDown.Name = "afterNumUpDown";
         afterNumUpDown.Size = new Size(45, 25);
-        afterNumUpDown.TabIndex = 5;
+        afterNumUpDown.TabIndex = 2;
         afterNumUpDown.TextAlign = HorizontalAlignment.Center;
         // 
         // chkBxBirthdayAutoShow
@@ -146,7 +147,7 @@ partial class FrmBirthdays
         chkBxBirthdayAutoShow.Location = new Point(10, 321);
         chkBxBirthdayAutoShow.Name = "chkBxBirthdayAutoShow";
         chkBxBirthdayAutoShow.Size = new Size(86, 23);
-        chkBxBirthdayAutoShow.TabIndex = 7;
+        chkBxBirthdayAutoShow.TabIndex = 3;
         chkBxBirthdayAutoShow.Text = "Autostart";
         chkBxBirthdayAutoShow.UseVisualStyleBackColor = true;
         // 

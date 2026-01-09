@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 
 namespace Adressen.cls;
+
 internal class AppSettings
 {
     public string PrintDevice { get; set; } = string.Empty;

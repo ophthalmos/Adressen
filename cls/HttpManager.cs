@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Headers;
 
 namespace Adressen.cls;
+
 internal static class HttpService
 {
     public static readonly HttpClient Client; // Die einzige Instanz von HttpClient für die gesamte Anwendung.

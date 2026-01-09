@@ -1,31 +1,53 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.Drawing.Printing;
 using System.Globalization;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 using System.Xml.Linq;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.PeopleService.v1;
 using Google.Apis.PeopleService.v1.Data;
 using Google.Apis.Services;
-using Google.Apis.Util.Store;
+//using Google.Apis.Util.Store;
 using Microsoft.Win32;
 using Timer = System.Windows.Forms.Timer;
 using Word = Microsoft.Office.Interop.Word;
 
 namespace Adressen.cls;
 
-internal static class Utilities
+internal static class Utils
 {
-    internal static void ErrorMsgTaskDlg(nint hwnd, string error, string message, TaskDialogIcon? icon = null)
+    public static void MsgTaskDlg(nint hwnd, string heading, string message, TaskDialogIcon? icon = null)
     {
-        TaskDialog.ShowDialog(hwnd, new TaskDialogPage() { Caption = Application.ProductName, SizeToContent = true, Heading = error, Text = message, Icon = icon ?? TaskDialogIcon.Error, AllowCancel = true, Buttons = { TaskDialogButton.OK } });
+        TaskDialog.ShowDialog(hwnd, new TaskDialogPage() { Caption = Application.ProductName, SizeToContent = true, Heading = heading, Text = message, Icon = icon ?? TaskDialogIcon.None, AllowCancel = true, Buttons = { TaskDialogButton.OK } });
+    }
+
+    public static void ErrTaskDlg(nint? hwnd, Exception error)
+    {
+        TaskDialogPage page = new()
+        {
+            Caption = Application.ProductName,
+            Heading = error.GetType().ToString(),
+            Text = error.Message,
+            Icon = TaskDialogIcon.Error,
+            SizeToContent = true,
+            AllowCancel = true,
+            Buttons = { TaskDialogButton.OK },
+            Expander = new TaskDialogExpander()
+            {
+                Text = error.ToString(),
+                CollapsedButtonText = "Technische Details anzeigen",
+                ExpandedButtonText = "Details ausblenden",
+                Position = TaskDialogExpanderPosition.AfterFootnote
+            }
+        };
+        TaskDialog.ShowDialog(hwnd ?? IntPtr.Zero, page);
     }
 
     internal static void StartFile(nint handle, string filePath)
@@ -37,9 +59,9 @@ internal static class Utilities
                 ProcessStartInfo psi = new(filePath) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(filePath) };
                 Process.Start(psi);
             }
-            else { ErrorMsgTaskDlg(handle, "Datei nicht gefunden!", "'" + filePath + "' fehlt.", TaskDialogIcon.ShieldWarningYellowBar); }
+            else { MsgTaskDlg(handle, "Datei nicht gefunden!", "'" + filePath + "' fehlt.", TaskDialogIcon.ShieldWarningYellowBar); }
         }
-        catch (Exception ex) when (ex is Win32Exception || ex is InvalidOperationException) { ErrorMsgTaskDlg(handle, "StartFile: " + ex.GetType().ToString(), ex.Message); }
+        catch (Exception ex) when (ex is Win32Exception || ex is InvalidOperationException) { ErrTaskDlg(handle, ex); }
     }
 
     internal static void StartLink(nint handle, string url)
@@ -51,25 +73,82 @@ internal static class Utilities
                 ProcessStartInfo psi = new(url) { UseShellExecute = true };
                 Process.Start(psi);
             }
-            else { ErrorMsgTaskDlg(handle, "Ungültiger Link!", "'" + url + "' ist keine gültige URL.", TaskDialogIcon.ShieldWarningYellowBar); }
+            else { MsgTaskDlg(handle, "Ungültiger Link!", "'" + url + "' ist keine gültige URL.", TaskDialogIcon.ShieldWarningYellowBar); }
         }
-        catch (Exception ex) when (ex is Win32Exception || ex is InvalidOperationException) { ErrorMsgTaskDlg(handle, "StartLink: " + ex.GetType().ToString(), ex.Message); }
+        catch (Exception ex) when (ex is Win32Exception || ex is InvalidOperationException) { ErrTaskDlg(handle, ex); }
     }
 
     internal static bool GoogleConnectionCheck(nint hwnd, string path)
     {
         if (new Ping().Send(new IPAddress([8, 8, 8, 8]), 1000).Status != IPStatus.Success)
         {
-            ErrorMsgTaskDlg(hwnd, "Keine Internetverbindung!", "Überprüfen Sie das Netzwerk.", TaskDialogIcon.ShieldWarningYellowBar);
+            MsgTaskDlg(hwnd, "Keine Internetverbindung!", "Überprüfen Sie das Netzwerk.", TaskDialogIcon.ShieldWarningYellowBar);
             return false;
         }
         else if (!File.Exists(path))
         {
-            ErrorMsgTaskDlg(hwnd, "Der Key-File wurde nicht gefunden!", "'" + path + "' fehlt.", TaskDialogIcon.ShieldWarningYellowBar);
+            MsgTaskDlg(hwnd, "Der Key-File wurde nicht gefunden!", "'" + path + "' fehlt.", TaskDialogIcon.ShieldWarningYellowBar);
             return false;
         }
         return true;
     }
+
+    internal static IEnumerable<Control> GetAllControls(Control container)
+    {
+        foreach (Control c in container.Controls)
+        {
+            yield return c; // Gib das aktuelle Control zurück
+            foreach (var child in GetAllControls(c)) { yield return child; }
+        }
+    }
+
+    internal static string GenerateDetailedDiff(Contact current, Contact old)
+    {
+        var sb = new StringBuilder();
+        void Check(string label, string? oldVal, string? newVal)
+        {
+            var o = oldVal ?? string.Empty; // Normalisieren um null/empty gleich zu behandeln
+            var n = newVal ?? string.Empty;
+            if (o != n)
+            {
+                var displayOld = string.IsNullOrEmpty(o) ? "" : o; // Formatierung: Leere Werte sichtbar machen
+                var displayNew = string.IsNullOrEmpty(n) ? "∅" : n;
+                sb.AppendLine($"{label}: {displayOld} ➔ {displayNew}");
+            }
+        }
+        Check("Anrede", old.Anrede, current.Anrede);
+        Check("Präfix", old.Praefix, current.Praefix);
+        Check("Nachname", old.Nachname, current.Nachname);
+        Check("Vorname", old.Vorname, current.Vorname);
+        Check("Zwischenname", old.Zwischenname, current.Zwischenname);
+        Check("Nickname", old.Nickname, current.Nickname);
+        Check("Suffix", old.Suffix, current.Suffix);
+        Check("Firma", old.Firma, current.Firma);
+        Check("Straße", old.Strasse, current.Strasse);
+        Check("PLZ", old.PLZ, current.PLZ);
+        Check("Ort", old.Ort, current.Ort);
+        Check("Land", old.Land, current.Land);
+        Check("Betreff", old.Betreff, current.Betreff);
+        Check("Grussformel", old.Grussformel, current.Grussformel);
+        Check("Schlussformel", old.Schlussformel, current.Schlussformel);
+        Check("E-Mail 1", old.Mail1, current.Mail1);
+        Check("Mail 2", old.Mail2, current.Mail2);
+        Check("Telefon 1", old.Telefon1, current.Telefon1);
+        Check("Telefon 2", old.Telefon2, current.Telefon2);
+        Check("Mobil", old.Mobil, current.Mobil);
+        Check("Fax", old.Fax, current.Fax);
+        Check("Internet", old.Internet, current.Internet);
+        Check("Notizen", old.Notizen, current.Notizen);
+        if (old.Geburtstag != current.Geburtstag)
+        {
+            var oldDate = old.Geburtstag.HasValue ? old.Geburtstag.Value.ToShortDateString() : "[Leer]";
+            var newDate = current.Geburtstag.HasValue ? current.Geburtstag.Value.ToShortDateString() : "[Leer]";
+            sb.AppendLine($"Geburtstag: {oldDate} ➔ {newDate}");
+        }
+        return sb.ToString();
+    }
+
+    internal static void StartSearchCacheWarmup(IEnumerable<IContactEntity> items) => Task.Run(() => { foreach (var item in items) { var warmup = item.SearchText; } });
 
     internal static async Task<PeopleServiceService> GetPeopleServiceAsync(string secretPath, string tokenDir)
     {
@@ -77,7 +156,7 @@ internal static class Utilities
         UserCredential credential;
         using (FileStream stream = new(secretPath, FileMode.Open, FileAccess.Read))
         {
-            credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(GoogleClientSecrets.FromStream(stream).Secrets, scopes, "user", CancellationToken.None, new FileDataStore(tokenDir, true));
+            credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(GoogleClientSecrets.FromStream(stream).Secrets, scopes, "user", CancellationToken.None, new Google.Apis.Util.Store.FileDataStore(tokenDir, true));
         }
         return new PeopleServiceService(new BaseClientService.Initializer()
         {
@@ -165,7 +244,7 @@ internal static class Utilities
 
     internal static string FormatBytes(long bytes)  // Effizienter (Loop statt Logarithmen)
     {
-        string[] suffix = { "Bytes", "KB", "MB", "GB", "TB" };
+        string[] suffix = ["Bytes", "KB", "MB", "GB", "TB"];
         if (bytes == 0) { return "0 " + suffix[0]; }
         var i = 0;
         double dBytes = bytes;
@@ -196,7 +275,7 @@ internal static class Utilities
                 Process.Start(psi);
             }
         }
-        catch (Exception ex) when (ex is Win32Exception || ex is InvalidOperationException) { ErrorMsgTaskDlg(handle, "StartDir: " + ex.GetType().ToString(), ex.Message); }
+        catch (Exception ex) when (ex is Win32Exception || ex is InvalidOperationException) { ErrTaskDlg(handle, ex); }
     }
 
     public static bool IsPrinterAvailable(string printerName)
@@ -248,7 +327,7 @@ internal static class Utilities
     internal static void HelpMsgTaskDlg(nint hwnd, string appName, Icon? icon)
     {
         var curVersion = Assembly.GetExecutingAssembly().GetName().Version;
-        var threeVersion = curVersion is not null ? $"{curVersion.Major}.{curVersion.Minor}.{curVersion.Build}" : "unbekannt";
+        var threeVersion = curVersion?.ToString(3) ?? "unbekannt"; //curVersion is not null ? $"{curVersion.Major}.{curVersion.Minor}.{curVersion.Build}" : "unbekannt";
         var buildDate = GetBuildDate();
         TaskDialogButton paypalButton = new TaskDialogCommandLinkButton("Anerkennung spenden via PayPal");
         TaskDialogButton updateButton = new TaskDialogCommandLinkButton("Nach Programm-Update suchen…") { AllowCloseDialog = false };
@@ -377,24 +456,29 @@ internal static class Utilities
         return null;
     }
 
-    internal static bool YesNo_TaskDialog(nint hwnd, string caption, string heading, string text, TaskDialogIcon? dialogIcon, bool defBtn = true, string yes = "", string no = "")
+
+    internal static (bool IsYes, bool IsNo, bool IsCancelled) YesNo_TaskDialog(IWin32Window? owner, string caption, string heading, string text, string yes = "", string no = "", bool defBtn = true)
     {
         var yesButton = string.IsNullOrEmpty(yes) ? TaskDialogButton.Yes : new TaskDialogButton(yes);
         var noButton = string.IsNullOrEmpty(no) ? TaskDialogButton.No : new TaskDialogButton(no);
-        using TaskDialogIcon questionDialogIcon = new(Properties.Resources.question32);
         var page = new TaskDialogPage
         {
             Caption = caption,
-            Heading = heading, // "Möchten Sie die Änderungen speichern?",
-            Text = text, // changesCount == 1 ? "An einer Adresse wurden Änderungen vorgenommen." : $"Änderungen wurden an {changesCount} Adressen vorgenommen.",
-            Icon = dialogIcon ?? questionDialogIcon,
+            Heading = heading,
+            Text = text,
+            Icon = new TaskDialogIcon(Properties.Resources.question32),
             Buttons = { yesButton, noButton },
             DefaultButton = defBtn ? yesButton : noButton,
             AllowCancel = true,
             SizeToContent = true
         };
-        return TaskDialog.ShowDialog(hwnd, page) == yesButton;
+        var result = owner is not null ? TaskDialog.ShowDialog(owner, page) : TaskDialog.ShowDialog(page);
+        var isYes = result == yesButton;
+        var isNo = result == noButton;
+        var isCancelled = result == TaskDialogButton.Cancel || (!isYes && !isNo);
+        return (isYes, isNo, isCancelled);
     }
+
 
     internal static bool ValuesEqual(object? a, object? b)
     {
@@ -404,37 +488,98 @@ internal static class Utilities
         return string.Equals(a?.ToString(), b?.ToString(), StringComparison.Ordinal); // Fallback: ToString-Vergleich
     }
 
-
-    internal static IEnumerable<string> DeserializeGroups(nint hwnd, string json, JsonSerializerOptions options)
-    {
-        try { return JsonSerializer.Deserialize<List<string>>(json, options) ?? Enumerable.Empty<string>(); }
-        catch (JsonException ex)
-        {
-            ErrorMsgTaskDlg(hwnd, "PopulateMemberships: " + ex.GetType().Name, ex.Message);
-            return [];
-        }
-    }
+    //internal static IEnumerable<string> DeserializeGroups(nint hwnd, string json, JsonSerializerOptions options)
+    //{
+    //    try { return JsonSerializer.Deserialize<List<string>>(json, options) ?? Enumerable.Empty<string>(); }
+    //    catch (JsonException ex)
+    //    {
+    //        ErrTaskDlg(hwnd, ex);
+    //        return [];
+    //    }
+    //}
 
     public static string BuildMask(params string[] fields) => string.Join(",", fields.Where(f => !string.IsNullOrWhiteSpace(f)).Select(f => f.Trim()));
 
-    internal static (bool askBefore, bool deleteNow) AskBeforeDeleteTaskDlg(nint hwnd, DataGridViewRow row, bool askBeforeDelete, bool showVerification = true)
+    internal static (bool askBefore, bool deleteNow) AskBeforeDeleteContact(nint handle, IContactEntity contact, bool askBeforeDelete, bool showVerification = true)
     {
         var deleteNow = false;
         try
         {
-            var vorname = row.Cells["Vorname"].Value?.ToString() ?? string.Empty;
-            var nachname = row.Cells["Nachname"].Value?.ToString() ?? string.Empty;
-            var firma = row.Cells["Firma"].Value?.ToString() ?? string.Empty;
-            var straße = row.Cells["Straße"].Value?.ToString() ?? string.Empty;
-            var plz = row.Cells["PLZ"].Value?.ToString() ?? string.Empty;
-            var ort = row.Cells["Ort"].Value?.ToString() ?? string.Empty;
+            // Wir holen die Daten direkt vom Objekt, nicht aus den Grid-Zellen
+            // Das ist viel schneller und weniger fehleranfällig
+            var details = contact.DisplayName;
+
+            // Falls du mehr Details wie Firma/Ort anzeigen willst, 
+            // musst du diese ggf. in das Interface aufnehmen oder hier casten:
+            var zusatzInfo = "";
+            if (contact is Contact c)
+            {
+                zusatzInfo = $"\n{c.Firma}\n{c.Strasse}\n{c.PLZ} {c.Ort}".Trim();
+            }
+            else if (contact is Adresse a)
+            {
+                zusatzInfo = $"\n{a.Firma}\n{a.Strasse}\n{a.PLZ} {a.Ort}".Trim();
+            }
+
             using TaskDialogIcon questionDialogIcon = new(Properties.Resources.question32);
             var page = new TaskDialogPage()
             {
                 Heading = "Möchten Sie den Datensatz löschen?",
-                Text = $"{vorname} {nachname}\n{firma}\n{straße}\n{plz} {ort}".Trim(),
+                Text = (details + zusatzInfo).Trim(),
                 Caption = Application.ProductName,
-                Icon = questionDialogIcon, // TaskDialogIcon.ShieldWarningYellowBar,
+                Icon = questionDialogIcon,
+                AllowCancel = true,
+                SizeToContent = true,
+                Verification = showVerification ? new TaskDialogVerificationCheckBox() { Text = "Diese Frage immer anzeigen" } : null,
+                Buttons = { TaskDialogButton.Yes, TaskDialogButton.No },
+            };
+
+            if (page.Verification is TaskDialogVerificationCheckBox check)
+            {
+                check.Checked = askBeforeDelete;
+            }
+
+            var resultButton = TaskDialog.ShowDialog(handle, page);
+
+
+            // Logik für die Checkbox
+            if (page.Verification is TaskDialogVerificationCheckBox finalCheck)
+            {
+                if (askBeforeDelete && !finalCheck.Checked)
+                {
+                    MsgTaskDlg(page.BoundDialog?.Handle ?? IntPtr.Zero, "Hinweis", "Sie können die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.", new(Properties.Resources.info32));
+                    askBeforeDelete = false;
+                }
+                else if (finalCheck.Checked)
+                {
+                    askBeforeDelete = true;
+                }
+            }
+
+            if (resultButton == TaskDialogButton.Yes) { deleteNow = true; }
+        }
+        catch (Exception ex) { ErrTaskDlg(handle, ex); }
+        return (askBeforeDelete, deleteNow);
+    }
+
+    internal static (bool askBefore, bool deleteNow) AskBeforeDeleteAddress(nint hwnd, Adresse adresse, bool askBeforeDelete, bool showVerification = true)
+    {
+        var deleteNow = false;
+        try
+        {
+            var vorname = adresse.Vorname ?? string.Empty;
+            var nachname = adresse.Nachname ?? string.Empty;
+            var firma = adresse.Firma ?? string.Empty;
+            var strasse = adresse.Strasse ?? string.Empty;
+            var plz = adresse.PLZ ?? string.Empty;
+            var ort = adresse.Ort ?? string.Empty;
+            using TaskDialogIcon questionDialogIcon = new(Properties.Resources.question32);
+            var page = new TaskDialogPage()
+            {
+                Heading = "Möchten Sie den Datensatz löschen?",
+                Text = $"{vorname} {nachname}\n{firma}\n{strasse}\n{plz} {ort}".Trim(),
+                Caption = Application.ProductName,
+                Icon = questionDialogIcon,
                 AllowCancel = true,
                 SizeToContent = true,
                 Verification = showVerification ? new TaskDialogVerificationCheckBox() { Text = "Diese Frage immer anzeigen" } : "",
@@ -442,15 +587,16 @@ internal static class Utilities
             };
             page.Verification.Checked = askBeforeDelete;
             var resultButton = TaskDialog.ShowDialog(hwnd, page);
+
             if (askBeforeDelete && !page.Verification.Checked)
             {
-                ErrorMsgTaskDlg(hwnd, "Hinweis", "Sie können die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.", new(Properties.Resources.info32));
+                MsgTaskDlg(hwnd, "Hinweis", "Sie können die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.", new(Properties.Resources.info32));
                 askBeforeDelete = false;
             }
             else { askBeforeDelete = true; }
             if (resultButton == TaskDialogButton.Yes) { deleteNow = true; }
         }
-        catch (Exception ex) { ErrorMsgTaskDlg(hwnd, "AskBeforeDeleteTaskDlg: " + ex.GetType().ToString(), ex.Message); }
+        catch (Exception ex) { ErrTaskDlg(hwnd, ex); }
         return (askBeforeDelete, deleteNow);
     }
 
@@ -498,22 +644,21 @@ internal static class Utilities
     {
         if (Type.GetTypeFromProgID("Word.Application") == null)
         {
-            ErrorMsgTaskDlg(handle, "Microsoft Word is not installed", "Installieren Sie Microsoft Word.");
+            MsgTaskDlg(handle, "Microsoft Word is not installed", "Installieren Sie Microsoft Word.");
             return;
         }
         Word.Document? wordDoc = null;
         dynamic? wordApp = null;
-
         try
         {
             wordApp = new Word.Application { Visible = true };
             wordDoc = wordApp.Documents.Add();
-            wordDoc.BuiltInDocumentProperties[Word.WdBuiltInProperty.wdPropertyAuthor].Value = "Wilhelm Happe";
-            wordDoc.BuiltInDocumentProperties[Word.WdBuiltInProperty.wdPropertyTitle].Value = "Adressen-Vorlage";
-            wordDoc.BuiltInDocumentProperties[Word.WdBuiltInProperty.wdPropertySubject].Value = "Nur als Beispiel gedacht";
-            wordDoc.BuiltInDocumentProperties[Word.WdBuiltInProperty.wdPropertyKeywords].Value = "Adressen, Briefvorlage";
-            wordDoc.BuiltInDocumentProperties[Word.WdBuiltInProperty.wdPropertyComments].Value = "Die Datei wurde in Ihrem Download-Ordner gespeichert.\nSie kann gelöscht werden, wenn sie nicht benötigt wird.";
-
+            dynamic properties = wordDoc.BuiltInDocumentProperties; // Indizierung erst zur Laufzeit zu prüfen
+            properties[Word.WdBuiltInProperty.wdPropertyAuthor].Value = "Wilhelm Happe";
+            properties[Word.WdBuiltInProperty.wdPropertyTitle].Value = "Adressen-Vorlage";
+            properties[Word.WdBuiltInProperty.wdPropertySubject].Value = "Nur als Beispiel gedacht";
+            properties[Word.WdBuiltInProperty.wdPropertyKeywords].Value = "Adressen, Briefvorlage";
+            properties[Word.WdBuiltInProperty.wdPropertyComments].Value = "Die Datei wurde gespeichert...";
             var para0 = wordDoc.Paragraphs.Add();
             para0.Range.Font.Size = 14;
             para0.Range.Text = "Präfix_Vorname_Zwischenname_Nachname";
@@ -572,21 +717,40 @@ internal static class Utilities
             wordApp.Activate();
             wordApp.Dialogs[Word.WdWordDialog.wdDialogFileSummaryInfo].Show();
         }
-        catch (Exception ex) { ErrorMsgTaskDlg(handle, ex.GetType().ToString(), ex.Message); } //  + Environment.NewLine + ex.StackTrace
+        catch (Exception ex) { ErrTaskDlg(handle, ex); } //  + Environment.NewLine + ex.StackTrace
+
         finally
         {
             if (wordDoc != null)
             {
+                try { wordDoc.Close(false); } catch { }  // Ignorieren falls Dokument schon geschlossen
                 Marshal.ReleaseComObject(wordDoc);
-                wordDoc = null;
             }
             if (wordApp != null)
             {
+                try { wordApp.Quit(); } catch { } // Ignorieren falls Word App schon geschlossen 
                 Marshal.ReleaseComObject(wordApp);
-                wordApp = null;
             }
-            GC.Collect();
+            GC.Collect(); // den Garbage Collector zwingen, die COM-Wrapper sofort aufzuräumen
+            GC.WaitForPendingFinalizers();
+            //GC.Collect(); // COM-Objekte benötigen oft zwei Durchläufe des Garbage Collectors, um die endgültige Freigabe (Finalization) der COM-Proxys zu gewährleisten.
+            //GC.WaitForPendingFinalizers();
         }
+
+        //finally
+        //{
+        //    if (wordDoc != null)
+        //    {
+        //        Marshal.ReleaseComObject(wordDoc);
+        //        wordDoc = null;
+        //    }
+        //    if (wordApp != null)
+        //    {
+        //        Marshal.ReleaseComObject(wordApp);
+        //        wordApp = null;
+        //    }
+        //    GC.Collect();
+        //}
     }
 
     /*    private static void CreateTextMakerDocument(string[] allKeys, IntPtr handle)
@@ -663,19 +827,6 @@ internal static class Utilities
         else { return assemblyLocation.Equals(RemoveFromEnd(value.Trim('"'), "\\unins000.exe"), StringComparison.Ordinal); } // "C:\Program Files\ClipMenu\unins000.exe"
     }
 
-    //internal static void StartFile(IntPtr handle, string filePath)
-    //{
-    //    try
-    //    {
-    //        if (File.Exists(filePath))
-    //        {
-    //            ProcessStartInfo psi = new(filePath) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(filePath) };
-    //            Process.Start(psi);
-    //        }
-    //    }
-    //    catch (Exception ex) when (ex is Win32Exception || ex is InvalidOperationException) { ErrorMsgTaskDlg(handle, ex.GetType().ToString(), ex.Message); }
-    //}
-
     private static string RemoveFromEnd(string str, string toRemove) => str.EndsWith(toRemove) ? str[..^toRemove.Length] : str;
 
     internal static string CorrectUNC(string unc) => unc.StartsWith('\\') ? @"\\" + unc.TrimStart('\\') : unc;
@@ -692,6 +843,7 @@ internal static class Utilities
 
     internal static bool RowIsVisible(DataGridView dgv, DataGridViewRow row)
     {
+        if (dgv.FirstDisplayedCell == null) { return false; }
         var firstVisibleRowIndex = dgv.FirstDisplayedCell.RowIndex;
         var lastVisibleRowIndex = firstVisibleRowIndex + dgv.DisplayedRowCount(false) - 1;
         return row.Index >= firstVisibleRowIndex && row.Index <= lastVisibleRowIndex;
@@ -728,60 +880,91 @@ internal static class Utilities
         return default;
     }
 
-    internal static void SetColumnWidths(int[] columnWidths, DataGridView dgv)
+    internal static void ApplyColumnSettings(DataGridView dgv, int[] widths, bool[] hideStatus)
     {
-        var widths = columnWidths ?? [];
-        if (widths.Length == 0) // noch keine Einstellungen vorhanden
+        if (dgv.Columns.Count == 0) { return; }
+
+        for (var i = 0; i < dgv.Columns.Count; i++)
         {
-            for (var i = 0; i < dgv.Columns.Count; i++)
+            // 1. Sichtbarkeit (Array hideColumnStd)
+            if (hideStatus != null && i < hideStatus.Length)
             {
-                if (dgv.Columns[i].Name == "Nachname") { dgv.Columns[i].Width = 200; }
-                else { dgv.Columns[i].Width = 100; }
+                dgv.Columns[i].Visible = !hideStatus[i];
             }
-        }
-        else
-        {
-            for (var i = 0; i < widths.Length && i < dgv.Columns.Count; i++) { dgv.Columns[i].Width = widths[i]; }
+
+            // 2. Breite (Array columnWidths)
+            if (widths != null && i < widths.Length)
+            {
+                dgv.Columns[i].Width = Math.Max(20, widths[i]); // Min 20px
+            }
+            else
+            {
+                dgv.Columns[i].Width = dgv.Columns[i].Name == "Nachname" ? 200 : 100;
+            }
+
+            // 3. Relationen IMMER ausblenden (Sicherheitsnetz)
+            if (dgv.Columns[i].Name is "Gruppen" or "Dokumente" or "Foto" or "SearchText" or "GroupList") // or "UniqueId" or "BirthdayDate" 
+            {
+                dgv.Columns[i].Visible = false;
+            }
         }
     }
 
-    internal static string GetGooglePhoneByType(Person person, string type)  //home* work * mobile* homeFax * workFax* otherFax * pager* workMobile * workPager* main * googleVoice*
+    //internal static void SetColumnWidths(int[] columnWidths, DataGridView dgv)
+    //{
+    //    var widths = columnWidths ?? [];
+    //    if (widths.Length == 0) // noch keine Einstellungen vorhanden
+    //    {
+    //        for (var i = 0; i < dgv.Columns.Count; i++)
+    //        {
+    //            if (dgv.Columns[i].Name == "Nachname") { dgv.Columns[i].Width = 200; }
+    //            else { dgv.Columns[i].Width = 100; }
+    //        }
+    //    }
+    //    else
+    //    {
+    //        for (var i = 0; i < widths.Length && i < dgv.Columns.Count; i++) { dgv.Columns[i].Width = widths[i]; }
+    //    }
+    //}
+
+    internal static string GetGooglePhoneByType(Person person, string type)
     {
-        foreach (var value in person.PhoneNumbers)
+        foreach (var phone in person.PhoneNumbers ?? []) // falls PhoneNumbers null ist, wird die Schleife dank ?? [] einfach übersprungen
         {
-            if (value.Type.Contains(type, StringComparison.OrdinalIgnoreCase)) { return value.Value; }
+            if (phone.Type?.Contains(type, StringComparison.OrdinalIgnoreCase) == true) { return phone.Value ?? string.Empty; }
         }
         return string.Empty;
     }
 
-    public static bool[]? FromBase64String(string base64String)
-    {
-        try
-        {
-            var bytes = Convert.FromBase64String(base64String); // 1. Decodierung des Base64-Strings
-            var boolArray = new bool[(bytes.Length * 8)]; // 8 Bits pro Byte // 2. Ermitteln der Länge des Bool-Arrays
-            for (var i = 0; i < bytes.Length; i++)        // 3. Umwandlung in ein Bool-Array
-            {
-                for (var j = 0; j < 8; j++)
-                {
-                    var bit = bytes[i] >> j & 1;    // Extrahiert das j-te Bit
-                    boolArray[i * 8 + j] = bit == 1;  // Wandelt Bit in Bool um
-                }
-            }
-            return boolArray;
-        }
-        catch (FormatException) { return null; }
-    }
 
-    public static string BoolArray2Base64String(bool[] boolArray)
-    {
-        var bytes = new byte[boolArray.Length / 8 + 1];
-        for (var i = 0; i < boolArray.Length; i++)
-        {
-            if (boolArray[i]) { bytes[i / 8] |= (byte)(1 << i % 8); }
-        }
-        return Convert.ToBase64String(bytes);
-    }
+    //public static bool[]? FromBase64String(string base64String)
+    //{
+    //    try
+    //    {
+    //        var bytes = Convert.FromBase64String(base64String); // 1. Decodierung des Base64-Strings
+    //        var boolArray = new bool[(bytes.Length * 8)]; // 8 Bits pro Byte // 2. Ermitteln der Länge des Bool-Arrays
+    //        for (var i = 0; i < bytes.Length; i++)        // 3. Umwandlung in ein Bool-Array
+    //        {
+    //            for (var j = 0; j < 8; j++)
+    //            {
+    //                var bit = bytes[i] >> j & 1;    // Extrahiert das j-te Bit
+    //                boolArray[i * 8 + j] = bit == 1;  // Wandelt Bit in Bool um
+    //            }
+    //        }
+    //        return boolArray;
+    //    }
+    //    catch (FormatException) { return null; }
+    //}
+
+    //public static string BoolArray2Base64String(bool[] boolArray)
+    //{
+    //    var bytes = new byte[boolArray.Length / 8 + 1];
+    //    for (var i = 0; i < boolArray.Length; i++)
+    //    {
+    //        if (boolArray[i]) { bytes[i / 8] |= (byte)(1 << i % 8); }
+    //    }
+    //    return Convert.ToBase64String(bytes);
+    //}
 
     public static string NormalizeString(string input) => string.IsNullOrEmpty(input) ? "" : input.ToLower().Replace("ä", "ae").Replace("ö", "oe").Replace("ü", "ue").Replace("ß", "ss");
 
@@ -791,7 +974,7 @@ internal static class Utilities
         while (!reader.EndOfStream) { yield return reader.ReadLine()!; }
     }
 
-    internal static void DailyBackup(string filePath, string backupDir, bool success, decimal duration)
+    internal static void DailyBackup(string filePath, string backupDir, bool success, decimal duration, bool silent = false)
     {
         try
         {
@@ -802,7 +985,7 @@ internal static class Utilities
             File.Copy(filePath, todaysBackupFile, true);
             var existingBackups = Directory.GetFiles(backupDir, Path.GetFileNameWithoutExtension(filePath) + "*.adb");
             if (existingBackups.Length >= 2) { File.Delete(existingBackups.OrderBy(f => new FileInfo(f).CreationTime).First()); }
-            if (success)
+            if (success && !silent)
             {
                 var okButton = TaskDialogButton.OK;
                 var page = new TaskDialogPage()
@@ -824,7 +1007,33 @@ internal static class Utilities
                 TaskDialog.ShowDialog(page);
             }
         }
-        catch (Exception ex) { ErrorMsgTaskDlg(IntPtr.Zero, "DailyBackup: " + ex.GetType().ToString(), ex.Message); }
+        catch (Exception ex) { ErrTaskDlg(IntPtr.Zero, ex); }
     }
 
+}
+
+public interface IContactEntity
+{
+    string UniqueId
+    {
+        get;
+    }
+    string DisplayName
+    {
+        get;
+    }
+    string SearchText
+    {
+        get;
+    }
+    DateOnly? BirthdayDate
+    {
+        get;
+    }
+    IList<string> GroupList
+    {
+        get;
+    }
+    Task<Image?> GetPhotoAsync();
+    void ResetSearchCache();
 }

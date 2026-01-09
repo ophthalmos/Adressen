@@ -51,7 +51,7 @@ internal class TopAlignZoomPictureBox : PictureBox
     protected override void OnResize(EventArgs e)
     {
         base.OnResize(e);
-        UpdateHeightForImage(); // Invalidate() wird durch Resize ausgelöst 
+        ////UpdateHeightForImage(); // Invalidate() wird durch Resize ausgelöst 
     }
 
     protected override void OnPaint(PaintEventArgs pe)

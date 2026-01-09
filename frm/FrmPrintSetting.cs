@@ -1,7 +1,8 @@
-﻿using System.Drawing.Printing;
-using Adressen.cls;
+﻿using Adressen.cls;
+using System.Drawing.Printing;
 
 namespace Adressen;
+
 public partial class FrmPrintSetting : Form
 {
     public string Device => cbPrinter.Text; // printDocument.PrinterSettings.PrinterName;
@@ -73,7 +74,7 @@ public partial class FrmPrintSetting : Form
         ckbAnredePrint.Checked = pAnrede;
         ckbLandPrint.Checked = pLand;
 
-        if (!string.IsNullOrEmpty(pDevice) && Utilities.IsPrinterAvailable(pDevice))
+        if (!string.IsNullOrEmpty(pDevice) && Utils.IsPrinterAvailable(pDevice))
         {
             printDocument.PrinterSettings.PrinterName = pDevice;
             if (printDocument.PrinterSettings.IsValid)
@@ -107,8 +108,8 @@ public partial class FrmPrintSetting : Form
         }
         else
         {
-            if (string.IsNullOrEmpty(pDevice)) { Utilities.ErrorMsgTaskDlg(Handle, "Druckerfehler", $"Es wurde noch kein Drucker ausgewählt."); }
-            else { Utilities.ErrorMsgTaskDlg(Handle, "Druckerfehler", $"Der Drucker '{pDevice}' ist nicht verfügbar."); }
+            if (string.IsNullOrEmpty(pDevice)) { Utils.MsgTaskDlg(Handle, "Druckerfehler", $"Es wurde noch kein Drucker ausgewählt."); }
+            else { Utils.MsgTaskDlg(Handle, "Druckerfehler", $"Der Drucker '{pDevice}' ist nicht verfügbar."); }
             return;
         }
 
@@ -149,11 +150,11 @@ public partial class FrmPrintSetting : Form
         var _recipientLines = new string[6];
         _recipientLines[0] = (_recipientDict.TryGetValue("Anrede", out var value) && ckbAnredePrint.Checked && !string.IsNullOrEmpty(value) ? value : string.Empty)  // Anrede 
             + (_recipientDict.TryGetValue("Titel", out value) && !string.IsNullOrEmpty(value) ? value + " " : string.Empty); // Titel
-        _recipientLines[1] = (_recipientDict.TryGetValue("Präfix", out value) && !string.IsNullOrEmpty(value) ? value + " " : string.Empty) // Präfix
+        _recipientLines[1] = (_recipientDict.TryGetValue("Praefix", out value) && !string.IsNullOrEmpty(value) ? value + " " : string.Empty) // Praefix
             + (_recipientDict.TryGetValue("Vorname", out value) && !string.IsNullOrEmpty(value) ? value + " " : string.Empty) // Vorname
             + (_recipientDict.TryGetValue("Nachname", out value) && !string.IsNullOrEmpty(value) ? value : string.Empty); // Nachname
         _recipientLines[2] = _recipientDict.TryGetValue("Firma", out value) && !string.IsNullOrEmpty(value) ? value : string.Empty; // Firma    
-        _recipientLines[3] = _recipientDict.TryGetValue("StraßeNr", out value) && !string.IsNullOrEmpty(value) ? value : string.Empty; // Straße  
+        _recipientLines[3] = _recipientDict.TryGetValue("StraßeNr", out value) && !string.IsNullOrEmpty(value) ? value : string.Empty; // Strasse  
         _recipientLines[4] = (_recipientDict.TryGetValue("PLZ", out value) && !string.IsNullOrEmpty(value) ? value + " " : string.Empty) // PLZ
             + (_recipientDict.TryGetValue("Ort", out value) && !string.IsNullOrEmpty(value) ? value : string.Empty); // Ort 
         _recipientLines[5] = _recipientDict.TryGetValue("Land", out value) && ckbLandPrint.Checked && !string.IsNullOrEmpty(value) ? value : string.Empty; // Land  
@@ -177,7 +178,7 @@ public partial class FrmPrintSetting : Form
         printDocument.PrinterSettings.PrinterName = cbPrinter.Text;
         if (!printDocument.PrinterSettings.IsValid)
         {
-            Utilities.ErrorMsgTaskDlg(Handle, "Druckerfehler", $"Der Drucker '{cbPrinter.Text}' ist nicht gültig oder nicht verfügbar.");
+            Utils.MsgTaskDlg(Handle, "Druckerfehler", $"Der Drucker '{cbPrinter.Text}' ist nicht gültig oder nicht verfügbar.");
             return;
         }
         //MessageBox.Show(printDocument.PrinterSettings.DefaultPageSettings.PaperSize.PaperName + Environment.NewLine + printDocument.PrinterSettings.DefaultPageSettings.PaperSource.SourceName);
@@ -420,7 +421,7 @@ public partial class FrmPrintSetting : Form
 
     private void CkbBoldRecipient_CheckedChanged(object sender, EventArgs e)
     {
-            if (ckbBoldRecipient.Visible && ckbBoldRecipient.Focused) { printPreviewControl.Document = printDocument; }
+        if (ckbBoldRecipient.Visible && ckbBoldRecipient.Focused) { printPreviewControl.Document = printDocument; }
     }
 
     private void CkbBoldSender_CheckedChanged(object sender, EventArgs e)
