@@ -69,7 +69,11 @@ public class Adresse : IContactEntity
     {
         get; set;
     }
-    public string? Firma
+    public string? Unternehmen
+    {
+        get; set;
+    }
+    public string? Position
     {
         get; set;
     }
@@ -85,6 +89,10 @@ public class Adresse : IContactEntity
     {
         get; set;
     }
+    public string? Postfach
+    {
+        get; set;
+    }   
     public string? Land
     {
         get; set;
@@ -181,7 +189,7 @@ public class Adresse : IContactEntity
     {
         get
         {
-            _searchTextCache ??= $"{Vorname} {Nachname} {Firma} {Ort} {PLZ} {Strasse} {Nickname} {Telefon1} {Telefon2} {Mobil} {Mail1} {Mail2} {Notizen} {Internet}".ToLowerInvariant();
+            _searchTextCache ??= $"{Vorname} {Nachname} {Unternehmen} {Position} {Ort} {PLZ} {Strasse} {Nickname} {Telefon1} {Telefon2} {Mobil} {Mail1} {Mail2} {Notizen} {Internet}".ToLowerInvariant();
             return _searchTextCache;
         }
     }

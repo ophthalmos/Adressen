@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Drawing.Drawing2D;
-using Adressen.cls;
 
 namespace Adressen;
 
@@ -87,13 +86,6 @@ public partial class FrmProgSettings : Form
     }
 
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Visible)]
-    public bool BackupSuccess
-    {
-        get => ckbBackupSuccess.Checked;
-        set => ckbBackupSuccess.Checked = value;
-    }
-
-    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Visible)]
     public string BackupDirectory
     {
         get => tbBackupFolder.Text;
@@ -106,14 +98,6 @@ public partial class FrmProgSettings : Form
         get => tbDatabaseFolder.Text;
         set => tbDatabaseFolder.Text = value;
     }
-
-    //[System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Visible)]
-    //public decimal SuccessDuration
-    //{
-    //    get => numUpDownSuccess.Value;
-    //    set => numUpDownSuccess.Value = value;
-    //}
-    public NumericUpDown NumUpDownSuccess => numUpDownSuccess;
 
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Visible)]
     public bool AskBeforeSaveSQL
@@ -217,11 +201,6 @@ public partial class FrmProgSettings : Form
         return base.ProcessCmdKey(ref msg, keyData);
     }
 
-    private void CkbBackup_CheckedChanged(object sender, EventArgs e)
-    {
-        tbBackupFolder.Enabled = btnBackupFolder.Enabled = ckbBackupSuccess.Enabled = numUpDownSuccess.Enabled = labelMS.Enabled = ckbBackup.Checked;
-    }
-
     private void BtnStandardFile_Click(object sender, EventArgs e)
     {
         openFileDialog.InitialDirectory = !string.IsNullOrEmpty(tbStandard.Text) ? Path.GetDirectoryName(tbStandard.Text) : null;
@@ -243,15 +222,9 @@ public partial class FrmProgSettings : Form
         else { Console.Beep(); }
     }
 
-    private void TbBackupFolder_TextChanged(object sender, EventArgs e)
-    {
-        btnExplorer.Enabled = !string.IsNullOrEmpty(tbBackupFolder.Text);
-    }
-
-    private void CkbWatchFolder_CheckedChanged(object sender, EventArgs e)
-    {
-        tbWatchFolder.Enabled = btnWatchFolder.Enabled = lblWatchFolder.Enabled = ckbWatchFolder.Checked;
-    }
+    private void CkbBackup_CheckedChanged(object sender, EventArgs e) => tbBackupFolder.Enabled = btnBackupFolder.Enabled = ckbBackup.Checked;
+    private void TbBackupFolder_TextChanged(object sender, EventArgs e) => btnExplorer.Enabled = !string.IsNullOrEmpty(tbBackupFolder.Text);
+    private void CkbWatchFolder_CheckedChanged(object sender, EventArgs e) => tbWatchFolder.Enabled = btnWatchFolder.Enabled = lblWatchFolder.Enabled = ckbWatchFolder.Checked;
 
     private void BtnWatchFolder_Click(object sender, EventArgs e)
     {

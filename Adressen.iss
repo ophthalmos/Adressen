@@ -1,6 +1,6 @@
 #define MyAppLong "Adressen & Kontakte"
 #define MyAppName "Adressen"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.1.1"
 
 [Setup]
 AppName={#MyAppName}

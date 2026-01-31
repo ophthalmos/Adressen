@@ -36,7 +36,11 @@ internal class Contact : ICloneable, IContactEntity
     {
         get; set;
     }
-    public string? Firma
+    public string? Unternehmen
+    {
+        get; set;
+    }
+    public string? Position
     {
         get; set;
     }
@@ -49,6 +53,10 @@ internal class Contact : ICloneable, IContactEntity
         get; set;
     }
     public string? Ort
+    {
+        get; set;
+    }
+    public string? Postfach
     {
         get; set;
     }
@@ -137,7 +145,7 @@ internal class Contact : ICloneable, IContactEntity
     {
         get
         {
-            _searchTextCache ??= $"{Vorname} {Nachname} {Firma} {Ort} {PLZ} {Strasse} {Nickname} {Telefon1} {Telefon2} {Mobil} {Mail1} {Mail2} {Notizen} {Internet}".ToLowerInvariant();
+            _searchTextCache ??= $"{Vorname} {Nachname} {Unternehmen} {Position} {Ort} {PLZ} {Strasse} {Nickname} {Telefon1} {Telefon2} {Mobil} {Mail1} {Mail2} {Notizen} {Internet}".ToLowerInvariant();
             return _searchTextCache;
         }
     }
@@ -193,11 +201,12 @@ internal class Contact : ICloneable, IContactEntity
         }
 
         if (IsChanged(Nickname, original.Nickname)) { changes.Add("nicknames"); }
-        if (IsChanged(Firma, original.Firma)) { changes.Add("organizations"); }
+        if (IsChanged(Unternehmen, original.Unternehmen) || IsChanged(Position, original.Position)) { changes.Add("organizations"); }
 
         if (IsChanged(Strasse, original.Strasse) ||
             IsChanged(PLZ, original.PLZ) ||
             IsChanged(Ort, original.Ort) ||
+            IsChanged(Postfach, original.Postfach) ||
             IsChanged(Land, original.Land))
         {
             changes.Add("addresses");

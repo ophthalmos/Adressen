@@ -1,4 +1,6 @@
-﻿namespace Adressen;
+﻿using Adressen.cls;
+
+namespace Adressen;
 
 partial class FrmPrintSetting
 {
@@ -29,6 +31,7 @@ partial class FrmPrintSetting
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
+        var resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmPrintSetting));
         tabControl = new TabControl();
         printerPage = new TabPage();
         gbOrientation = new GroupBox();
@@ -66,8 +69,18 @@ partial class FrmPrintSetting
         tbSender6 = new TextBox();
         ckbPrintSender = new CheckBox();
         recipientPage = new TabPage();
+        lblLineFactor = new Label();
+        lblLineHeight = new Label();
+        nudLineHeightFactor = new NumericUpDown();
+        lblLandRows = new Label();
+        lblLandGapFactor = new Label();
+        nudLandGapFactor = new NumericUpDown();
+        lblZipRows = new Label();
+        lblZipGapFactor = new Label();
+        nudZipGapFactor = new NumericUpDown();
+        ckbLandGROSS = new CheckBox();
+        ckbAnredeOberhalb = new CheckBox();
         ckbAnredePrint = new CheckBox();
-        lblEmpfPrint = new Label();
         ckbLandPrint = new CheckBox();
         tuningPage = new TabPage();
         lblHorizLine = new Label();
@@ -87,13 +100,16 @@ partial class FrmPrintSetting
         btnSave = new Button();
         btnCancel = new Button();
         printDocument = new System.Drawing.Printing.PrintDocument();
-        printPreviewControl = new PrintPreviewControl();
+        printPreviewControl = new FlickerFreePrintPreviewControl();
         contextMenuStrip = new ContextMenuStrip(components);
         zoomInToolStripMenuItem = new ToolStripMenuItem();
         zoomOutToolStripMenuItem = new ToolStripMenuItem();
         zoomDefaultToolStripMenuItem = new ToolStripMenuItem();
         statusStrip = new StatusStrip();
+        lblZoomStatus = new ToolStripStatusLabel();
         toolStripStatusLabel = new ToolStripStatusLabel();
+        rightPanel = new Panel();
+        timerDebounce = new System.Windows.Forms.Timer(components);
         tabControl.SuspendLayout();
         printerPage.SuspendLayout();
         gbOrientation.SuspendLayout();
@@ -112,6 +128,9 @@ partial class FrmPrintSetting
         tpSender5.SuspendLayout();
         tpSender6.SuspendLayout();
         recipientPage.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)nudLineHeightFactor).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)nudLandGapFactor).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)nudZipGapFactor).BeginInit();
         tuningPage.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)nudSenderOffsetY).BeginInit();
         ((System.ComponentModel.ISupportInitialize)nudSenderOffsetX).BeginInit();
@@ -119,6 +138,7 @@ partial class FrmPrintSetting
         ((System.ComponentModel.ISupportInitialize)nudRecipOffsetX).BeginInit();
         contextMenuStrip.SuspendLayout();
         statusStrip.SuspendLayout();
+        rightPanel.SuspendLayout();
         SuspendLayout();
         // 
         // tabControl
@@ -129,7 +149,7 @@ partial class FrmPrintSetting
         tabControl.Controls.Add(senderPage);
         tabControl.Controls.Add(recipientPage);
         tabControl.Controls.Add(tuningPage);
-        tabControl.Location = new Point(380, 0);
+        tabControl.Location = new Point(2, 3);
         tabControl.Name = "tabControl";
         tabControl.SelectedIndex = 0;
         tabControl.Size = new Size(324, 201);
@@ -292,6 +312,7 @@ partial class FrmPrintSetting
         cbFontSizeRecipient.Name = "cbFontSizeRecipient";
         cbFontSizeRecipient.Size = new Size(60, 25);
         cbFontSizeRecipient.TabIndex = 5;
+        cbFontSizeRecipient.SelectedIndexChanged += GenericControl_ValueChanged;
         // 
         // lblRecipient
         // 
@@ -311,6 +332,7 @@ partial class FrmPrintSetting
         cbFontsizeSender.Name = "cbFontsizeSender";
         cbFontsizeSender.Size = new Size(60, 25);
         cbFontsizeSender.TabIndex = 3;
+        cbFontsizeSender.SelectedIndexChanged += GenericControl_ValueChanged;
         // 
         // lblFontsize
         // 
@@ -329,6 +351,7 @@ partial class FrmPrintSetting
         cbFont.Name = "cbFont";
         cbFont.Size = new Size(288, 25);
         cbFont.TabIndex = 0;
+        cbFont.SelectedIndexChanged += GenericControl_ValueChanged;
         // 
         // gbFormat
         // 
@@ -355,9 +378,9 @@ partial class FrmPrintSetting
         senderPage.BorderStyle = BorderStyle.FixedSingle;
         senderPage.Controls.Add(tcSender);
         senderPage.Controls.Add(ckbPrintSender);
-        senderPage.Location = new Point(4, 26);
+        senderPage.Location = new Point(4, 24);
         senderPage.Name = "senderPage";
-        senderPage.Size = new Size(316, 171);
+        senderPage.Size = new Size(316, 173);
         senderPage.TabIndex = 3;
         senderPage.Text = "Absender";
         // 
@@ -381,7 +404,7 @@ partial class FrmPrintSetting
         tcSender.SizeMode = TabSizeMode.Fixed;
         tcSender.TabIndex = 2;
         tcSender.DrawItem += TcSender_DrawItem;
-        tcSender.SelectedIndexChanged += TcSender_SelectedIndexChanged;
+        tcSender.SelectedIndexChanged += GenericControl_ValueChanged;
         // 
         // tpSender1
         // 
@@ -406,6 +429,7 @@ partial class FrmPrintSetting
         tbSender1.Name = "tbSender1";
         tbSender1.Size = new Size(277, 129);
         tbSender1.TabIndex = 0;
+        tbSender1.TextChanged += TbSender_TextChanged;
         // 
         // tpSender2
         // 
@@ -430,6 +454,7 @@ partial class FrmPrintSetting
         tbSender2.Name = "tbSender2";
         tbSender2.Size = new Size(277, 129);
         tbSender2.TabIndex = 1;
+        tbSender2.TextChanged += TbSender_TextChanged;
         // 
         // tpSender3
         // 
@@ -454,6 +479,7 @@ partial class FrmPrintSetting
         tbSender3.Name = "tbSender3";
         tbSender3.Size = new Size(277, 129);
         tbSender3.TabIndex = 2;
+        tbSender3.TextChanged += TbSender_TextChanged;
         // 
         // tpSender4
         // 
@@ -478,6 +504,7 @@ partial class FrmPrintSetting
         tbSender4.Name = "tbSender4";
         tbSender4.Size = new Size(277, 129);
         tbSender4.TabIndex = 5;
+        tbSender4.TextChanged += TbSender_TextChanged;
         // 
         // tpSender5
         // 
@@ -502,6 +529,7 @@ partial class FrmPrintSetting
         tbSender5.Name = "tbSender5";
         tbSender5.Size = new Size(277, 129);
         tbSender5.TabIndex = 4;
+        tbSender5.TextChanged += TbSender_TextChanged;
         // 
         // tpSender6
         // 
@@ -526,6 +554,7 @@ partial class FrmPrintSetting
         tbSender6.Name = "tbSender6";
         tbSender6.Size = new Size(277, 129);
         tbSender6.TabIndex = 3;
+        tbSender6.TextChanged += TbSender_TextChanged;
         // 
         // ckbPrintSender
         // 
@@ -538,51 +567,172 @@ partial class FrmPrintSetting
         ckbPrintSender.TabIndex = 1;
         ckbPrintSender.Text = "Absendertext auf Briefumschlag drucken";
         ckbPrintSender.UseVisualStyleBackColor = true;
-        ckbPrintSender.CheckedChanged += CkbPrintSender_CheckedChanged;
+        ckbPrintSender.CheckedChanged += GenericControl_ValueChanged;
         // 
         // recipientPage
         // 
+        recipientPage.Controls.Add(lblLineFactor);
+        recipientPage.Controls.Add(lblLineHeight);
+        recipientPage.Controls.Add(nudLineHeightFactor);
+        recipientPage.Controls.Add(lblLandRows);
+        recipientPage.Controls.Add(lblLandGapFactor);
+        recipientPage.Controls.Add(nudLandGapFactor);
+        recipientPage.Controls.Add(lblZipRows);
+        recipientPage.Controls.Add(lblZipGapFactor);
+        recipientPage.Controls.Add(nudZipGapFactor);
+        recipientPage.Controls.Add(ckbLandGROSS);
+        recipientPage.Controls.Add(ckbAnredeOberhalb);
         recipientPage.Controls.Add(ckbAnredePrint);
-        recipientPage.Controls.Add(lblEmpfPrint);
         recipientPage.Controls.Add(ckbLandPrint);
-        recipientPage.Location = new Point(4, 24);
+        recipientPage.Location = new Point(4, 26);
         recipientPage.Name = "recipientPage";
-        recipientPage.Size = new Size(316, 173);
+        recipientPage.Size = new Size(316, 171);
         recipientPage.TabIndex = 4;
         recipientPage.Text = "Empfänger";
         recipientPage.UseVisualStyleBackColor = true;
         // 
+        // lblLineFactor
+        // 
+        lblLineFactor.AutoSize = true;
+        lblLineFactor.Location = new Point(288, 76);
+        lblLineFactor.Name = "lblLineFactor";
+        lblLineFactor.Size = new Size(20, 19);
+        lblLineFactor.TabIndex = 30;
+        lblLineFactor.Text = "Z.";
+        // 
+        // lblLineHeight
+        // 
+        lblLineHeight.AutoSize = true;
+        lblLineHeight.Location = new Point(8, 76);
+        lblLineHeight.Name = "lblLineHeight";
+        lblLineHeight.Size = new Size(210, 19);
+        lblLineHeight.TabIndex = 29;
+        lblLineHeight.Text = "Genereller Zeilenabstand (★ 1,5):";
+        // 
+        // nudLineHeightFactor
+        // 
+        nudLineHeightFactor.DecimalPlaces = 2;
+        nudLineHeightFactor.Increment = new decimal(new int[] { 5, 0, 0, 131072 });
+        nudLineHeightFactor.Location = new Point(229, 74);
+        nudLineHeightFactor.Maximum = new decimal(new int[] { 30, 0, 0, 65536 });
+        nudLineHeightFactor.Minimum = new decimal(new int[] { 5, 0, 0, 65536 });
+        nudLineHeightFactor.Name = "nudLineHeightFactor";
+        nudLineHeightFactor.Size = new Size(55, 25);
+        nudLineHeightFactor.TabIndex = 28;
+        nudLineHeightFactor.TextAlign = HorizontalAlignment.Center;
+        nudLineHeightFactor.Value = new decimal(new int[] { 15, 0, 0, 65536 });
+        nudLineHeightFactor.ValueChanged += GenericControl_ValueChanged;
+        // 
+        // lblLandRows
+        // 
+        lblLandRows.AutoSize = true;
+        lblLandRows.Location = new Point(288, 143);
+        lblLandRows.Name = "lblLandRows";
+        lblLandRows.Size = new Size(20, 19);
+        lblLandRows.TabIndex = 27;
+        lblLandRows.Text = "Z.";
+        // 
+        // lblLandGapFactor
+        // 
+        lblLandGapFactor.AutoSize = true;
+        lblLandGapFactor.Location = new Point(8, 143);
+        lblLandGapFactor.Name = "lblLandGapFactor";
+        lblLandGapFactor.Size = new Size(197, 19);
+        lblLandGapFactor.TabIndex = 26;
+        lblLandGapFactor.Text = "Zusätzlicher Abstand vor Land:";
+        // 
+        // nudLandGapFactor
+        // 
+        nudLandGapFactor.DecimalPlaces = 2;
+        nudLandGapFactor.Increment = new decimal(new int[] { 5, 0, 0, 131072 });
+        nudLandGapFactor.Location = new Point(228, 141);
+        nudLandGapFactor.Maximum = new decimal(new int[] { 2, 0, 0, 0 });
+        nudLandGapFactor.Name = "nudLandGapFactor";
+        nudLandGapFactor.Size = new Size(55, 25);
+        nudLandGapFactor.TabIndex = 25;
+        nudLandGapFactor.TextAlign = HorizontalAlignment.Center;
+        nudLandGapFactor.Value = new decimal(new int[] { 3, 0, 0, 65536 });
+        nudLandGapFactor.ValueChanged += GenericControl_ValueChanged;
+        // 
+        // lblZipRows
+        // 
+        lblZipRows.AutoSize = true;
+        lblZipRows.Location = new Point(288, 112);
+        lblZipRows.Name = "lblZipRows";
+        lblZipRows.Size = new Size(20, 19);
+        lblZipRows.TabIndex = 24;
+        lblZipRows.Text = "Z.";
+        // 
+        // lblZipGapFactor
+        // 
+        lblZipGapFactor.AutoSize = true;
+        lblZipGapFactor.Location = new Point(8, 112);
+        lblZipGapFactor.Name = "lblZipGapFactor";
+        lblZipGapFactor.Size = new Size(216, 19);
+        lblZipGapFactor.TabIndex = 23;
+        lblZipGapFactor.Text = "Zusätzlicher Abstand vor PLZ/Ort:";
+        // 
+        // nudZipGapFactor
+        // 
+        nudZipGapFactor.DecimalPlaces = 2;
+        nudZipGapFactor.Increment = new decimal(new int[] { 5, 0, 0, 131072 });
+        nudZipGapFactor.Location = new Point(229, 110);
+        nudZipGapFactor.Maximum = new decimal(new int[] { 2, 0, 0, 0 });
+        nudZipGapFactor.Name = "nudZipGapFactor";
+        nudZipGapFactor.Size = new Size(55, 25);
+        nudZipGapFactor.TabIndex = 22;
+        nudZipGapFactor.TextAlign = HorizontalAlignment.Center;
+        nudZipGapFactor.Value = new decimal(new int[] { 3, 0, 0, 65536 });
+        nudZipGapFactor.ValueChanged += GenericControl_ValueChanged;
+        // 
+        // ckbLandGROSS
+        // 
+        ckbLandGROSS.AutoSize = true;
+        ckbLandGROSS.Checked = true;
+        ckbLandGROSS.CheckState = CheckState.Checked;
+        ckbLandGROSS.Location = new Point(178, 38);
+        ckbLandGROSS.Name = "ckbLandGROSS";
+        ckbLandGROSS.Size = new Size(130, 23);
+        ckbLandGROSS.TabIndex = 21;
+        ckbLandGROSS.Text = "Großbuchstaben";
+        ckbLandGROSS.UseVisualStyleBackColor = true;
+        ckbLandGROSS.CheckedChanged += GenericControl_ValueChanged;
+        // 
+        // ckbAnredeOberhalb
+        // 
+        ckbAnredeOberhalb.AutoSize = true;
+        ckbAnredeOberhalb.Enabled = false;
+        ckbAnredeOberhalb.Location = new Point(178, 9);
+        ckbAnredeOberhalb.Name = "ckbAnredeOberhalb";
+        ckbAnredeOberhalb.Size = new Size(85, 23);
+        ckbAnredeOberhalb.TabIndex = 20;
+        ckbAnredeOberhalb.Text = "Oberhalb";
+        ckbAnredeOberhalb.UseVisualStyleBackColor = true;
+        ckbAnredeOberhalb.CheckedChanged += GenericControl_ValueChanged;
+        // 
         // ckbAnredePrint
         // 
         ckbAnredePrint.AutoSize = true;
-        ckbAnredePrint.Location = new Point(143, 76);
+        ckbAnredePrint.Location = new Point(12, 9);
         ckbAnredePrint.Name = "ckbAnredePrint";
-        ckbAnredePrint.Size = new Size(72, 23);
+        ckbAnredePrint.Size = new Size(144, 23);
         ckbAnredePrint.TabIndex = 17;
-        ckbAnredePrint.Text = "Anrede";
+        ckbAnredePrint.Text = "Anrede hinzufügen";
         ckbAnredePrint.UseVisualStyleBackColor = true;
-        ckbAnredePrint.CheckedChanged += CkbAnredePrint_CheckedChanged;
-        // 
-        // lblEmpfPrint
-        // 
-        lblEmpfPrint.AutoSize = true;
-        lblEmpfPrint.Location = new Point(20, 78);
-        lblEmpfPrint.Name = "lblEmpfPrint";
-        lblEmpfPrint.Size = new Size(112, 19);
-        lblEmpfPrint.TabIndex = 19;
-        lblEmpfPrint.Text = "Empfängerzeilen:";
+        ckbAnredePrint.CheckedChanged += GenericControl_ValueChanged;
         // 
         // ckbLandPrint
         // 
         ckbLandPrint.AutoSize = true;
         ckbLandPrint.Checked = true;
         ckbLandPrint.CheckState = CheckState.Checked;
-        ckbLandPrint.Location = new Point(238, 76);
+        ckbLandPrint.Location = new Point(12, 38);
         ckbLandPrint.Name = "ckbLandPrint";
-        ckbLandPrint.Size = new Size(58, 23);
+        ckbLandPrint.Size = new Size(130, 23);
         ckbLandPrint.TabIndex = 18;
-        ckbLandPrint.Text = "Land";
+        ckbLandPrint.Text = "Land hinzufügen";
         ckbLandPrint.UseVisualStyleBackColor = true;
+        ckbLandPrint.CheckedChanged += GenericControl_ValueChanged;
         // 
         // tuningPage
         // 
@@ -624,7 +774,7 @@ partial class FrmPrintSetting
         ckbBoldSender.TabIndex = 12;
         ckbBoldSender.Text = "Absender";
         ckbBoldSender.UseVisualStyleBackColor = true;
-        ckbBoldSender.CheckedChanged += CkbBoldSender_CheckedChanged;
+        ckbBoldSender.CheckedChanged += GenericControl_ValueChanged;
         // 
         // ckbBoldRecipient
         // 
@@ -635,7 +785,7 @@ partial class FrmPrintSetting
         ckbBoldRecipient.TabIndex = 11;
         ckbBoldRecipient.Text = "Empfänger";
         ckbBoldRecipient.UseVisualStyleBackColor = true;
-        ckbBoldRecipient.CheckedChanged += CkbBoldRecipient_CheckedChanged;
+        ckbBoldRecipient.CheckedChanged += GenericControl_ValueChanged;
         // 
         // lblBold
         // 
@@ -654,7 +804,7 @@ partial class FrmPrintSetting
         nudSenderOffsetY.Size = new Size(55, 25);
         nudSenderOffsetY.TabIndex = 9;
         nudSenderOffsetY.TextAlign = HorizontalAlignment.Center;
-        nudSenderOffsetY.ValueChanged += NudOffset_ValueChanged;
+        nudSenderOffsetY.ValueChanged += GenericControl_ValueChanged;
         // 
         // label1
         // 
@@ -691,7 +841,7 @@ partial class FrmPrintSetting
         nudSenderOffsetX.Size = new Size(55, 25);
         nudSenderOffsetX.TabIndex = 5;
         nudSenderOffsetX.TextAlign = HorizontalAlignment.Center;
-        nudSenderOffsetX.ValueChanged += NudOffset_ValueChanged;
+        nudSenderOffsetX.ValueChanged += GenericControl_ValueChanged;
         // 
         // nudRecipOffsetY
         // 
@@ -702,7 +852,7 @@ partial class FrmPrintSetting
         nudRecipOffsetY.Size = new Size(55, 25);
         nudRecipOffsetY.TabIndex = 4;
         nudRecipOffsetY.TextAlign = HorizontalAlignment.Center;
-        nudRecipOffsetY.ValueChanged += NudOffset_ValueChanged;
+        nudRecipOffsetY.ValueChanged += GenericControl_ValueChanged;
         // 
         // lblRecipOffsetY
         // 
@@ -740,14 +890,14 @@ partial class FrmPrintSetting
         nudRecipOffsetX.Size = new Size(55, 25);
         nudRecipOffsetX.TabIndex = 0;
         nudRecipOffsetX.TextAlign = HorizontalAlignment.Center;
-        nudRecipOffsetX.ValueChanged += NudOffset_ValueChanged;
+        nudRecipOffsetX.ValueChanged += GenericControl_ValueChanged;
         // 
         // btnSave
         // 
         btnSave.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         btnSave.DialogResult = DialogResult.OK;
         btnSave.Image = Properties.Resources.printer24;
-        btnSave.Location = new Point(384, 203);
+        btnSave.Location = new Point(6, 206);
         btnSave.Name = "btnSave";
         btnSave.Size = new Size(166, 32);
         btnSave.TabIndex = 1;
@@ -761,7 +911,7 @@ partial class FrmPrintSetting
         // 
         btnCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         btnCancel.DialogResult = DialogResult.OK;
-        btnCancel.Location = new Point(556, 203);
+        btnCancel.Location = new Point(178, 207);
         btnCancel.Name = "btnCancel";
         btnCancel.Size = new Size(144, 32);
         btnCancel.TabIndex = 2;
@@ -778,13 +928,14 @@ partial class FrmPrintSetting
         // 
         printPreviewControl.AutoZoom = false;
         printPreviewControl.ContextMenuStrip = contextMenuStrip;
-        printPreviewControl.Dock = DockStyle.Left;
+        printPreviewControl.Dock = DockStyle.Fill;
         printPreviewControl.Location = new Point(0, 0);
         printPreviewControl.Name = "printPreviewControl";
-        printPreviewControl.Size = new Size(375, 266);
+        printPreviewControl.Size = new Size(440, 242);
         printPreviewControl.TabIndex = 1;
         printPreviewControl.UseAntiAlias = true;
         printPreviewControl.Zoom = 0.5D;
+        printPreviewControl.DoubleClick += PrintPreviewControl_DoubleClick;
         // 
         // contextMenuStrip
         // 
@@ -823,21 +974,47 @@ partial class FrmPrintSetting
         // statusStrip
         // 
         statusStrip.Font = new Font("Segoe UI", 10F);
-        statusStrip.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel });
-        statusStrip.Location = new Point(375, 242);
+        statusStrip.GripStyle = ToolStripGripStyle.Visible;
+        statusStrip.Items.AddRange(new ToolStripItem[] { lblZoomStatus, toolStripStatusLabel });
+        statusStrip.Location = new Point(0, 242);
         statusStrip.Name = "statusStrip";
-        statusStrip.Size = new Size(329, 24);
-        statusStrip.SizingGrip = false;
+        statusStrip.Size = new Size(769, 24);
         statusStrip.TabIndex = 3;
         statusStrip.Text = "statusStrip";
+        // 
+        // lblZoomStatus
+        // 
+        lblZoomStatus.AutoSize = false;
+        lblZoomStatus.BorderSides = ToolStripStatusLabelBorderSides.Right;
+        lblZoomStatus.Name = "lblZoomStatus";
+        lblZoomStatus.Size = new Size(440, 19);
+        lblZoomStatus.Text = "Zoom: 50%";
+        lblZoomStatus.TextAlign = ContentAlignment.MiddleLeft;
         // 
         // toolStripStatusLabel
         // 
         toolStripStatusLabel.Font = new Font("Segoe UI", 10F);
         toolStripStatusLabel.Name = "toolStripStatusLabel";
-        toolStripStatusLabel.Size = new Size(314, 19);
+        toolStripStatusLabel.Size = new Size(283, 19);
         toolStripStatusLabel.Spring = true;
         toolStripStatusLabel.Text = "Drucker";
+        toolStripStatusLabel.TextAlign = ContentAlignment.MiddleLeft;
+        // 
+        // rightPanel
+        // 
+        rightPanel.Controls.Add(tabControl);
+        rightPanel.Controls.Add(btnCancel);
+        rightPanel.Controls.Add(btnSave);
+        rightPanel.Dock = DockStyle.Right;
+        rightPanel.Location = new Point(440, 0);
+        rightPanel.Name = "rightPanel";
+        rightPanel.Size = new Size(329, 242);
+        rightPanel.TabIndex = 4;
+        // 
+        // timerDebounce
+        // 
+        timerDebounce.Interval = 1000;
+        timerDebounce.Tick += TimerDebounce_Tick;
         // 
         // FrmPrintSetting
         // 
@@ -845,21 +1022,22 @@ partial class FrmPrintSetting
         AutoScaleDimensions = new SizeF(7F, 17F);
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = btnCancel;
-        ClientSize = new Size(704, 266);
-        Controls.Add(statusStrip);
-        Controls.Add(btnCancel);
-        Controls.Add(btnSave);
+        ClientSize = new Size(769, 266);
         Controls.Add(printPreviewControl);
-        Controls.Add(tabControl);
+        Controls.Add(rightPanel);
+        Controls.Add(statusStrip);
         Font = new Font("Segoe UI", 10F);
-        FormBorderStyle = FormBorderStyle.FixedDialog;
+        Icon = (Icon)resources.GetObject("$this.Icon");
         MaximizeBox = false;
         MinimizeBox = false;
+        MinimumSize = new Size(785, 305);
         Name = "FrmPrintSetting";
         ShowInTaskbar = false;
+        SizeGripStyle = SizeGripStyle.Show;
         StartPosition = FormStartPosition.CenterParent;
         Text = "Adresse auf Briefumschlag drucken";
         Load += FrmPrintSetting_Load;
+        Layout += FrmPrintSetting_Layout;
         tabControl.ResumeLayout(false);
         printerPage.ResumeLayout(false);
         gbOrientation.ResumeLayout(false);
@@ -889,6 +1067,9 @@ partial class FrmPrintSetting
         tpSender6.PerformLayout();
         recipientPage.ResumeLayout(false);
         recipientPage.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)nudLineHeightFactor).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudLandGapFactor).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudZipGapFactor).EndInit();
         tuningPage.ResumeLayout(false);
         tuningPage.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)nudSenderOffsetY).EndInit();
@@ -898,6 +1079,7 @@ partial class FrmPrintSetting
         contextMenuStrip.ResumeLayout(false);
         statusStrip.ResumeLayout(false);
         statusStrip.PerformLayout();
+        rightPanel.ResumeLayout(false);
         ResumeLayout(false);
         PerformLayout();
     }
@@ -954,10 +1136,10 @@ partial class FrmPrintSetting
     private TextBox tbSender3;
     private TabPage recipientPage;
     private CheckBox ckbAnredePrint;
-    private Label lblEmpfPrint;
     private CheckBox ckbLandPrint;
-    private PrintPreviewControl printPreviewControl;
+    private FlickerFreePrintPreviewControl printPreviewControl;
     private StatusStrip statusStrip;
+    private ToolStripStatusLabel lblZoomStatus;
     private ToolStripStatusLabel toolStripStatusLabel;
     private ContextMenuStrip contextMenuStrip;
     private ToolStripMenuItem zoomInToolStripMenuItem;
@@ -969,4 +1151,17 @@ partial class FrmPrintSetting
     private TextBox tbSender4;
     private TextBox tbSender5;
     private TextBox tbSender6;
+    private Panel rightPanel;
+    private System.Windows.Forms.Timer timerDebounce;
+    private CheckBox ckbLandGROSS;
+    private CheckBox ckbAnredeOberhalb;
+    private Label lblZipGapFactor;
+    private NumericUpDown nudZipGapFactor;
+    private Label lblZipRows;
+    private Label lblLandRows;
+    private Label lblLandGapFactor;
+    private NumericUpDown nudLandGapFactor;
+    private Label lblLineFactor;
+    private Label lblLineHeight;
+    private NumericUpDown nudLineHeightFactor;
 }
