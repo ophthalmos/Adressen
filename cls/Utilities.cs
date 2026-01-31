@@ -8,15 +8,11 @@ using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.Json;
 using System.Xml.Linq;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.PeopleService.v1;
 using Google.Apis.PeopleService.v1.Data;
 using Google.Apis.Services;
-//using Google.Apis.Util.Store;
-using Microsoft.Win32;
-using Timer = System.Windows.Forms.Timer;
 using Word = Microsoft.Office.Interop.Word;
 
 namespace Adressen.cls;
@@ -123,7 +119,7 @@ internal static class Utils
         Check("Zwischenname", old.Zwischenname, current.Zwischenname);
         Check("Nickname", old.Nickname, current.Nickname);
         Check("Suffix", old.Suffix, current.Suffix);
-        Check("Firma", old.Firma, current.Firma);
+        Check("Unternehmen", old.Unternehmen, current.Unternehmen);
         Check("Straße", old.Strasse, current.Strasse);
         Check("PLZ", old.PLZ, current.PLZ);
         Check("Ort", old.Ort, current.Ort);
@@ -288,7 +284,7 @@ internal static class Utils
     }
 
 
-    internal static void WordInfoTaskDlg(nint hwnd, string[] allKeys, TaskDialogIcon icon)
+    internal static void WordInfoTaskDlg(nint hwnd, string[] allKeys, TaskDialogIcon icon, Word.Application? wordApp, Word.Document? wordDoc)
     {
         var btnCreateDoc = new TaskDialogButton("Beispieldokument erstellen");
         var page = new TaskDialogPage()
@@ -301,28 +297,9 @@ internal static class Utils
             AllowCancel = true,
             Buttons = { btnCreateDoc, TaskDialogButton.Close }
         };
-        //btnCreateDoc.Click += (s, e) => { CreateTextMakerDocument(allKeys, hwnd); };
-        btnCreateDoc.Click += (s, e) => { CreateWordDocument(allKeys, hwnd); };
+        btnCreateDoc.Click += (s, e) => { CreateWordDocument(allKeys, hwnd, wordApp, wordDoc); };
         TaskDialog.ShowDialog(hwnd, page);
     }
-
-    //internal static void HotkeysTaskDlg(IntPtr hwnd)
-    //{
-    //    var sb = new StringBuilder();
-    //    sb.AppendLine("Strg+Enter:");
-    //    sb.AppendLine("Shift+Tab:");
-    //    sb.AppendLine("F5/F6:             Wechsel zwischen Adressen und Kontakte");
-    //    TaskDialog.ShowDialog(hwnd, new TaskDialogPage()
-    //    {
-    //        SizeToContent = true,
-    //        Caption = Application.ProductName,
-    //        Heading = "Hilfreiche Tastenkombinationen",
-    //        Text = sb.ToString(),
-    //        Icon = TaskDialogIcon.ShieldSuccessGreenBar,
-    //        AllowCancel = true,
-    //        Buttons = { TaskDialogButton.Close }
-    //    });
-    //}
 
     internal static void HelpMsgTaskDlg(nint hwnd, string appName, Icon? icon)
     {
@@ -509,16 +486,16 @@ internal static class Utils
             // Das ist viel schneller und weniger fehleranfällig
             var details = contact.DisplayName;
 
-            // Falls du mehr Details wie Firma/Ort anzeigen willst, 
+            // Falls du mehr Details wie Unternehmen/Ort anzeigen willst, 
             // musst du diese ggf. in das Interface aufnehmen oder hier casten:
             var zusatzInfo = "";
             if (contact is Contact c)
             {
-                zusatzInfo = $"\n{c.Firma}\n{c.Strasse}\n{c.PLZ} {c.Ort}".Trim();
+                zusatzInfo = $"\n{c.Unternehmen}\n{c.Strasse}\n{c.PLZ} {c.Ort}".Trim();
             }
             else if (contact is Adresse a)
             {
-                zusatzInfo = $"\n{a.Firma}\n{a.Strasse}\n{a.PLZ} {a.Ort}".Trim();
+                zusatzInfo = $"\n{a.Unternehmen}\n{a.Strasse}\n{a.PLZ} {a.Ort}".Trim();
             }
 
             using TaskDialogIcon questionDialogIcon = new(Properties.Resources.question32);
@@ -569,7 +546,7 @@ internal static class Utils
         {
             var vorname = adresse.Vorname ?? string.Empty;
             var nachname = adresse.Nachname ?? string.Empty;
-            var firma = adresse.Firma ?? string.Empty;
+            var unternehmen = adresse.Unternehmen ?? string.Empty;
             var strasse = adresse.Strasse ?? string.Empty;
             var plz = adresse.PLZ ?? string.Empty;
             var ort = adresse.Ort ?? string.Empty;
@@ -577,7 +554,7 @@ internal static class Utils
             var page = new TaskDialogPage()
             {
                 Heading = "Möchten Sie den Datensatz löschen?",
-                Text = $"{vorname} {nachname}\n{firma}\n{strasse}\n{plz} {ort}".Trim(),
+                Text = $"{vorname} {nachname}\n{unternehmen}\n{strasse}\n{plz} {ort}".Trim(),
                 Caption = Application.ProductName,
                 Icon = questionDialogIcon,
                 AllowCancel = true,
@@ -601,17 +578,6 @@ internal static class Utils
     }
 
     internal static bool TryParseInput(string? text, out DateTime date) => DateTime.TryParseExact(text?.Trim(), ["d.M.yy", "dd.MM.yyyy", "d.M.yyyy", "dd.MM.yy"], CultureInfo.GetCultureInfo("de-DE"), DateTimeStyles.None, out date);
-
-    //internal static T GetOrAddKey<T>(IList<T> list, Func<T, bool> predicate, Func<T> factory)
-    //{
-    //    var item = list.FirstOrDefault(predicate);
-    //    if (item == null)
-    //    {
-    //        item = factory();
-    //        list.Add(item);
-    //    }
-    //    return item;
-    //}
 
     internal struct DateDiff
     {
@@ -640,118 +606,169 @@ internal static class Utils
         return ddf;
     }
 
-    private static void CreateWordDocument(string[] allKeys, nint handle)
+    internal static bool IsWordInstalled => Type.GetTypeFromProgID("Word.Application") is not null;
+
+    internal static bool IsLibreOfficeInstalled => Type.GetTypeFromProgID("com.sun.star.ServiceManager") is not null;
+
+    private static void CreateWordDocument(string[] allKeys, nint handle, Word.Application? wordApp, Word.Document? wordDoc)
     {
-        if (Type.GetTypeFromProgID("Word.Application") == null)
+        if (!IsWordInstalled)
         {
             MsgTaskDlg(handle, "Microsoft Word is not installed", "Installieren Sie Microsoft Word.");
             return;
         }
-        Word.Document? wordDoc = null;
-        dynamic? wordApp = null;
         try
         {
+            NativeMethods.SHGetKnownFolderPath(new Guid("374DE290-123F-4565-9164-39C4925E467B"), 0, IntPtr.Zero, out var downloadPath); // Downloads folder    
+            downloadPath = Path.Combine(downloadPath, "Adressen-Vorlage.dotx");
+
+            Control? owner = null;
+            try { owner = Control.FromHandle(handle); }
+            catch { owner = null; }
+            try
+            {
+                try { wordApp = (Word.Application?)Marshal2.GetActiveObject("Word.Application"); }
+                catch (COMException) { wordApp = null; }
+                if (wordApp != null)
+                {
+                    var docCount = wordApp.Documents.Count; // Office Collections sind 1-basiert!
+                    for (var i = 1; i <= docCount; i++)
+                    {
+                        try
+                        {
+                            var openDoc = wordApp.Documents[i]; // Zugriff per Index statt Enumerator
+                            if (!string.IsNullOrEmpty(openDoc.FullName) &&
+                                string.Equals(Path.GetFullPath(openDoc.FullName), Path.GetFullPath(downloadPath), StringComparison.OrdinalIgnoreCase))
+                            {
+                                wordApp.Activate();
+                                openDoc.Activate();
+                                return;
+                            }
+                        }
+                        catch (Exception) { } // Falls die Prüfung fehlschlägt, einfach weiterfahren (keine Blockade)
+                    }
+                }
+            }
+            catch (Exception) { } // Falls die Prüfung fehlschlägt, einfach weiterfahren (keine Blockade)
+            if (File.Exists(downloadPath))
+            {
+                var (IsYes, IsNo, _) = YesNo_TaskDialog(owner, "Datei existiert bereits", "Möchten Sie sie die vorhandene Vorlage löschen und neu erstellen?", downloadPath, "Ja, löschen und neu erstellen", "Nein, nur öffnen", true);
+                if (IsNo)
+                {
+                    try // Öffnet die Datei selbst (Vorlage), nicht: neues Dokument aus der Vorlage
+                    {
+                        wordApp ??= new Word.Application { Visible = true };
+                        var openedDoc = wordApp.Documents.Open(FileName: downloadPath, ReadOnly: false, AddToRecentFiles: true);
+                        wordApp.Activate();
+                        openedDoc.Activate();
+                    }
+                    catch { StartFile(owner?.Handle ?? IntPtr.Zero, downloadPath); }
+                    return;
+                }
+                else if (!IsYes) { return; }
+                try { File.Delete(downloadPath); }
+                catch (Exception ex) { ErrTaskDlg(handle, ex); return; }
+            }
+
             wordApp = new Word.Application { Visible = true };
             wordDoc = wordApp.Documents.Add();
-            dynamic properties = wordDoc.BuiltInDocumentProperties; // Indizierung erst zur Laufzeit zu prüfen
-            properties[Word.WdBuiltInProperty.wdPropertyAuthor].Value = "Wilhelm Happe";
-            properties[Word.WdBuiltInProperty.wdPropertyTitle].Value = "Adressen-Vorlage";
-            properties[Word.WdBuiltInProperty.wdPropertySubject].Value = "Nur als Beispiel gedacht";
-            properties[Word.WdBuiltInProperty.wdPropertyKeywords].Value = "Adressen, Briefvorlage";
-            properties[Word.WdBuiltInProperty.wdPropertyComments].Value = "Die Datei wurde gespeichert...";
+
+            wordDoc.PageSetup.TopMargin = wordApp.CentimetersToPoints(1.5f);
+            wordDoc.PageSetup.BottomMargin = wordApp.CentimetersToPoints(1.0f);
+
+            wordDoc.Styles[Word.WdBuiltinStyle.wdStyleNormal].Font.Name = "Calibri";
+            wordDoc.Styles[Word.WdBuiltinStyle.wdStyleNormal].Font.Size = 11;
+
+            wordDoc.BuiltInDocumentProperties[Word.WdBuiltInProperty.wdPropertyAuthor].Value = "Wilhelm Happe";
+            wordDoc.BuiltInDocumentProperties[Word.WdBuiltInProperty.wdPropertyTitle].Value = "Adressen-Vorlage";
+            wordDoc.BuiltInDocumentProperties[Word.WdBuiltInProperty.wdPropertySubject].Value = "Nur als Beispiel gedacht";
+            wordDoc.BuiltInDocumentProperties[Word.WdBuiltInProperty.wdPropertyKeywords].Value = "Adressen, Briefvorlage";
+            wordDoc.BuiltInDocumentProperties[Word.WdBuiltInProperty.wdPropertyComments].Value = "";
+
             var para0 = wordDoc.Paragraphs.Add();
-            para0.Range.Font.Size = 14;
+            para0.Range.Font.Size = 12; // explizit 12 behalten
             para0.Range.Text = "Präfix_Vorname_Zwischenname_Nachname";
             wordDoc.Bookmarks.Add("Präfix_Vorname_Zwischenname_Nachname", para0.Range);
             para0.Format.SpaceAfter = 0f;
             para0.Range.InsertParagraphAfter();
 
             var para1 = wordDoc.Paragraphs.Add();
-            para1.Range.Font.Size = 14;
-            para1.Range.Text = "StraßeNr";
-            para1.Range.Bookmarks.Add("StraßeNr", para1.Range);
+            para1.Range.Font.Size = 12; // explizit 12 behalten
+            para1.Range.Text = "Strasse";
+            para1.Range.Bookmarks.Add("Strasse", para1.Range);
             para1.Format.SpaceAfter = 6f;
             para1.Range.InsertParagraphAfter();
 
             var para2 = wordDoc.Paragraphs.Add();
-            para2.Range.Font.Size = 14;
+            para2.Range.Font.Size = 12; // explizit 12 behalten
             para2.Range.Text = "PLZ_Ort";
             para2.Range.Bookmarks.Add("PLZ_Ort", para2.Range);
             para2.Format.SpaceAfter = 12f;
             para2.Range.InsertParagraphAfter();
 
-            //var para3 = wordDoc.Paragraphs.Add();
-            //para3.Format.Borders[WdBorderType.wdBorderTop].LineStyle = WdLineStyle.wdLineStyleSingle;
-
             var para4 = wordDoc.Paragraphs.Add();
+            para4.Range.Font.Size = 11;
             para4.Range.Text = "Probieren Sie nun das Einfügen einer Adresse aus, indem Sie im Adressen-Programm eine Adresse selektieren und dann auf den Button »In Brief einfügen« klicken. Wiederholen Sie den Vorgang mit anderen Adressen!";
             para4.Range.InsertParagraphAfter();
 
             var para5 = wordDoc.Paragraphs.Add();
+            para5.Range.Font.Size = 11;
             para5.Range.Text = "Wenn Sie eine Textmarke hinzufügen möchten, markieren Sie zuerst die Stelle der Textmarke in Ihrem Dokument. Wählen Sie die Registerkarte »Einfügen« und dann »Textmarke« aus. Schneller geht es, wenn Sie die Tastenkombination Strg+Shift+F5 drücken.";
             para5.Range.InsertParagraphAfter();
 
             var para6 = wordDoc.Paragraphs.Add();
-            para6.Range.Text = "Um Textmarken-Klammen anzuzeigen, führen Sie die folgenden Schritte aus:\x0BKlicken Sie auf Datei > Optionen > Erweitert.\x0BWählen Sie unter \"Dokumentinhalt anzeigen\" die Option \"Textmarken anzeigen\".";
+            para6.Range.Font.Size = 11;
+            para6.Range.Text = "Um Textmarken-Klammen anzuzeigen, klicken Sie auf Datei > Optionen > Erweitert. Wählen Sie unter \"Dokumentinhalt anzeigen\" die Option \"Textmarken anzeigen\".";
             para6.Range.InsertParagraphAfter();
 
             var para7 = wordDoc.Paragraphs.Add();
-            para7.Range.Font.Bold = 1;
-            para7.Range.Text = "Liste der möglichen Textmarkierungen:";
-            para7.Format.SpaceAfter = 0f;
+            para7.Range.Font.Size = 11;
+            para7.Range.Text = "Kombinierte Textmarken (mit Unterstrich) sind nützlich, weil bei ihnen unnötige Leerzeichen zwischen den Elementen automatisch entfernt werden.";
             para7.Range.InsertParagraphAfter();
 
             var para8 = wordDoc.Paragraphs.Add();
-            para8.Range.Font.Name = "Courier New";
-            para8.Range.NoProofing = 1;
-            para8.Range.Text = string.Join(Environment.NewLine, allKeys);
-            para8.Format.SpaceAfter = 6f;
+            para8.Range.Font.Bold = 1;
+            para8.Range.Text = "Liste der möglichen Textmarkierungen:";
+            para8.Format.SpaceAfter = 0f;
             para8.Range.InsertParagraphAfter();
 
             var para9 = wordDoc.Paragraphs.Add();
-            para9.Range.Text = "Die kombinierten Textmarken (mit Unterstrich) dienen dazu, doppelte Leerzeichen zu vermeiden.";
-            //para9.Range.InsertParagraphAfter();
+            para9.Range.Font.Name = "Courier New";
+            para9.Range.NoProofing = 1;
+            para9.Range.Text = string.Join(Environment.NewLine, allKeys);  // Zeilenumbruch im Text: \x0B
 
-            var downloadPath = NativeMethods.SHGetKnownFolderPath(new Guid("374DE290-123F-4565-9164-39C4925E467B"), 0);
-            wordDoc.SaveAs2(downloadPath + @"\Adressen-Vorlage.dotx", Word.WdSaveFormat.wdFormatXMLTemplate);
+            wordDoc.SaveAs2(downloadPath, Word.WdSaveFormat.wdFormatXMLTemplate);
             wordApp.Activate();
-            wordApp.Dialogs[Word.WdWordDialog.wdDialogFileSummaryInfo].Show();
+            //wordApp.Dialogs[Word.WdWordDialog.wdDialogFileSummaryInfo].Show(); // Öffnet den Eigenschaften-Dialog. Cave: Blockiert UI
         }
-        catch (Exception ex) { ErrTaskDlg(handle, ex); } //  + Environment.NewLine + ex.StackTrace
-
-        finally
-        {
-            if (wordDoc != null)
-            {
-                try { wordDoc.Close(false); } catch { }  // Ignorieren falls Dokument schon geschlossen
-                Marshal.ReleaseComObject(wordDoc);
-            }
-            if (wordApp != null)
-            {
-                try { wordApp.Quit(); } catch { } // Ignorieren falls Word App schon geschlossen 
-                Marshal.ReleaseComObject(wordApp);
-            }
-            GC.Collect(); // den Garbage Collector zwingen, die COM-Wrapper sofort aufzuräumen
-            GC.WaitForPendingFinalizers();
-            //GC.Collect(); // COM-Objekte benötigen oft zwei Durchläufe des Garbage Collectors, um die endgültige Freigabe (Finalization) der COM-Proxys zu gewährleisten.
-            //GC.WaitForPendingFinalizers();
-        }
-
-        //finally
-        //{
-        //    if (wordDoc != null)
-        //    {
-        //        Marshal.ReleaseComObject(wordDoc);
-        //        wordDoc = null;
-        //    }
-        //    if (wordApp != null)
-        //    {
-        //        Marshal.ReleaseComObject(wordApp);
-        //        wordApp = null;
-        //    }
-        //    GC.Collect();
-        //}
+        catch (Exception ex) { ErrTaskDlg(handle, ex); }
+        finally { ReleaseWordObjects(ref wordDoc, ref wordApp); }
     }
+
+    internal static void ReleaseWordObjects(ref Word.Document? wordDoc, ref Word.Application? wordApp)
+    {
+        if (wordDoc is not null)
+        {
+            try { Marshal.FinalReleaseComObject(wordDoc); }
+            catch { }
+            finally { wordDoc = null; }
+        }
+        if (wordApp is not null)
+        {
+            try { Marshal.FinalReleaseComObject(wordApp); } // 'Visible = true' => Word bleibt offen
+            catch { }
+            finally { wordApp = null; }
+        }
+        try
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        catch { }
+    }
+
 
     /*    private static void CreateTextMakerDocument(string[] allKeys, IntPtr handle)
         {
@@ -817,19 +834,44 @@ internal static class Utils
             }
         } */
 
-    internal static bool IsInnoSetupValid(string assemblyLocation)
+    internal static bool IsInnoSetupValid(string appPath)
     {
-        var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Adressen_is1");
-        if (key == null) { return false; }
-        var value = (string?)key.GetValue("UninstallString");
-        if (value == null) { return false; }
-        else if (Debugger.IsAttached) { return true; } // run by Visual Studio
-        else { return assemblyLocation.Equals(RemoveFromEnd(value.Trim('"'), "\\unins000.exe"), StringComparison.Ordinal); } // "C:\Program Files\ClipMenu\unins000.exe"
+        if (appPath.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles))) { return true; }
+        var appDir = Path.GetDirectoryName(appPath);
+        if (appDir is null) { return false; }
+        if (File.Exists(Path.Combine(appDir, "unins000.exe"))) { return true; }
+        //var localSettings = Path.ChangeExtension(appPath, ".json");
+        //if (File.Exists(localSettings)) { return false; } // Existiert bereits eine lokale Einstellungsdatei? (typisch für Portable)
+        return false;
     }
 
-    private static string RemoveFromEnd(string str, string toRemove) => str.EndsWith(toRemove) ? str[..^toRemove.Length] : str;
-
     internal static string CorrectUNC(string unc) => unc.StartsWith('\\') ? @"\\" + unc.TrimStart('\\') : unc;
+
+    public static void RestoreWindowBounds(Form form, WindowPlacement? placement, bool isMaximized = false)
+    {
+        if (isMaximized)
+        {
+            form.WindowState = FormWindowState.Maximized;
+            return;
+        }
+        if (placement == null) { return; }
+        form.StartPosition = FormStartPosition.Manual;
+        form.WindowState = FormWindowState.Normal;
+        var targetRect = new Rectangle(placement.X, placement.Y, placement.Width, placement.Height);
+        var screen = Screen.FromRectangle(targetRect);  // Screen.FromRectangle ist robuster als FromPoint, da es prüft, wo der größte Teil des Fensters liegt.
+        var workArea = screen.WorkingArea;
+        var width = Math.Max(targetRect.Width, form.MinimumSize.Width);  // nicht größer als Bildschirm, aber nicht kleiner als MinimumSize
+        var height = Math.Max(targetRect.Height, form.MinimumSize.Height);
+        width = Math.Min(width, workArea.Width);
+        height = Math.Min(height, workArea.Height);
+        targetRect.Width = width;
+        targetRect.Height = height;
+        if (targetRect.Right > workArea.Right) { targetRect.X = workArea.Right - targetRect.Width; }
+        if (targetRect.Left < workArea.Left) { targetRect.X = workArea.Left; }
+        if (targetRect.Bottom > workArea.Bottom) { targetRect.Y = workArea.Bottom - targetRect.Height; }
+        if (targetRect.Top < workArea.Top) { targetRect.Y = workArea.Top; }
+        form.DesktopBounds = targetRect;
+    }
 
     internal static bool SetClipboardText(string text)
     {
@@ -849,20 +891,6 @@ internal static class Utils
         return row.Index >= firstVisibleRowIndex && row.Index <= lastVisibleRowIndex;
     }
 
-    internal static int GetFirstVisibleRowIndex(DataGridView dgv)
-    {
-        var firstVisibleIndex = -1;
-        foreach (DataGridViewRow row in dgv.Rows)
-        {
-            if (row.Visible && row.Displayed)
-            {
-                firstVisibleIndex = row.Index;
-                break;
-            }
-        }
-        return firstVisibleIndex;
-    }
-
     private static DateTime GetBuildDate()
     { //s. <SourceRevisionId>build$([System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss"))</SourceRevisionId> in ClipMenu.csproj
         const string BuildVersionMetadataPrefix = "+build";
@@ -880,53 +908,6 @@ internal static class Utils
         return default;
     }
 
-    internal static void ApplyColumnSettings(DataGridView dgv, int[] widths, bool[] hideStatus)
-    {
-        if (dgv.Columns.Count == 0) { return; }
-
-        for (var i = 0; i < dgv.Columns.Count; i++)
-        {
-            // 1. Sichtbarkeit (Array hideColumnStd)
-            if (hideStatus != null && i < hideStatus.Length)
-            {
-                dgv.Columns[i].Visible = !hideStatus[i];
-            }
-
-            // 2. Breite (Array columnWidths)
-            if (widths != null && i < widths.Length)
-            {
-                dgv.Columns[i].Width = Math.Max(20, widths[i]); // Min 20px
-            }
-            else
-            {
-                dgv.Columns[i].Width = dgv.Columns[i].Name == "Nachname" ? 200 : 100;
-            }
-
-            // 3. Relationen IMMER ausblenden (Sicherheitsnetz)
-            if (dgv.Columns[i].Name is "Gruppen" or "Dokumente" or "Foto" or "SearchText" or "GroupList") // or "UniqueId" or "BirthdayDate" 
-            {
-                dgv.Columns[i].Visible = false;
-            }
-        }
-    }
-
-    //internal static void SetColumnWidths(int[] columnWidths, DataGridView dgv)
-    //{
-    //    var widths = columnWidths ?? [];
-    //    if (widths.Length == 0) // noch keine Einstellungen vorhanden
-    //    {
-    //        for (var i = 0; i < dgv.Columns.Count; i++)
-    //        {
-    //            if (dgv.Columns[i].Name == "Nachname") { dgv.Columns[i].Width = 200; }
-    //            else { dgv.Columns[i].Width = 100; }
-    //        }
-    //    }
-    //    else
-    //    {
-    //        for (var i = 0; i < widths.Length && i < dgv.Columns.Count; i++) { dgv.Columns[i].Width = widths[i]; }
-    //    }
-    //}
-
     internal static string GetGooglePhoneByType(Person person, string type)
     {
         foreach (var phone in person.PhoneNumbers ?? []) // falls PhoneNumbers null ist, wird die Schleife dank ?? [] einfach übersprungen
@@ -936,83 +917,57 @@ internal static class Utils
         return string.Empty;
     }
 
-
-    //public static bool[]? FromBase64String(string base64String)
-    //{
-    //    try
-    //    {
-    //        var bytes = Convert.FromBase64String(base64String); // 1. Decodierung des Base64-Strings
-    //        var boolArray = new bool[(bytes.Length * 8)]; // 8 Bits pro Byte // 2. Ermitteln der Länge des Bool-Arrays
-    //        for (var i = 0; i < bytes.Length; i++)        // 3. Umwandlung in ein Bool-Array
-    //        {
-    //            for (var j = 0; j < 8; j++)
-    //            {
-    //                var bit = bytes[i] >> j & 1;    // Extrahiert das j-te Bit
-    //                boolArray[i * 8 + j] = bit == 1;  // Wandelt Bit in Bool um
-    //            }
-    //        }
-    //        return boolArray;
-    //    }
-    //    catch (FormatException) { return null; }
-    //}
-
-    //public static string BoolArray2Base64String(bool[] boolArray)
-    //{
-    //    var bytes = new byte[boolArray.Length / 8 + 1];
-    //    for (var i = 0; i < boolArray.Length; i++)
-    //    {
-    //        if (boolArray[i]) { bytes[i / 8] |= (byte)(1 << i % 8); }
-    //    }
-    //    return Convert.ToBase64String(bytes);
-    //}
-
-    public static string NormalizeString(string input) => string.IsNullOrEmpty(input) ? "" : input.ToLower().Replace("ä", "ae").Replace("ö", "oe").Replace("ü", "ue").Replace("ß", "ss");
-
     public static IEnumerable<string> ReadAsLines(string filename)
     {
         using var reader = new StreamReader(filename);
         while (!reader.EndOfStream) { yield return reader.ReadLine()!; }
     }
 
-    internal static void DailyBackup(string filePath, string backupDir, bool success, decimal duration, bool silent = false)
+    internal static async Task DailyBackupAsync(string filePath, string backupDir)
     {
         try
         {
+            // 1. Pfadvorbereitung
             backupDir = Path.Combine(backupDir, new CultureInfo("de-DE").DateTimeFormat.GetDayName(DateTime.Today.DayOfWeek));
-            Directory.CreateDirectory(backupDir); // Sicherstellen, dass das Tages-Verzeichnis existiert
-            var todaysBackupFile = Path.Combine(backupDir, Path.GetFileNameWithoutExtension(filePath) + "_" + DateTime.Now.ToString("yyyy_MM_dd") + Path.GetExtension(filePath));
-            if (File.Exists(todaysBackupFile)) { return; }  // Überprüfen, ob bereits ein Backup für heute existiert
-            File.Copy(filePath, todaysBackupFile, true);
-            var existingBackups = Directory.GetFiles(backupDir, Path.GetFileNameWithoutExtension(filePath) + "*.adb");
-            if (existingBackups.Length >= 2) { File.Delete(existingBackups.OrderBy(f => new FileInfo(f).CreationTime).First()); }
-            if (success && !silent)
+
+            if (!Directory.Exists(backupDir))
             {
-                var okButton = TaskDialogButton.OK;
-                var page = new TaskDialogPage()
-                {
-                    SizeToContent = true,
-                    AllowCancel = true,
-                    Caption = Application.ProductName,
-                    Heading = "Die lokale Datenbank wurde gesichert.",
-                    Text = todaysBackupFile,
-                    Icon = TaskDialogIcon.ShieldSuccessGreenBar,
-                    Buttons = { TaskDialogButton.OK },
-                };
-                using var timer = new Timer() { Enabled = true, Interval = (int)duration };
-                timer.Tick += (s, e) =>
-                {
-                    page.BoundDialog?.Close();
-                    timer.Enabled = false;
-                };
-                TaskDialog.ShowDialog(page);
+                Directory.CreateDirectory(backupDir);
+            }
+
+            var fileName = Path.GetFileNameWithoutExtension(filePath);
+            var extension = Path.GetExtension(filePath);
+            var todaysBackupFile = Path.Combine(backupDir, $"{fileName}_{DateTime.Now:yyyy_MM_dd}{extension}");
+
+            if (File.Exists(todaysBackupFile))
+            {
+                return;
+            }
+
+            // 2. Sicherer, asynchroner Kopiervorgang (Löst auch das Lock-Problem)
+            // FileShare.ReadWrite ist entscheidend für SQLite!
+            await using (var sourceStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, useAsync: true))
+            {
+                await using var destStream = new FileStream(todaysBackupFile, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
+                await sourceStream.CopyToAsync(destStream);
+            }
+
+            // 3. Rotation (synchron ok, da nur Dateinamen-Operationen)
+            var existingBackups = Directory.GetFiles(backupDir, fileName + "*.adb");
+            if (existingBackups.Length >= 2)
+            {
+                var oldestFile = existingBackups.OrderBy(f => new FileInfo(f).CreationTime).First();
+                File.Delete(oldestFile);
             }
         }
-        catch (Exception ex) { ErrTaskDlg(IntPtr.Zero, ex); }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Backup fehlgeschlagen: {ex.Message}");
+        }
     }
-
 }
 
-public interface IContactEntity
+    public interface IContactEntity
 {
     string UniqueId
     {

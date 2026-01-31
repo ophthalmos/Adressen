@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Encodings.Web; // Wichtig für die Umlaute
 
 namespace Adressen.cls;
 
@@ -26,7 +27,12 @@ internal class AppSettings
     public bool PrintRecipientBold { get; set; } = false;
     public bool PrintSenderBold { get; set; } = false;
     public bool PrintRecipientSalutation { get; set; } = true;
+    public bool RecipientSalutationAbove { get; set; } = true;
     public bool PrintRecipientCountry { get; set; } = false;
+    public bool RecipientCountryUpper { get; set; } = false;
+    public decimal LineHeightFactor { get; set; } = 1.2m;
+    public decimal ZipGapFactor { get; set; } = 0.3m;
+    public decimal LandGapFactor { get; set; } = 0.3m;
     public bool AskBeforeDelete { get; set; } = true;
     public string ColorScheme { get; set; } = "blue";
     public bool ContactsAutoload { get; set; } = false;
@@ -42,22 +48,26 @@ internal class AppSettings
     public string DocumentFolder { get; set; } = string.Empty;
     public string DatabaseFolder { get; set; } = string.Empty;
     public int CopyPatternIndex { get; set; } = 0;
-    public string[] CopyPattern1 { get; set; } = ["Anrede", "Präfix_Vorname_Zwischenname_Nachname", "StraßeNr", "PLZ_Ort"];
+    public string[] CopyPattern1 { get; set; } = ["Anrede", "Präfix_Vorname_Zwischenname_Nachname", "Strasse", "PLZ_Ort"];
     public string[] CopyPattern2 { get; set; } = ["Telefon1", "Telefon2", "Mobil", "Fax"];
     public string[] CopyPattern3 { get; set; } = ["Mail1", "Mail2", "Internet"];
     public string[] CopyPattern4 { get; set; } = [];
     public string[] CopyPattern5 { get; set; } = [];
     public string[] CopyPattern6 { get; set; } = [];
-    public bool[] HideColumnArr { get; set; } = [true, true, false, false, true, true, true, false, false, false, false, false, true, true, true, false, false, false, false, false, false, false, false, true, true, true, true];
     public int SplitterPosition { get; set; } = 249;
     public bool WindowMaximized { get; set; } = false;
-    public int[] ColumnWidths { get; set; } = [100, 100, 200, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100];
     public int BirthdayRemindLimit { get; set; } = 14;
     public int BirthdayRemindAfter { get; set; } = 0;
     public bool BirthdayAddressShow { get; set; } = true;
     public bool BirthdayContactShow { get; set; } = true;
     public List<string> RecentFiles { get; set; } = [];
     public bool? WordProcessorProgram { get; set; } = null;
+    public bool[] HideColumnArr { get; set; } = [];
+    public int[] ColumnWidths { get; set; } = [];
+    public WindowPlacement? PrintWindowPosition
+    {
+        get; set;
+    }
     public WindowPlacement? WindowPosition
     {
         get; set;
@@ -86,7 +96,7 @@ public class WindowPlacement
 
 internal static class SettingsManager
 {
-    private static readonly JsonSerializerOptions _options = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions _options = new() { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     public static async Task<AppSettings> LoadAsync(string filePath)
     {
@@ -107,7 +117,7 @@ internal static class SettingsManager
             var directory = Path.GetDirectoryName(filePath);
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) { Directory.CreateDirectory(directory); }
             using var stream = File.Create(filePath);
-            JsonSerializer.SerializeAsync(stream, settings, _options);
+            JsonSerializer.Serialize(stream, settings, _options);
         }
         catch { }
     }

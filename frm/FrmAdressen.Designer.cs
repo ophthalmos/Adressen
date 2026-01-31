@@ -150,6 +150,8 @@ partial class FrmAdressen
         tabPageDetail = new TabPage();
         editSplitContainer = new SplitContainer();
         tableLayoutPanel = new TableLayoutPanel();
+        tbPostfach = new TextBox();
+        tbPosition = new TextBox();
         tbNickname = new TextBox();
         tbZwischenname = new TextBox();
         anredetitelLabel = new Label();
@@ -1335,6 +1337,8 @@ partial class FrmAdressen
         tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 18F));
         tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 9F));
         tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 23F));
+        tableLayoutPanel.Controls.Add(tbPostfach, 2, 6);
+        tableLayoutPanel.Controls.Add(tbPosition, 4, 3);
         tableLayoutPanel.Controls.Add(tbNickname, 6, 1);
         tableLayoutPanel.Controls.Add(tbZwischenname, 4, 1);
         tableLayoutPanel.Controls.Add(anredetitelLabel, 0, 0);
@@ -1353,7 +1357,7 @@ partial class FrmAdressen
         tableLayoutPanel.Controls.Add(cbPLZ, 2, 5);
         tableLayoutPanel.Controls.Add(cbOrt, 3, 5);
         tableLayoutPanel.Controls.Add(landLabel, 0, 6);
-        tableLayoutPanel.Controls.Add(cbLand, 2, 6);
+        tableLayoutPanel.Controls.Add(cbLand, 3, 6);
         tableLayoutPanel.Controls.Add(labelBetreff, 0, 7);
         tableLayoutPanel.Controls.Add(tbBetreff, 2, 7);
         tableLayoutPanel.Controls.Add(grußformelLabel, 0, 8);
@@ -1408,6 +1412,37 @@ partial class FrmAdressen
         tableLayoutPanel.Size = new Size(560, 538);
         tableLayoutPanel.TabIndex = 0;
         // 
+        // tbPostfach
+        // 
+        tbPostfach.BorderStyle = BorderStyle.FixedSingle;
+        tbPostfach.Dock = DockStyle.Fill;
+        tbPostfach.Location = new Point(104, 201);
+        tbPostfach.Name = "tbPostfach";
+        tbPostfach.PlaceholderText = "Postfach";
+        tbPostfach.Size = new Size(106, 25);
+        tbPostfach.TabIndex = 58;
+        tbPostfach.TextChanged += TextBox_ComboBox_TextChanged;
+        tbPostfach.Enter += TextBox_Enter;
+        tbPostfach.KeyDown += TextBox_ComboBox_KeyDown;
+        tbPostfach.Leave += TextBox_Leave;
+        tbPostfach.MouseDown += TextBox_MouseDown;
+        // 
+        // tbPosition
+        // 
+        tbPosition.BorderStyle = BorderStyle.FixedSingle;
+        tableLayoutPanel.SetColumnSpan(tbPosition, 3);
+        tbPosition.Dock = DockStyle.Fill;
+        tbPosition.Location = new Point(328, 105);
+        tbPosition.Name = "tbPosition";
+        tbPosition.PlaceholderText = "Position";
+        tbPosition.Size = new Size(219, 25);
+        tbPosition.TabIndex = 9;
+        tbPosition.TextChanged += TextBox_ComboBox_TextChanged;
+        tbPosition.Enter += TextBox_Enter;
+        tbPosition.KeyDown += TextBox_ComboBox_KeyDown;
+        tbPosition.Leave += TextBox_Leave;
+        tbPosition.MouseDown += TextBox_MouseDown;
+        // 
         // tbNickname
         // 
         tbNickname.BorderStyle = BorderStyle.FixedSingle;
@@ -1417,9 +1452,9 @@ partial class FrmAdressen
         tbNickname.PlaceholderText = "Nickname";
         tbNickname.Size = new Size(99, 25);
         tbNickname.TabIndex = 5;
-        tbNickname.TextChanged += EditControlsFromDict_TextChanged;
+        tbNickname.TextChanged += TextBox_ComboBox_TextChanged;
         tbNickname.Enter += TextBox_Enter;
-        tbNickname.KeyDown += Edit_KeyDown;
+        tbNickname.KeyDown += TextBox_ComboBox_KeyDown;
         tbNickname.Leave += TextBox_Leave;
         tbNickname.MouseDown += TextBox_MouseDown;
         // 
@@ -1433,9 +1468,9 @@ partial class FrmAdressen
         tbZwischenname.PlaceholderText = "Zwischenname";
         tbZwischenname.Size = new Size(114, 25);
         tbZwischenname.TabIndex = 4;
-        tbZwischenname.TextChanged += EditControlsFromDict_TextChanged;
+        tbZwischenname.TextChanged += TextBox_ComboBox_TextChanged;
         tbZwischenname.Enter += TextBox_Enter;
-        tbZwischenname.KeyDown += Edit_KeyDown;
+        tbZwischenname.KeyDown += TextBox_ComboBox_KeyDown;
         tbZwischenname.Leave += TextBox_Leave;
         tbZwischenname.MouseDown += TextBox_MouseDown;
         // 
@@ -1464,9 +1499,9 @@ partial class FrmAdressen
         cbAnrede.Sorted = true;
         cbAnrede.TabIndex = 1;
         cbAnrede.DrawItem += ComboBox_DrawItem;
-        cbAnrede.TextChanged += EditControlsFromDict_TextChanged;
+        cbAnrede.TextChanged += TextBox_ComboBox_TextChanged;
         cbAnrede.Enter += ComboBox_Enter;
-        cbAnrede.KeyDown += Edit_KeyDown;
+        cbAnrede.KeyDown += TextBox_ComboBox_KeyDown;
         cbAnrede.Leave += ComboBox_Leave;
         cbAnrede.Resize += ComboBox_Resize;
         // 
@@ -1482,9 +1517,9 @@ partial class FrmAdressen
         cbPräfix.Size = new Size(219, 26);
         cbPräfix.TabIndex = 2;
         cbPräfix.DrawItem += ComboBox_DrawItem;
-        cbPräfix.TextChanged += EditControlsFromDict_TextChanged;
+        cbPräfix.TextChanged += TextBox_ComboBox_TextChanged;
         cbPräfix.Enter += ComboBox_Enter;
-        cbPräfix.KeyDown += Edit_KeyDown;
+        cbPräfix.KeyDown += TextBox_ComboBox_KeyDown;
         cbPräfix.Leave += ComboBox_Leave;
         cbPräfix.Resize += ComboBox_Resize;
         // 
@@ -1510,9 +1545,9 @@ partial class FrmAdressen
         tbVorname.PlaceholderText = "Vorname";
         tbVorname.Size = new Size(218, 25);
         tbVorname.TabIndex = 3;
-        tbVorname.TextChanged += EditControlsFromDict_TextChanged;
+        tbVorname.TextChanged += TextBox_ComboBox_TextChanged;
         tbVorname.Enter += TextBox_Enter;
-        tbVorname.KeyDown += Edit_KeyDown;
+        tbVorname.KeyDown += TextBox_ComboBox_KeyDown;
         tbVorname.Leave += TextBox_Leave;
         tbVorname.MouseDown += TextBox_MouseDown;
         // 
@@ -1538,9 +1573,9 @@ partial class FrmAdressen
         tbNachname.PlaceholderText = "Nachname";
         tbNachname.Size = new Size(298, 25);
         tbNachname.TabIndex = 6;
-        tbNachname.TextChanged += EditControlsFromDict_TextChanged;
+        tbNachname.TextChanged += TextBox_ComboBox_TextChanged;
         tbNachname.Enter += TextBox_Enter;
-        tbNachname.KeyDown += Edit_KeyDown;
+        tbNachname.KeyDown += TextBox_ComboBox_KeyDown;
         tbNachname.Leave += TextBox_Leave;
         tbNachname.MouseDown += TextBox_MouseDown;
         // 
@@ -1554,9 +1589,9 @@ partial class FrmAdressen
         tbSuffix.PlaceholderText = "Suffix";
         tbSuffix.Size = new Size(139, 25);
         tbSuffix.TabIndex = 7;
-        tbSuffix.TextChanged += EditControlsFromDict_TextChanged;
+        tbSuffix.TextChanged += TextBox_ComboBox_TextChanged;
         tbSuffix.Enter += TextBox_Enter;
-        tbSuffix.KeyDown += Edit_KeyDown;
+        tbSuffix.KeyDown += TextBox_ComboBox_KeyDown;
         tbSuffix.Leave += TextBox_Leave;
         tbSuffix.MouseDown += TextBox_MouseDown;
         // 
@@ -1569,22 +1604,22 @@ partial class FrmAdressen
         firmaLabel.Padding = new Padding(0, 0, 0, 3);
         firmaLabel.Size = new Size(95, 32);
         firmaLabel.TabIndex = 6;
-        firmaLabel.Text = "Firma:";
+        firmaLabel.Text = "Untern./Pos.:";
         firmaLabel.TextAlign = ContentAlignment.MiddleRight;
         // 
         // tbFirma
         // 
         tbFirma.BorderStyle = BorderStyle.FixedSingle;
-        tableLayoutPanel.SetColumnSpan(tbFirma, 5);
+        tableLayoutPanel.SetColumnSpan(tbFirma, 2);
         tbFirma.Dock = DockStyle.Fill;
         tbFirma.Location = new Point(104, 105);
         tbFirma.Name = "tbFirma";
-        tbFirma.PlaceholderText = "Firma";
-        tbFirma.Size = new Size(443, 25);
+        tbFirma.PlaceholderText = "Unternehmen";
+        tbFirma.Size = new Size(218, 25);
         tbFirma.TabIndex = 8;
-        tbFirma.TextChanged += EditControlsFromDict_TextChanged;
+        tbFirma.TextChanged += TextBox_ComboBox_TextChanged;
         tbFirma.Enter += TextBox_Enter;
-        tbFirma.KeyDown += Edit_KeyDown;
+        tbFirma.KeyDown += TextBox_ComboBox_KeyDown;
         tbFirma.Leave += TextBox_Leave;
         tbFirma.MouseDown += TextBox_MouseDown;
         // 
@@ -1609,10 +1644,10 @@ partial class FrmAdressen
         tbStraße.Name = "tbStraße";
         tbStraße.PlaceholderText = "Straße Hausnummer";
         tbStraße.Size = new Size(443, 25);
-        tbStraße.TabIndex = 9;
-        tbStraße.TextChanged += EditControlsFromDict_TextChanged;
+        tbStraße.TabIndex = 10;
+        tbStraße.TextChanged += TextBox_ComboBox_TextChanged;
         tbStraße.Enter += TextBox_Enter;
-        tbStraße.KeyDown += Edit_KeyDown;
+        tbStraße.KeyDown += TextBox_ComboBox_KeyDown;
         tbStraße.Leave += TextBox_Leave;
         tbStraße.MouseDown += TextBox_MouseDown;
         // 
@@ -1637,11 +1672,11 @@ partial class FrmAdressen
         cbPLZ.Location = new Point(104, 169);
         cbPLZ.Name = "cbPLZ";
         cbPLZ.Size = new Size(106, 26);
-        cbPLZ.TabIndex = 10;
+        cbPLZ.TabIndex = 11;
         cbPLZ.DrawItem += ComboBox_DrawItem;
-        cbPLZ.TextChanged += EditControlsFromDict_TextChanged;
+        cbPLZ.TextChanged += TextBox_ComboBox_TextChanged;
         cbPLZ.Enter += ComboBox_Enter;
-        cbPLZ.KeyDown += Edit_KeyDown;
+        cbPLZ.KeyDown += TextBox_ComboBox_KeyDown;
         cbPLZ.Leave += ComboBox_Leave;
         cbPLZ.Resize += ComboBox_Resize;
         // 
@@ -1656,11 +1691,11 @@ partial class FrmAdressen
         cbOrt.Location = new Point(216, 169);
         cbOrt.Name = "cbOrt";
         cbOrt.Size = new Size(331, 26);
-        cbOrt.TabIndex = 11;
+        cbOrt.TabIndex = 12;
         cbOrt.DrawItem += ComboBox_DrawItem;
-        cbOrt.TextChanged += EditControlsFromDict_TextChanged;
+        cbOrt.TextChanged += TextBox_ComboBox_TextChanged;
         cbOrt.Enter += ComboBox_Enter;
-        cbOrt.KeyDown += Edit_KeyDown;
+        cbOrt.KeyDown += TextBox_ComboBox_KeyDown;
         cbOrt.Leave += ComboBox_Leave;
         cbOrt.Resize += ComboBox_Resize;
         // 
@@ -1673,25 +1708,25 @@ partial class FrmAdressen
         landLabel.Padding = new Padding(0, 0, 0, 3);
         landLabel.Size = new Size(95, 32);
         landLabel.TabIndex = 12;
-        landLabel.Text = "Land:";
+        landLabel.Text = "Postf./Land:";
         landLabel.TextAlign = ContentAlignment.MiddleRight;
         // 
         // cbLand
         // 
         cbLand.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
         cbLand.AutoCompleteSource = AutoCompleteSource.ListItems;
-        tableLayoutPanel.SetColumnSpan(cbLand, 5);
+        tableLayoutPanel.SetColumnSpan(cbLand, 4);
         cbLand.Dock = DockStyle.Fill;
         cbLand.DrawMode = DrawMode.OwnerDrawFixed;
         cbLand.FormattingEnabled = true;
-        cbLand.Location = new Point(104, 201);
+        cbLand.Location = new Point(216, 201);
         cbLand.Name = "cbLand";
-        cbLand.Size = new Size(443, 26);
-        cbLand.TabIndex = 12;
+        cbLand.Size = new Size(331, 26);
+        cbLand.TabIndex = 13;
         cbLand.DrawItem += ComboBox_DrawItem;
-        cbLand.TextChanged += EditControlsFromDict_TextChanged;
+        cbLand.TextChanged += TextBox_ComboBox_TextChanged;
         cbLand.Enter += ComboBox_Enter;
-        cbLand.KeyDown += Edit_KeyDown;
+        cbLand.KeyDown += TextBox_ComboBox_KeyDown;
         cbLand.Leave += ComboBox_Leave;
         cbLand.Resize += ComboBox_Resize;
         // 
@@ -1717,10 +1752,10 @@ partial class FrmAdressen
         tbBetreff.Name = "tbBetreff";
         tbBetreff.PlaceholderText = "Betreff";
         tbBetreff.Size = new Size(443, 25);
-        tbBetreff.TabIndex = 13;
-        tbBetreff.TextChanged += EditControlsFromDict_TextChanged;
+        tbBetreff.TabIndex = 14;
+        tbBetreff.TextChanged += TextBox_ComboBox_TextChanged;
         tbBetreff.Enter += TextBox_Enter;
-        tbBetreff.KeyDown += Edit_KeyDown;
+        tbBetreff.KeyDown += TextBox_ComboBox_KeyDown;
         tbBetreff.Leave += TextBox_Leave;
         tbBetreff.MouseDown += TextBox_MouseDown;
         // 
@@ -1746,10 +1781,10 @@ partial class FrmAdressen
         cbGrußformel.Location = new Point(104, 265);
         cbGrußformel.Name = "cbGrußformel";
         cbGrußformel.Size = new Size(443, 26);
-        cbGrußformel.TabIndex = 14;
+        cbGrußformel.TabIndex = 15;
         cbGrußformel.DrawItem += ComboBox_DrawItem;
-        cbGrußformel.TextChanged += EditControlsFromDict_TextChanged;
-        cbGrußformel.KeyDown += Edit_KeyDown;
+        cbGrußformel.TextChanged += TextBox_ComboBox_TextChanged;
+        cbGrußformel.KeyDown += TextBox_ComboBox_KeyDown;
         cbGrußformel.Leave += ComboBox_Leave;
         cbGrußformel.Resize += ComboBox_Resize;
         // 
@@ -1775,11 +1810,11 @@ partial class FrmAdressen
         cbSchlussformel.Location = new Point(104, 297);
         cbSchlussformel.Name = "cbSchlussformel";
         cbSchlussformel.Size = new Size(443, 26);
-        cbSchlussformel.TabIndex = 15;
+        cbSchlussformel.TabIndex = 16;
         cbSchlussformel.DrawItem += ComboBox_DrawItem;
-        cbSchlussformel.TextChanged += EditControlsFromDict_TextChanged;
+        cbSchlussformel.TextChanged += TextBox_ComboBox_TextChanged;
         cbSchlussformel.Enter += ComboBox_Enter;
-        cbSchlussformel.KeyDown += Edit_KeyDown;
+        cbSchlussformel.KeyDown += TextBox_ComboBox_KeyDown;
         cbSchlussformel.Leave += ComboBox_Leave;
         cbSchlussformel.Resize += ComboBox_Resize;
         // 
@@ -1836,10 +1871,10 @@ partial class FrmAdressen
         tbMail1.Name = "tbMail1";
         tbMail1.PlaceholderText = "E-Mail-Adresse";
         tbMail1.Size = new Size(218, 25);
-        tbMail1.TabIndex = 17;
-        tbMail1.TextChanged += EditControlsFromDict_TextChanged;
+        tbMail1.TabIndex = 18;
+        tbMail1.TextChanged += TextBox_ComboBox_TextChanged;
         tbMail1.Enter += TextBox_Enter;
-        tbMail1.KeyDown += Edit_KeyDown;
+        tbMail1.KeyDown += TextBox_ComboBox_KeyDown;
         tbMail1.Leave += TextBox_Leave;
         tbMail1.MouseDown += TextBox_MouseDown;
         // 
@@ -1852,10 +1887,10 @@ partial class FrmAdressen
         tbMail2.Name = "tbMail2";
         tbMail2.PlaceholderText = "E-Mail-Adresse";
         tbMail2.Size = new Size(219, 25);
-        tbMail2.TabIndex = 18;
-        tbMail2.TextChanged += EditControlsFromDict_TextChanged;
+        tbMail2.TabIndex = 19;
+        tbMail2.TextChanged += TextBox_ComboBox_TextChanged;
         tbMail2.Enter += TextBox_Enter;
-        tbMail2.KeyDown += Edit_KeyDown;
+        tbMail2.KeyDown += TextBox_ComboBox_KeyDown;
         tbMail2.Leave += TextBox_Leave;
         tbMail2.MouseDown += TextBox_MouseDown;
         // 
@@ -1900,10 +1935,10 @@ partial class FrmAdressen
         tbTelefon1.Name = "tbTelefon1";
         tbTelefon1.PlaceholderText = "Telefonnummer";
         tbTelefon1.Size = new Size(218, 25);
-        tbTelefon1.TabIndex = 19;
-        tbTelefon1.TextChanged += EditControlsFromDict_TextChanged;
+        tbTelefon1.TabIndex = 20;
+        tbTelefon1.TextChanged += TextBox_ComboBox_TextChanged;
         tbTelefon1.Enter += TextBox_Enter;
-        tbTelefon1.KeyDown += Edit_KeyDown;
+        tbTelefon1.KeyDown += TextBox_ComboBox_KeyDown;
         tbTelefon1.Leave += TextBox_Leave;
         tbTelefon1.MouseDown += TextBox_MouseDown;
         // 
@@ -1916,10 +1951,10 @@ partial class FrmAdressen
         tbTelefon2.Name = "tbTelefon2";
         tbTelefon2.PlaceholderText = "Telefonnummer";
         tbTelefon2.Size = new Size(219, 25);
-        tbTelefon2.TabIndex = 20;
-        tbTelefon2.TextChanged += EditControlsFromDict_TextChanged;
+        tbTelefon2.TabIndex = 21;
+        tbTelefon2.TextChanged += TextBox_ComboBox_TextChanged;
         tbTelefon2.Enter += TextBox_Enter;
-        tbTelefon2.KeyDown += Edit_KeyDown;
+        tbTelefon2.KeyDown += TextBox_ComboBox_KeyDown;
         tbTelefon2.Leave += TextBox_Leave;
         tbTelefon2.MouseDown += TextBox_MouseDown;
         // 
@@ -1959,10 +1994,10 @@ partial class FrmAdressen
         tbMobil.Name = "tbMobil";
         tbMobil.PlaceholderText = "Mobilfunknummer";
         tbMobil.Size = new Size(218, 25);
-        tbMobil.TabIndex = 21;
-        tbMobil.TextChanged += EditControlsFromDict_TextChanged;
+        tbMobil.TabIndex = 22;
+        tbMobil.TextChanged += TextBox_ComboBox_TextChanged;
         tbMobil.Enter += TextBox_Enter;
-        tbMobil.KeyDown += Edit_KeyDown;
+        tbMobil.KeyDown += TextBox_ComboBox_KeyDown;
         tbMobil.Leave += TextBox_Leave;
         tbMobil.MouseDown += TextBox_MouseDown;
         // 
@@ -1975,10 +2010,10 @@ partial class FrmAdressen
         tbFax.Name = "tbFax";
         tbFax.PlaceholderText = "Faxnummer";
         tbFax.Size = new Size(219, 25);
-        tbFax.TabIndex = 22;
-        tbFax.TextChanged += EditControlsFromDict_TextChanged;
+        tbFax.TabIndex = 23;
+        tbFax.TextChanged += TextBox_ComboBox_TextChanged;
         tbFax.Enter += TextBox_Enter;
-        tbFax.KeyDown += Edit_KeyDown;
+        tbFax.KeyDown += TextBox_ComboBox_KeyDown;
         tbFax.Leave += TextBox_Leave;
         tbFax.MouseDown += TextBox_MouseDown;
         // 
@@ -2025,8 +2060,8 @@ partial class FrmAdressen
         tbInternet.Name = "tbInternet";
         tbInternet.PlaceholderText = "Webseite";
         tbInternet.Size = new Size(443, 25);
-        tbInternet.TabIndex = 23;
-        tbInternet.TextChanged += EditControlsFromDict_TextChanged;
+        tbInternet.TabIndex = 24;
+        tbInternet.TextChanged += TextBox_ComboBox_TextChanged;
         tbInternet.Enter += TextBox_Enter;
         tbInternet.KeyDown += TbInternet_KeyDown;
         tbInternet.Leave += TextBox_Leave;
@@ -2099,7 +2134,7 @@ partial class FrmAdressen
         maskedTextBox.Name = "maskedTextBox";
         maskedTextBox.PromptChar = ' ';
         maskedTextBox.Size = new Size(79, 18);
-        maskedTextBox.TabIndex = 16;
+        maskedTextBox.TabIndex = 17;
         maskedTextBox.ValidatingType = typeof(DateTime);
         maskedTextBox.TextChanged += MaskedTextBox_TextChanged;
         maskedTextBox.Enter += MaskedTextBox_Enter;
@@ -2136,7 +2171,7 @@ partial class FrmAdressen
         flowLayoutPanel.Location = new Point(104, 489);
         flowLayoutPanel.Name = "flowLayoutPanel";
         flowLayoutPanel.Size = new Size(443, 46);
-        flowLayoutPanel.TabIndex = 25;
+        flowLayoutPanel.TabIndex = 26;
         flowLayoutPanel.WrapContents = false;
         flowLayoutPanel.MouseDoubleClick += FlowLayoutPanel_MouseDoubleClick;
         // 
@@ -2182,7 +2217,7 @@ partial class FrmAdressen
         tagComboBox.Margin = new Padding(3, 0, 3, 0);
         tagComboBox.Name = "tagComboBox";
         tagComboBox.Size = new Size(95, 25);
-        tagComboBox.TabIndex = 24;
+        tagComboBox.TabIndex = 25;
         tagComboBox.TextChanged += TagComboBox_TextChanged;
         tagComboBox.KeyDown += TagComboBox_KeyDown;
         // 
@@ -2195,9 +2230,9 @@ partial class FrmAdressen
         tbNotizen.Name = "tbNotizen";
         tbNotizen.PlaceholderText = "Notizen";
         tbNotizen.Size = new Size(443, 134);
-        tbNotizen.TabIndex = 26;
+        tbNotizen.TabIndex = 27;
         tbNotizen.SizeChanged += TbNotizen_SizeChanged;
-        tbNotizen.TextChanged += EditControlsFromDict_TextChanged;
+        tbNotizen.TextChanged += TextBox_ComboBox_TextChanged;
         tbNotizen.Enter += TbNotizen_Enter;
         tbNotizen.Leave += TextBox_Leave;
         // 
@@ -2794,4 +2829,6 @@ partial class FrmAdressen
     private ToolStripSeparator toolStripSeparator25;
     private cls.TopAlignZoomPictureBox topAlignZoomPictureBox;
     private System.Windows.Forms.Timer scrollTimer;
+    private TextBox tbPosition;
+    private TextBox tbPostfach;
 }

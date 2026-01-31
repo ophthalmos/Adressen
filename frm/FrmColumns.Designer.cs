@@ -35,24 +35,26 @@ partial class FrmColumns
         var listViewItem5 = new ListViewItem("Zwischenname");
         var listViewItem6 = new ListViewItem("Nickname");
         var listViewItem7 = new ListViewItem("Suffix");
-        var listViewItem8 = new ListViewItem("Firma");
-        var listViewItem9 = new ListViewItem("Strasse");
-        var listViewItem10 = new ListViewItem("PLZ");
-        var listViewItem11 = new ListViewItem("Ort");
-        var listViewItem12 = new ListViewItem("Land");
-        var listViewItem13 = new ListViewItem("Betreff");
-        var listViewItem14 = new ListViewItem("Grussformel");
-        var listViewItem15 = new ListViewItem("Schlussformel");
-        var listViewItem16 = new ListViewItem("Geburtstag");
-        var listViewItem17 = new ListViewItem("Mail1");
-        var listViewItem18 = new ListViewItem("Mail2");
-        var listViewItem19 = new ListViewItem("Telefon1");
-        var listViewItem20 = new ListViewItem("Telefon2");
-        var listViewItem21 = new ListViewItem("Mobil");
-        var listViewItem22 = new ListViewItem("Fax");
-        var listViewItem23 = new ListViewItem("Internet");
-        var listViewItem24 = new ListViewItem("Notizen");
-        var listViewItem25 = new ListViewItem("Id");
+        var listViewItem8 = new ListViewItem("Unternehmen");
+        var listViewItem9 = new ListViewItem(" Position");
+        var listViewItem10 = new ListViewItem("Strasse");
+        var listViewItem11 = new ListViewItem("PLZ");
+        var listViewItem12 = new ListViewItem("Ort");
+        var listViewItem13 = new ListViewItem("Postfach");
+        var listViewItem14 = new ListViewItem("Land");
+        var listViewItem15 = new ListViewItem("Betreff");
+        var listViewItem16 = new ListViewItem("Grussformel");
+        var listViewItem17 = new ListViewItem("Schlussformel");
+        var listViewItem18 = new ListViewItem("Geburtstag");
+        var listViewItem19 = new ListViewItem("Mail1");
+        var listViewItem20 = new ListViewItem("Mail2");
+        var listViewItem21 = new ListViewItem("Telefon1");
+        var listViewItem22 = new ListViewItem("Telefon2");
+        var listViewItem23 = new ListViewItem("Mobil");
+        var listViewItem24 = new ListViewItem("Fax");
+        var listViewItem25 = new ListViewItem("Internet");
+        var listViewItem26 = new ListViewItem("Notizen");
+        var listViewItem27 = new ListViewItem("Id");
         listView = new ListView();
         columnHeader = new ColumnHeader();
         btnClose = new Button();
@@ -90,13 +92,15 @@ partial class FrmColumns
         listViewItem23.StateImageIndex = 0;
         listViewItem24.StateImageIndex = 0;
         listViewItem25.StateImageIndex = 0;
-        listView.Items.AddRange(new ListViewItem[] { listViewItem1, listViewItem2, listViewItem3, listViewItem4, listViewItem5, listViewItem6, listViewItem7, listViewItem8, listViewItem9, listViewItem10, listViewItem11, listViewItem12, listViewItem13, listViewItem14, listViewItem15, listViewItem16, listViewItem17, listViewItem18, listViewItem19, listViewItem20, listViewItem21, listViewItem22, listViewItem23, listViewItem24, listViewItem25 });
+        listViewItem26.StateImageIndex = 0;
+        listViewItem27.StateImageIndex = 0;
+        listView.Items.AddRange(new ListViewItem[] { listViewItem1, listViewItem2, listViewItem3, listViewItem4, listViewItem5, listViewItem6, listViewItem7, listViewItem8, listViewItem9, listViewItem10, listViewItem11, listViewItem12, listViewItem13, listViewItem14, listViewItem15, listViewItem16, listViewItem17, listViewItem18, listViewItem19, listViewItem20, listViewItem21, listViewItem22, listViewItem23, listViewItem24, listViewItem25, listViewItem26, listViewItem27 });
         listView.LabelWrap = false;
         listView.Location = new Point(12, 12);
         listView.MultiSelect = false;
         listView.Name = "listView";
         listView.ShowGroups = false;
-        listView.Size = new Size(159, 529);
+        listView.Size = new Size(159, 572);
         listView.TabIndex = 0;
         listView.UseCompatibleStateImageBehavior = false;
         listView.View = View.Details;
@@ -108,7 +112,7 @@ partial class FrmColumns
         // btnClose
         // 
         btnClose.DialogResult = DialogResult.OK;
-        btnClose.Location = new Point(93, 547);
+        btnClose.Location = new Point(93, 590);
         btnClose.Name = "btnClose";
         btnClose.Size = new Size(78, 26);
         btnClose.TabIndex = 1;
@@ -117,7 +121,7 @@ partial class FrmColumns
         // 
         // btnStandard
         // 
-        btnStandard.Location = new Point(12, 547);
+        btnStandard.Location = new Point(12, 590);
         btnStandard.Name = "btnStandard";
         btnStandard.Size = new Size(75, 26);
         btnStandard.TabIndex = 2;
@@ -130,7 +134,7 @@ partial class FrmColumns
         AcceptButton = btnClose;
         AutoScaleDimensions = new SizeF(7F, 17F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(183, 585);
+        ClientSize = new Size(183, 628);
         Controls.Add(btnStandard);
         Controls.Add(btnClose);
         Controls.Add(listView);

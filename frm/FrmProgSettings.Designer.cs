@@ -62,12 +62,9 @@ partial class FrmProgSettings
         btnWatchFolder = new Button();
         tbWatchFolder = new TextBox();
         tpSicherung = new TabPage();
-        labelMS = new Label();
-        numUpDownSuccess = new NumericUpDown();
         lblBackupFolder = new Label();
         btnExplorer = new Button();
         lblBackup = new Label();
-        ckbBackupSuccess = new CheckBox();
         ckbBackup = new CheckBox();
         btnBackupFolder = new Button();
         tbBackupFolder = new TextBox();
@@ -86,7 +83,6 @@ partial class FrmProgSettings
         gbxContactsAutoload.SuspendLayout();
         tpWatchFolder.SuspendLayout();
         tpSicherung.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)numUpDownSuccess).BeginInit();
         SuspendLayout();
         // 
         // tabControl
@@ -451,12 +447,9 @@ partial class FrmProgSettings
         // 
         tpSicherung.BackColor = SystemColors.ControlLightLight;
         tpSicherung.BorderStyle = BorderStyle.FixedSingle;
-        tpSicherung.Controls.Add(labelMS);
-        tpSicherung.Controls.Add(numUpDownSuccess);
         tpSicherung.Controls.Add(lblBackupFolder);
         tpSicherung.Controls.Add(btnExplorer);
         tpSicherung.Controls.Add(lblBackup);
-        tpSicherung.Controls.Add(ckbBackupSuccess);
         tpSicherung.Controls.Add(ckbBackup);
         tpSicherung.Controls.Add(btnBackupFolder);
         tpSicherung.Controls.Add(tbBackupFolder);
@@ -465,29 +458,6 @@ partial class FrmProgSettings
         tpSicherung.Size = new Size(271, 304);
         tpSicherung.TabIndex = 2;
         tpSicherung.Text = " Sicherung";
-        // 
-        // labelMS
-        // 
-        labelMS.AutoSize = true;
-        labelMS.Enabled = false;
-        labelMS.Location = new Point(220, 98);
-        labelMS.Name = "labelMS";
-        labelMS.Size = new Size(27, 19);
-        labelMS.TabIndex = 10;
-        labelMS.Text = "ms";
-        // 
-        // numUpDownSuccess
-        // 
-        numUpDownSuccess.Enabled = false;
-        numUpDownSuccess.Increment = new decimal(new int[] { 100, 0, 0, 0 });
-        numUpDownSuccess.Location = new Point(143, 96);
-        numUpDownSuccess.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
-        numUpDownSuccess.Minimum = new decimal(new int[] { 500, 0, 0, 0 });
-        numUpDownSuccess.Name = "numUpDownSuccess";
-        numUpDownSuccess.Size = new Size(71, 25);
-        numUpDownSuccess.TabIndex = 9;
-        numUpDownSuccess.TextAlign = HorizontalAlignment.Center;
-        numUpDownSuccess.Value = new decimal(new int[] { 2500, 0, 0, 0 });
         // 
         // lblBackupFolder
         // 
@@ -510,24 +480,11 @@ partial class FrmProgSettings
         // 
         // lblBackup
         // 
-        lblBackup.Location = new Point(12, 122);
+        lblBackup.Location = new Point(12, 84);
         lblBackup.Name = "lblBackup";
         lblBackup.Size = new Size(250, 136);
         lblBackup.TabIndex = 6;
         lblBackup.Text = resources.GetString("lblBackup.Text");
-        // 
-        // ckbBackupSuccess
-        // 
-        ckbBackupSuccess.AutoSize = true;
-        ckbBackupSuccess.Checked = true;
-        ckbBackupSuccess.CheckState = CheckState.Checked;
-        ckbBackupSuccess.Enabled = false;
-        ckbBackupSuccess.Location = new Point(12, 96);
-        ckbBackupSuccess.Name = "ckbBackupSuccess";
-        ckbBackupSuccess.Size = new Size(123, 23);
-        ckbBackupSuccess.TabIndex = 5;
-        ckbBackupSuccess.Text = "Erfolgsmeldung";
-        ckbBackupSuccess.UseVisualStyleBackColor = true;
         // 
         // ckbBackup
         // 
@@ -623,7 +580,6 @@ partial class FrmProgSettings
         tpWatchFolder.PerformLayout();
         tpSicherung.ResumeLayout(false);
         tpSicherung.PerformLayout();
-        ((System.ComponentModel.ISupportInitialize)numUpDownSuccess).EndInit();
         ResumeLayout(false);
     }
 
@@ -651,12 +607,9 @@ partial class FrmProgSettings
     private RadioButton rbRecent;
     private RadioButton rbEmpty;
     private OpenFileDialog openFileDialog;
-    private CheckBox ckbBackupSuccess;
     private Label lblBackup;
     private Button btnExplorer;
     private Label lblBackupFolder;
-    private Label labelMS;
-    private NumericUpDown numUpDownSuccess;
     private GroupBox gbxColorScheme;
     private RadioButton rbtnDark;
     private RadioButton rbtnBlue;
