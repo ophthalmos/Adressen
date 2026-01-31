@@ -31,10 +31,13 @@
   <ItemGroup>
     <Compile Remove="LibreOffice\**" />
     <Compile Remove="lib\**" />
+    <Compile Remove="Papierkorb\**" />
     <EmbeddedResource Remove="LibreOffice\**" />
     <EmbeddedResource Remove="lib\**" />
+    <EmbeddedResource Remove="Papierkorb\**" />
     <None Remove="LibreOffice\**" />
     <None Remove="lib\**" />
+    <None Remove="Papierkorb\**" />
   </ItemGroup>
 
   <ItemGroup>
