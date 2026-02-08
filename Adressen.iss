@@ -1,6 +1,6 @@
 #define MyAppLong "Adressen & Kontakte"
 #define MyAppName "Adressen"
-#define MyAppVersion "1.1.1"
+#define MyAppVersion "1.1.2"
 
 [Setup]
 AppName={#MyAppName}
@@ -79,8 +79,8 @@ Source: "bin\x64\Release\net10.0-windows10.0.19041.0\WinRT.Runtime.dll"; DestDir
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\client_secret.json"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion  
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\adb_file.ico"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\LibreHelper\*.*"; DestDir: "{app}\LibreHelper"; Permissions: users-modify; Flags: ignoreversion  
-Source: "MännlicheVornamen.txt"; DestDir: "{userappdata}\{#MyAppName}"; Flags: onlyifdoesntexist
-Source: "WeiblicheVornamen.txt"; DestDir: "{userappdata}\{#MyAppName}"; Flags: onlyifdoesntexist
+;Source: "MännlicheVornamen.txt"; DestDir: "{userappdata}\{#MyAppName}"; Flags: onlyifdoesntexist
+;Source: "WeiblicheVornamen.txt"; DestDir: "{userappdata}\{#MyAppName}"; Flags: onlyifdoesntexist
 
 [Icons]
 Name: "{autodesktop}\{#MyAppLong}"; Filename: "{app}\{#MyAppName}.exe"; Tasks: desktopicon

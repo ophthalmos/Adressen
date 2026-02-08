@@ -4,16 +4,12 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
 using System.Globalization;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml.Linq;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.PeopleService.v1;
-using Google.Apis.PeopleService.v1.Data;
-using Google.Apis.Services;
-using Word = Microsoft.Office.Interop.Word;
 
 namespace Adressen.cls;
 
@@ -44,6 +40,121 @@ internal static class Utils
             }
         };
         TaskDialog.ShowDialog(hwnd ?? IntPtr.Zero, page);
+    }
+
+    public static void SortContacts(BindingList<Contact>? contacts)
+    {
+        if (contacts == null || contacts.Count == 0) { return; }
+        var sortedList = contacts.OrderBy(x => x.Nachname).ThenBy(x => x.Vorname).ThenBy(x => x.Unternehmen).ToList();  // ignoriert Groß-/Kleinschreibung
+        contacts.Clear();  // BindingList wird geleert, weil sie keine Sortiermethode hat
+        foreach (var c in sortedList) { contacts.Add(c); }
+    }
+
+    //public static int GetAddressInsertIndex(BindingSource source, Adresse newItem)
+    //{
+    //    // Wir nutzen die Kultur des Systems (Deutsch), damit "ü", "ß" und Leerzeichen 
+    //    // so behandelt werden, wie SQLite es (hoffentlich) auch tut.
+    //    var comparison = StringComparison.CurrentCultureIgnoreCase;
+
+    //    for (var i = 0; i < source.Count; i++)
+    //    {
+    //        if (source[i] is Adresse current)
+    //        {
+    //            // 1. Nachname
+    //            var cmp = string.Compare(newItem.Nachname, current.Nachname, comparison);
+
+    //            // 2. Vorname (nur wenn Nachname identisch)
+    //            if (cmp == 0)
+    //            {
+    //                cmp = string.Compare(newItem.Vorname, current.Vorname, comparison);
+    //            }
+
+    //            // 3. Unternehmen (nur wenn alles andere identisch)
+    //            if (cmp == 0)
+    //            {
+    //                cmp = string.Compare(newItem.Unternehmen, current.Unternehmen, comparison);
+    //            }
+
+    //            // WICHTIG: Wenn cmp < 0 ist, haben wir den ersten Eintrag gefunden, 
+    //            // der ALPHABETISCH HINTER unserem neuen Element liegt. 
+    //            // Hier müssen wir uns "reindrängeln".
+    //            if (cmp < 0)
+    //            {
+    //                return i;
+    //            }
+    //        }
+    //    }
+    //    return source.Count;
+    //}
+
+    public static int GetAddressInsertIndex(BindingSource source, Adresse newItem)
+    {
+        // Wir nutzen InvariantCulture, da SQLite's NOCASE nur ASCII-Werte 
+        // zuverlässig case-insensitive behandelt. StringSort bleibt für die 
+        // korrekte Behandlung von Leerzeichen/Sonderzeichen wichtig.
+        var compareInfo = CultureInfo.InvariantCulture.CompareInfo;
+        var options = CompareOptions.IgnoreCase | CompareOptions.StringSort;
+
+        for (var i = 0; i < source.Count; i++)
+        {
+            if (source[i] is Adresse current)
+            {
+                // 1. Nachname vergleichen
+                var cmp = compareInfo.Compare(newItem.Nachname ?? "", current.Nachname ?? "", options);
+
+                // 2. Vorname
+                if (cmp == 0)
+                {
+                    cmp = compareInfo.Compare(newItem.Vorname ?? "", current.Vorname ?? "", options);
+                }
+
+                // 3. Unternehmen
+                if (cmp == 0)
+                {
+                    cmp = compareInfo.Compare(newItem.Unternehmen ?? "", current.Unternehmen ?? "", options);
+                }
+
+                // Wenn cmp < 0, ist newItem alphabetisch VOR current.
+                if (cmp < 0)
+                {
+                    return i;
+                }
+            }
+        }
+        return source.Count;
+    }
+
+    public static List<(DateOnly Datum, string Name, int Alter, int Tage, string Id)> CalculateUpcomingBirthdays(IEnumerable<IContactEntity> contacts, int daysLookBack, int daysLookAhead)
+    {
+        var heute = DateOnly.FromDateTime(DateTime.Today);
+
+        return [.. contacts.Where(x => x.BirthdayDate.HasValue).Select(x => {
+                var g = x.BirthdayDate!.Value;
+
+                // Schaltjahr-Korrektur
+                var day = (g.Month == 2 && g.Day == 29 && !DateTime.IsLeapYear(heute.Year)) ? 28 : g.Day;
+
+                var gebTagDiesesJahr = new DateOnly(heute.Year, g.Month, day);
+                var tage = gebTagDiesesJahr.DayNumber - heute.DayNumber;
+
+                // Jahreswechsel-Logik
+                if (tage < -daysLookBack)
+                {
+                    var dayNext = (g.Month == 2 && g.Day == 29 && !DateTime.IsLeapYear(heute.Year + 1)) ? 28 : g.Day;
+                    tage = new DateOnly(heute.Year + 1, g.Month, dayNext).DayNumber - heute.DayNumber;
+                }
+                else if (tage > daysLookAhead)
+                {
+                    var dayPrev = (g.Month == 2 && g.Day == 29 && !DateTime.IsLeapYear(heute.Year - 1)) ? 28 : g.Day;
+                    var tageLetztesJahr = new DateOnly(heute.Year - 1, g.Month, dayPrev).DayNumber - heute.DayNumber;
+                    if (tageLetztesJahr >= -daysLookBack) { tage = tageLetztesJahr; } }
+
+                return new { Entity = x, Tage = tage, OriginalGeb = g };
+            })
+            .Where(x => x.Tage >= -daysLookBack && x.Tage <= daysLookAhead).OrderBy(x => x.Tage).Select(x =>            {
+                var alter = heute.Year - x.OriginalGeb.Year;
+                if (x.Tage > 0) { alter--; } return (Datum: x.OriginalGeb, Name: x.Entity.DisplayName, Alter: alter, x.Tage, Id: x.Entity.UniqueId);
+            })];
     }
 
     internal static void StartFile(nint handle, string filePath)
@@ -145,21 +256,6 @@ internal static class Utils
     }
 
     internal static void StartSearchCacheWarmup(IEnumerable<IContactEntity> items) => Task.Run(() => { foreach (var item in items) { var warmup = item.SearchText; } });
-
-    internal static async Task<PeopleServiceService> GetPeopleServiceAsync(string secretPath, string tokenDir)
-    {
-        string[] scopes = [PeopleServiceService.Scope.Contacts]; // für OAuth2-Freigabe, mehrere Eingaben mit Komma gerennt (PeopleServiceService.Scope.ContactsOtherReadonly)
-        UserCredential credential;
-        using (FileStream stream = new(secretPath, FileMode.Open, FileAccess.Read))
-        {
-            credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(GoogleClientSecrets.FromStream(stream).Secrets, scopes, "user", CancellationToken.None, new Google.Apis.Util.Store.FileDataStore(tokenDir, true));
-        }
-        return new PeopleServiceService(new BaseClientService.Initializer()
-        {
-            HttpClientInitializer = credential,
-            ApplicationName = Application.ProductName,
-        });
-    }
 
     internal static void WendeExifOrientierungAn(Image bild)
     {
@@ -283,32 +379,59 @@ internal static class Utils
         return false;
     }
 
-
-    internal static void WordInfoTaskDlg(nint hwnd, string[] allKeys, TaskDialogIcon icon, Word.Application? wordApp, Word.Document? wordDoc)
+    public static async Task<(Version? Version, string? ReleaseDate)> GetLatestVersionInfoAsync()
     {
-        var btnCreateDoc = new TaskDialogButton("Beispieldokument erstellen");
-        var page = new TaskDialogPage()
+        var xmlUrl = "https://www.netradio.info/download/adressen.xml";
+        try
         {
-            Caption = Application.ProductName,
-            Heading = "Folgende Textmarken können in einem Word-Dokument verwendet werden:",
-            Text = string.Join(", ", allKeys),
-            Icon = icon,
-            Footnote = "Tipp: Erstellen Sie eigene Vorlagen mit passenden Textmarken.",
-            AllowCancel = true,
-            Buttons = { btnCreateDoc, TaskDialogButton.Close }
-        };
-        btnCreateDoc.Click += (s, e) => { CreateWordDocument(allKeys, hwnd, wordApp, wordDoc); };
-        TaskDialog.ShowDialog(hwnd, page);
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Get, xmlUrl);
+            requestMessage.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/xml"));
+
+            using var response = await HttpService.Client.SendAsync(requestMessage);
+            response.EnsureSuccessStatusCode();
+
+            var xmlContent = await response.Content.ReadAsStringAsync();
+            var doc = XDocument.Parse(xmlContent);
+
+            var rawVersion = doc.Element("adressen")?.Element("version")?.Value;
+            var releaseDate = doc.Element("adressen")?.Element("date")?.Value;
+
+            if (!string.IsNullOrEmpty(rawVersion))
+            {
+                var cleanVersionString = rawVersion.Split(['+', '-'])[0];
+                if (!cleanVersionString.Contains('.')) { cleanVersionString += ".0"; }
+
+                if (Version.TryParse(cleanVersionString, out var parsedVersion)) { return (parsedVersion, releaseDate); }
+            }
+        }
+        catch (Exception ex) { Debug.WriteLine($"Fehler beim Abrufen der Versionsinfo: {ex.Message}"); }
+        return (null, null);
     }
 
-    internal static void HelpMsgTaskDlg(nint hwnd, string appName, Icon? icon)
+    public static bool IsUpdateCheckDue(int updateIndex, DateTime lastUpdateCheck)
     {
+        if (updateIndex == 3)        {            return false; }  // "Niemals"
+        var elapsed = DateTime.Now - lastUpdateCheck;
+        return updateIndex switch
+        {
+            0 => elapsed.TotalDays >= 1,  // Jeden Tag
+            1 => elapsed.TotalDays >= 7,  // Jede Woche
+            2 => elapsed.TotalDays >= 30, // Jeden Monat
+            _ => false
+        };
+    }
+
+    internal static void HelpMsgTaskDlg(nint hwnd, string appName, Icon? icon, int? dbVersion = null)
+    {
+        
         var curVersion = Assembly.GetExecutingAssembly().GetName().Version;
         var threeVersion = curVersion?.ToString(3) ?? "unbekannt"; //curVersion is not null ? $"{curVersion.Major}.{curVersion.Minor}.{curVersion.Build}" : "unbekannt";
         var buildDate = GetBuildDate();
         TaskDialogButton paypalButton = new TaskDialogCommandLinkButton("Anerkennung spenden via PayPal");
-        TaskDialogButton updateButton = new TaskDialogCommandLinkButton("Nach Programm-Update suchen…") { AllowCloseDialog = false };
-        var foot = "              © " + buildDate.ToString("yyyy") + " Wilhelm Happe, Version " + threeVersion + " (" + buildDate.ToString("d") + ")";
+        //TaskDialogButton updateButton = new TaskDialogCommandLinkButton("Nach Programm-Update suchen…") { AllowCloseDialog = false };
+        var indent = new string(' ', 14);
+        var foot = $"{indent}© {buildDate:yyyy} Wilhelm Happe\n{indent}Version {threeVersion} ({buildDate:d})";
+        if (dbVersion.HasValue) { foot += $"\n{indent}Datenbank-Schema: v{dbVersion.Value}"; }
         var msg = "Adressverwaltung für die komfortable Zusammen-" + Environment.NewLine +
             "arbeit mit Microsoft-Word und LibreOffice-Writer" + Environment.NewLine +
             "und der Möglichkeit, Briefumschläge zu bedrucken." + Environment.NewLine +
@@ -321,22 +444,22 @@ internal static class Utils
             Icon = icon == null ? null : new TaskDialogIcon(icon),
             AllowCancel = true,
             SizeToContent = true,
-            Buttons = { paypalButton, updateButton, TaskDialogButton.OK },
+            Buttons = { paypalButton, TaskDialogButton.OK },
             DefaultButton = TaskDialogButton.OK,
             Footnote = foot
         };
 
-        TaskDialogButton downloadButton = new TaskDialogCommandLinkButton("AdressenSetup.exe herunterladen", "AdressenSetup.exe wird im Download-Ordner\ngespeichert. Führen Sie das Setupprogramm\naus, um die neueste Version zu installieren.");
-        var updatePage = new TaskDialogPage()
-        {
-            Caption = appName,
-            Heading = $"{appName} ist auf dem neuesten Stand.",
-            Text = $"Version {threeVersion} (Offizielles Build, 64-Bit)", //\n\nAutomatische Suche nach Updates:",
-            Icon = TaskDialogIcon.Information,
-            AllowCancel = true,
-            SizeToContent = true,
-            Buttons = { TaskDialogButton.Close }
-        };
+        //TaskDialogButton downloadButton = new TaskDialogCommandLinkButton("AdressenSetup.exe herunterladen", "AdressenSetup.exe wird im Download-Ordner\ngespeichert. Führen Sie das Setupprogramm\naus, um die neueste Version zu installieren.");
+        //var updatePage = new TaskDialogPage()
+        //{
+        //    Caption = appName,
+        //    Heading = $"{appName} ist auf dem neuesten Stand.",
+        //    Text = $"Version {threeVersion} (Offizielles Build, 64-Bit)", //\n\nAutomatische Suche nach Updates:",
+        //    Icon = TaskDialogIcon.Information,
+        //    AllowCancel = true,
+        //    SizeToContent = true,
+        //    Buttons = { TaskDialogButton.Close }
+        //};
 
         //var radioButton1 = updatePage.RadioButtons.Add("täglich");
         //var radioButton2 = updatePage.RadioButtons.Add("wöchentlich");
@@ -350,52 +473,52 @@ internal static class Utils
         //radioButton4.CheckedChanged += (s, e) => Console.WriteLine("RadioButton4 CheckedChanged: " + radioButton4.Checked);
 
 
-        var urlString = string.Empty;
-        updateButton.Click += async (sender, e) =>
-        {
-            updateButton.Enabled = false; // um doppelte Klicks zu verhindern
-            var xmlURL = "https://www.netradio.info/download/adressen.xml";
-            Version? updateVersion = null;
-            var dateString = string.Empty;
-            try
-            {
-                using var requestMessage = new HttpRequestMessage(HttpMethod.Get, xmlURL);
-                requestMessage.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/xml"));
-                using var response = await HttpService.Client.SendAsync(requestMessage);
-                response.EnsureSuccessStatusCode(); // Wirft eine Exception bei Fehlern wie 404 oder 500
-                var xmlContent = await response.Content.ReadAsStringAsync();
-                var doc = XDocument.Parse(xmlContent);
-                var versionString = doc.Element("adressen")?.Element("version")?.Value;
-                if (versionString != null) { updateVersion = new Version(versionString); }
-                dateString = doc.Element("adressen")?.Element("date")?.Value;
-                urlString = doc.Element("adressen")?.Element("url64")?.Value;
-            }
-            catch (HttpRequestException ex) // when (ex is WebException or NullReferenceException or ArgumentNullException or XmlException or ArgumentException or IOException)
-            {
-                updatePage.Icon = TaskDialogIcon.Error;
-                updatePage.Heading = "Es ist ein Fehler aufgetreten.";
-                var exStatusCode = ex.StatusCode;
-                if (exStatusCode == HttpStatusCode.NotFound) { updatePage.Text = "Die Update-Informationen wurden nicht gefunden."; }
-                else { updatePage.Text = exStatusCode?.ToString().Length > 0 ? $"Status-Code: {exStatusCode}\nFehlermeldung: {ex.Message}" : $"Fehlermeldung: {ex.Message}"; } // + "\n\nAutomatische Suche nach Updates:"; }
-            }
-            catch (Exception ex) // when (ex is WebException or NullReferenceException or ArgumentNullException or XmlException or ArgumentException or IOException)
-            {
-                updatePage.Icon = TaskDialogIcon.Error;
-                updatePage.Heading = ex.GetType().ToString();
-                updatePage.Text = ex.Message;  // + "\n\nAutomatische Suche nach Updates:"; 
-            }
-            if (updateVersion != null && updateVersion.CompareTo(curVersion) > 0)
-            {
-                updatePage.Heading = "Es steht ein Update zur Verfügung!";
-                updatePage.Text = $"Version {updateVersion?.ToString()} vom {dateString}";  //\n\nAutomatische Suche nach Updates:";
-                updatePage.Buttons.Add(downloadButton);
-            }
-            initialPage.Navigate(updatePage);  // When the user clicks updateButton, navigate to the second page.
-        };
+        //var urlString = string.Empty;
+        //updateButton.Click += async (sender, e) =>
+        //{
+        //    updateButton.Enabled = false; // um doppelte Klicks zu verhindern
+        //    var xmlURL = "https://www.netradio.info/download/adressen.xml";
+        //    Version? updateVersion = null;
+        //    var dateString = string.Empty;
+        //    try
+        //    {
+        //        using var requestMessage = new HttpRequestMessage(HttpMethod.Get, xmlURL);
+        //        requestMessage.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/xml"));
+        //        using var response = await HttpService.Client.SendAsync(requestMessage);
+        //        response.EnsureSuccessStatusCode(); // Wirft eine Exception bei Fehlern wie 404 oder 500
+        //        var xmlContent = await response.Content.ReadAsStringAsync();
+        //        var doc = XDocument.Parse(xmlContent);
+        //        var versionString = doc.Element("adressen")?.Element("version")?.Value;
+        //        if (versionString != null) { updateVersion = new Version(versionString); }
+        //        dateString = doc.Element("adressen")?.Element("date")?.Value;
+        //        urlString = doc.Element("adressen")?.Element("url64")?.Value;
+        //    }
+        //    catch (HttpRequestException ex) // when (ex is WebException or NullReferenceException or ArgumentNullException or XmlException or ArgumentException or IOException)
+        //    {
+        //        updatePage.Icon = TaskDialogIcon.Error;
+        //        updatePage.Heading = "Es ist ein Fehler aufgetreten.";
+        //        var exStatusCode = ex.StatusCode;
+        //        if (exStatusCode == HttpStatusCode.NotFound) { updatePage.Text = "Die Update-Informationen wurden nicht gefunden."; }
+        //        else { updatePage.Text = exStatusCode?.ToString().Length > 0 ? $"Status-Code: {exStatusCode}\nFehlermeldung: {ex.Message}" : $"Fehlermeldung: {ex.Message}"; } // + "\n\nAutomatische Suche nach Updates:"; }
+        //    }
+        //    catch (Exception ex) // when (ex is WebException or NullReferenceException or ArgumentNullException or XmlException or ArgumentException or IOException)
+        //    {
+        //        updatePage.Icon = TaskDialogIcon.Error;
+        //        updatePage.Heading = ex.GetType().ToString();
+        //        updatePage.Text = ex.Message;  // + "\n\nAutomatische Suche nach Updates:"; 
+        //    }
+        //    if (updateVersion != null && updateVersion.CompareTo(curVersion) > 0)
+        //    {
+        //        updatePage.Heading = "Es steht ein Update zur Verfügung!";
+        //        updatePage.Text = $"Version {updateVersion?.ToString()} vom {dateString}";  //\n\nAutomatische Suche nach Updates:";
+        //        updatePage.Buttons.Add(downloadButton);
+        //    }
+        //    initialPage.Navigate(updatePage);  // When the user clicks updateButton, navigate to the second page.
+        //};
 
         var result = TaskDialog.ShowDialog(hwnd, initialPage);
         if (result == paypalButton) { StartLink(hwnd, "https://www.paypal.com/donate/?hosted_button_id=3HRQZCUW37BQ6"); }
-        else if (result == downloadButton) { StartLink(hwnd, urlString); }
+        //else if (result == downloadButton) { StartLink(hwnd, urlString); }
     }
 
 
@@ -606,234 +729,6 @@ internal static class Utils
         return ddf;
     }
 
-    internal static bool IsWordInstalled => Type.GetTypeFromProgID("Word.Application") is not null;
-
-    internal static bool IsLibreOfficeInstalled => Type.GetTypeFromProgID("com.sun.star.ServiceManager") is not null;
-
-    private static void CreateWordDocument(string[] allKeys, nint handle, Word.Application? wordApp, Word.Document? wordDoc)
-    {
-        if (!IsWordInstalled)
-        {
-            MsgTaskDlg(handle, "Microsoft Word is not installed", "Installieren Sie Microsoft Word.");
-            return;
-        }
-        try
-        {
-            NativeMethods.SHGetKnownFolderPath(new Guid("374DE290-123F-4565-9164-39C4925E467B"), 0, IntPtr.Zero, out var downloadPath); // Downloads folder    
-            downloadPath = Path.Combine(downloadPath, "Adressen-Vorlage.dotx");
-
-            Control? owner = null;
-            try { owner = Control.FromHandle(handle); }
-            catch { owner = null; }
-            try
-            {
-                try { wordApp = (Word.Application?)Marshal2.GetActiveObject("Word.Application"); }
-                catch (COMException) { wordApp = null; }
-                if (wordApp != null)
-                {
-                    var docCount = wordApp.Documents.Count; // Office Collections sind 1-basiert!
-                    for (var i = 1; i <= docCount; i++)
-                    {
-                        try
-                        {
-                            var openDoc = wordApp.Documents[i]; // Zugriff per Index statt Enumerator
-                            if (!string.IsNullOrEmpty(openDoc.FullName) &&
-                                string.Equals(Path.GetFullPath(openDoc.FullName), Path.GetFullPath(downloadPath), StringComparison.OrdinalIgnoreCase))
-                            {
-                                wordApp.Activate();
-                                openDoc.Activate();
-                                return;
-                            }
-                        }
-                        catch (Exception) { } // Falls die Prüfung fehlschlägt, einfach weiterfahren (keine Blockade)
-                    }
-                }
-            }
-            catch (Exception) { } // Falls die Prüfung fehlschlägt, einfach weiterfahren (keine Blockade)
-            if (File.Exists(downloadPath))
-            {
-                var (IsYes, IsNo, _) = YesNo_TaskDialog(owner, "Datei existiert bereits", "Möchten Sie sie die vorhandene Vorlage löschen und neu erstellen?", downloadPath, "Ja, löschen und neu erstellen", "Nein, nur öffnen", true);
-                if (IsNo)
-                {
-                    try // Öffnet die Datei selbst (Vorlage), nicht: neues Dokument aus der Vorlage
-                    {
-                        wordApp ??= new Word.Application { Visible = true };
-                        var openedDoc = wordApp.Documents.Open(FileName: downloadPath, ReadOnly: false, AddToRecentFiles: true);
-                        wordApp.Activate();
-                        openedDoc.Activate();
-                    }
-                    catch { StartFile(owner?.Handle ?? IntPtr.Zero, downloadPath); }
-                    return;
-                }
-                else if (!IsYes) { return; }
-                try { File.Delete(downloadPath); }
-                catch (Exception ex) { ErrTaskDlg(handle, ex); return; }
-            }
-
-            wordApp = new Word.Application { Visible = true };
-            wordDoc = wordApp.Documents.Add();
-
-            wordDoc.PageSetup.TopMargin = wordApp.CentimetersToPoints(1.5f);
-            wordDoc.PageSetup.BottomMargin = wordApp.CentimetersToPoints(1.0f);
-
-            wordDoc.Styles[Word.WdBuiltinStyle.wdStyleNormal].Font.Name = "Calibri";
-            wordDoc.Styles[Word.WdBuiltinStyle.wdStyleNormal].Font.Size = 11;
-
-            wordDoc.BuiltInDocumentProperties[Word.WdBuiltInProperty.wdPropertyAuthor].Value = "Wilhelm Happe";
-            wordDoc.BuiltInDocumentProperties[Word.WdBuiltInProperty.wdPropertyTitle].Value = "Adressen-Vorlage";
-            wordDoc.BuiltInDocumentProperties[Word.WdBuiltInProperty.wdPropertySubject].Value = "Nur als Beispiel gedacht";
-            wordDoc.BuiltInDocumentProperties[Word.WdBuiltInProperty.wdPropertyKeywords].Value = "Adressen, Briefvorlage";
-            wordDoc.BuiltInDocumentProperties[Word.WdBuiltInProperty.wdPropertyComments].Value = "";
-
-            var para0 = wordDoc.Paragraphs.Add();
-            para0.Range.Font.Size = 12; // explizit 12 behalten
-            para0.Range.Text = "Präfix_Vorname_Zwischenname_Nachname";
-            wordDoc.Bookmarks.Add("Präfix_Vorname_Zwischenname_Nachname", para0.Range);
-            para0.Format.SpaceAfter = 0f;
-            para0.Range.InsertParagraphAfter();
-
-            var para1 = wordDoc.Paragraphs.Add();
-            para1.Range.Font.Size = 12; // explizit 12 behalten
-            para1.Range.Text = "Strasse";
-            para1.Range.Bookmarks.Add("Strasse", para1.Range);
-            para1.Format.SpaceAfter = 6f;
-            para1.Range.InsertParagraphAfter();
-
-            var para2 = wordDoc.Paragraphs.Add();
-            para2.Range.Font.Size = 12; // explizit 12 behalten
-            para2.Range.Text = "PLZ_Ort";
-            para2.Range.Bookmarks.Add("PLZ_Ort", para2.Range);
-            para2.Format.SpaceAfter = 12f;
-            para2.Range.InsertParagraphAfter();
-
-            var para4 = wordDoc.Paragraphs.Add();
-            para4.Range.Font.Size = 11;
-            para4.Range.Text = "Probieren Sie nun das Einfügen einer Adresse aus, indem Sie im Adressen-Programm eine Adresse selektieren und dann auf den Button »In Brief einfügen« klicken. Wiederholen Sie den Vorgang mit anderen Adressen!";
-            para4.Range.InsertParagraphAfter();
-
-            var para5 = wordDoc.Paragraphs.Add();
-            para5.Range.Font.Size = 11;
-            para5.Range.Text = "Wenn Sie eine Textmarke hinzufügen möchten, markieren Sie zuerst die Stelle der Textmarke in Ihrem Dokument. Wählen Sie die Registerkarte »Einfügen« und dann »Textmarke« aus. Schneller geht es, wenn Sie die Tastenkombination Strg+Shift+F5 drücken.";
-            para5.Range.InsertParagraphAfter();
-
-            var para6 = wordDoc.Paragraphs.Add();
-            para6.Range.Font.Size = 11;
-            para6.Range.Text = "Um Textmarken-Klammen anzuzeigen, klicken Sie auf Datei > Optionen > Erweitert. Wählen Sie unter \"Dokumentinhalt anzeigen\" die Option \"Textmarken anzeigen\".";
-            para6.Range.InsertParagraphAfter();
-
-            var para7 = wordDoc.Paragraphs.Add();
-            para7.Range.Font.Size = 11;
-            para7.Range.Text = "Kombinierte Textmarken (mit Unterstrich) sind nützlich, weil bei ihnen unnötige Leerzeichen zwischen den Elementen automatisch entfernt werden.";
-            para7.Range.InsertParagraphAfter();
-
-            var para8 = wordDoc.Paragraphs.Add();
-            para8.Range.Font.Bold = 1;
-            para8.Range.Text = "Liste der möglichen Textmarkierungen:";
-            para8.Format.SpaceAfter = 0f;
-            para8.Range.InsertParagraphAfter();
-
-            var para9 = wordDoc.Paragraphs.Add();
-            para9.Range.Font.Name = "Courier New";
-            para9.Range.NoProofing = 1;
-            para9.Range.Text = string.Join(Environment.NewLine, allKeys);  // Zeilenumbruch im Text: \x0B
-
-            wordDoc.SaveAs2(downloadPath, Word.WdSaveFormat.wdFormatXMLTemplate);
-            wordApp.Activate();
-            //wordApp.Dialogs[Word.WdWordDialog.wdDialogFileSummaryInfo].Show(); // Öffnet den Eigenschaften-Dialog. Cave: Blockiert UI
-        }
-        catch (Exception ex) { ErrTaskDlg(handle, ex); }
-        finally { ReleaseWordObjects(ref wordDoc, ref wordApp); }
-    }
-
-    internal static void ReleaseWordObjects(ref Word.Document? wordDoc, ref Word.Application? wordApp)
-    {
-        if (wordDoc is not null)
-        {
-            try { Marshal.FinalReleaseComObject(wordDoc); }
-            catch { }
-            finally { wordDoc = null; }
-        }
-        if (wordApp is not null)
-        {
-            try { Marshal.FinalReleaseComObject(wordApp); } // 'Visible = true' => Word bleibt offen
-            catch { }
-            finally { wordApp = null; }
-        }
-        try
-        {
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-        }
-        catch { }
-    }
-
-
-    /*    private static void CreateTextMakerDocument(string[] allKeys, IntPtr handle)
-        {
-            var textMakerType = Type.GetTypeFromProgID("TextMaker.Application");
-            if (textMakerType == null)
-            {
-                ErrorMsgTaskDlg(handle, "TextMaker is not installed", "Installieren Sie SoftMaker Office.");
-                return;
-            }
-            dynamic? textDoc = null;
-            dynamic? textApp = null;
-
-            try
-            {
-                textApp = Activator.CreateInstance(textMakerType);
-                if (textApp == null)
-                {
-                    ErrorMsgTaskDlg(handle, "TextMaker could not be started", "Stellen Sie sicher, dass TextMaker korrekt installiert ist.");
-                    return;
-                }
-                textApp.WindowState = TmWindowState.tmWindowStateMaximize; // textApp[SmoWindowState.smoWindowStateMaximize]; // = true; // Maximieren des Fensters   
-
-                textApp.Visible = true;
-                textDoc = textApp.Documents.Add();
-                textDoc.BuiltInDocumentProperties[SmoBuiltInProperty.smoPropertyAuthor].Value = "Wilhelm Happe"; // textApp.ActiveDocument.BuiltInDocumentProperties
-                textDoc.BuiltInDocumentProperties[SmoBuiltInProperty.smoPropertyTitle].Value = "Adressen-Vorlage";
-                textDoc.BuiltInDocumentProperties[SmoBuiltInProperty.smoPropertySubject].Value = "Nur als Beispiel gedacht";
-                textDoc.BuiltInDocumentProperties[SmoBuiltInProperty.smoPropertyKeywords].Value = "Adressen, Briefvorlage";
-                textDoc.BuiltInDocumentProperties[SmoBuiltInProperty.smoPropertyComments].Value = "Die Datei wurde in Ihrem Download-Ordner gespeichert.\nSie kann gelöschte werden, wenn Sie sie nicht benötigen.";
-
-                textApp.ActiveWindow.View.ShowBookmarks = true; 
-                textApp.Application.Options.EnableSound = true; // Sound aktivieren 
-                textDoc.PageSetup.TopMargin = textApp.Application.MillimetersToPoints(25); // oberen Rand auf n Millimeter setzen
-                textDoc.Paragraphs(1).PreferredLineSpacing = 150; // Zeilenabstand auf "Automatisch 150%" setzen
-                textDoc.Selection.Font.Name = "Courier New";
-                textDoc.Selection.Font.Size = 14;
-                textDoc.Selection.TypeText("Programmieren mit BasicMaker"); //  An der aktuellen Schreibmarke Text einfügen
-                textDoc.Selection.TypeParagraph();
-
-                //textDoc.Selection.TypeText("[Präfix_Vorname_Zwischenname_Nachname]");
-                //textDoc.Selection.TypeParagraph();
-
-                //foreach (var text in allKeys)
-                //{
-                //    textDoc.Selection.Font.Name = "Calibri";
-                //    textDoc.Selection.Font.Size = 12;
-                //    textDoc.Selection.TypeText(text); // string.Join(Environment.NewLine, allKeys);
-                //    textDoc.Selection.TypeParagraph(); //  Wagenrücklauf an der aktuellen Schreibmarke einfügen
-                //}
-
-
-                var downloadPath = NativeMethods.SHGetKnownFolderPath(new Guid("374DE290-123F-4565-9164-39C4925E467B"), 0);
-                textDoc.SaveAs(downloadPath + @"\Adressen-Vorlage.tmdx", TmSaveFormat.tmFormatDocument);
-                textApp.Activate();
-                //textApp.Application.Dialogs[smoDialogFileSummaryInfo].Show();  // funktioniert nicht  
-            }
-            catch (Exception ex) { ErrorMsgTaskDlg(handle, ex.GetType().ToString(), ex.Message); }
-            finally
-            {
-                if (textDoc != null) { Marshal.ReleaseComObject(textDoc); }
-                if (textApp != null) { Marshal.ReleaseComObject(textApp); }
-                GC.Collect();
-            }
-        } */
-
     internal static bool IsInnoSetupValid(string appPath)
     {
         if (appPath.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles))) { return true; }
@@ -847,32 +742,6 @@ internal static class Utils
 
     internal static string CorrectUNC(string unc) => unc.StartsWith('\\') ? @"\\" + unc.TrimStart('\\') : unc;
 
-    public static void RestoreWindowBounds(Form form, WindowPlacement? placement, bool isMaximized = false)
-    {
-        if (isMaximized)
-        {
-            form.WindowState = FormWindowState.Maximized;
-            return;
-        }
-        if (placement == null) { return; }
-        form.StartPosition = FormStartPosition.Manual;
-        form.WindowState = FormWindowState.Normal;
-        var targetRect = new Rectangle(placement.X, placement.Y, placement.Width, placement.Height);
-        var screen = Screen.FromRectangle(targetRect);  // Screen.FromRectangle ist robuster als FromPoint, da es prüft, wo der größte Teil des Fensters liegt.
-        var workArea = screen.WorkingArea;
-        var width = Math.Max(targetRect.Width, form.MinimumSize.Width);  // nicht größer als Bildschirm, aber nicht kleiner als MinimumSize
-        var height = Math.Max(targetRect.Height, form.MinimumSize.Height);
-        width = Math.Min(width, workArea.Width);
-        height = Math.Min(height, workArea.Height);
-        targetRect.Width = width;
-        targetRect.Height = height;
-        if (targetRect.Right > workArea.Right) { targetRect.X = workArea.Right - targetRect.Width; }
-        if (targetRect.Left < workArea.Left) { targetRect.X = workArea.Left; }
-        if (targetRect.Bottom > workArea.Bottom) { targetRect.Y = workArea.Bottom - targetRect.Height; }
-        if (targetRect.Top < workArea.Top) { targetRect.Y = workArea.Top; }
-        form.DesktopBounds = targetRect;
-    }
-
     internal static bool SetClipboardText(string text)
     {
         try
@@ -881,14 +750,6 @@ internal static class Utils
             return true;
         }
         catch (Exception ex) when (ex is ExternalException) { return false; }
-    }
-
-    internal static bool RowIsVisible(DataGridView dgv, DataGridViewRow row)
-    {
-        if (dgv.FirstDisplayedCell == null) { return false; }
-        var firstVisibleRowIndex = dgv.FirstDisplayedCell.RowIndex;
-        var lastVisibleRowIndex = firstVisibleRowIndex + dgv.DisplayedRowCount(false) - 1;
-        return row.Index >= firstVisibleRowIndex && row.Index <= lastVisibleRowIndex;
     }
 
     private static DateTime GetBuildDate()
@@ -906,15 +767,6 @@ internal static class Utils
             }
         }
         return default;
-    }
-
-    internal static string GetGooglePhoneByType(Person person, string type)
-    {
-        foreach (var phone in person.PhoneNumbers ?? []) // falls PhoneNumbers null ist, wird die Schleife dank ?? [] einfach übersprungen
-        {
-            if (phone.Type?.Contains(type, StringComparison.OrdinalIgnoreCase) == true) { return phone.Value ?? string.Empty; }
-        }
-        return string.Empty;
     }
 
     public static IEnumerable<string> ReadAsLines(string filename)
@@ -939,10 +791,7 @@ internal static class Utils
             var extension = Path.GetExtension(filePath);
             var todaysBackupFile = Path.Combine(backupDir, $"{fileName}_{DateTime.Now:yyyy_MM_dd}{extension}");
 
-            if (File.Exists(todaysBackupFile))
-            {
-                return;
-            }
+            if (File.Exists(todaysBackupFile)) { return; }
 
             // 2. Sicherer, asynchroner Kopiervorgang (Löst auch das Lock-Problem)
             // FileShare.ReadWrite ist entscheidend für SQLite!
@@ -967,7 +816,7 @@ internal static class Utils
     }
 }
 
-    public interface IContactEntity
+public interface IContactEntity
 {
     string UniqueId
     {

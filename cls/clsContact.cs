@@ -5,7 +5,7 @@ namespace Adressen.cls;
 internal class Contact : ICloneable, IContactEntity
 {
     private string? _searchTextCache;
-    
+
     // --- 1. Eigenschaften in der gewünschten Anzeige-Reihenfolge ---
 
     public string? Anrede
@@ -151,10 +151,17 @@ internal class Contact : ICloneable, IContactEntity
     }
 
     [Browsable(false)]
-    public DateOnly? BirthdayDate => Geburtstag;
+    public IList<string> GroupList => GroupNames;
+
+    //[Browsable(false)] // Nicht im Grid anzeigen
+    //[System.Text.Json.Serialization.JsonIgnore] // Nicht in JSON serialisieren (falls genutzt)
+    //public Image? TempProfileImage
+    //{
+    //    get; set;
+    //}
 
     [Browsable(false)]
-    public IList<string> GroupList => GroupNames;
+    public DateOnly? BirthdayDate => Geburtstag;
 
     // --- 4. Methoden ---
     public void ResetSearchCache()
@@ -242,5 +249,42 @@ internal class Contact : ICloneable, IContactEntity
         }
 
         return [.. changes.Distinct()];
+    }
+
+    public void CopyFrom(Contact other)
+    {
+        if (other == null) { return; }
+        Anrede = other.Anrede;
+        Praefix = other.Praefix;
+        Nachname = other.Nachname;
+        Vorname = other.Vorname;
+        Zwischenname = other.Zwischenname;
+        Nickname = other.Nickname;
+        Suffix = other.Suffix;
+        Unternehmen = other.Unternehmen;
+        Position = other.Position;
+        Strasse = other.Strasse;
+        PLZ = other.PLZ;
+        Ort = other.Ort;
+        Postfach = other.Postfach;
+        Land = other.Land;
+        Betreff = other.Betreff;
+        Grussformel = other.Grussformel;
+        Schlussformel = other.Schlussformel;
+        Geburtstag = other.Geburtstag;  // Geburtstag ist DateOnly?, daher direkte Zuweisung okay
+        Mail1 = other.Mail1;
+        Mail2 = other.Mail2;
+        Telefon1 = other.Telefon1;
+        Telefon2 = other.Telefon2;
+        Mobil = other.Mobil;
+        Fax = other.Fax;
+        Internet = other.Internet;
+        Notizen = other.Notizen;
+        ResourceName = other.ResourceName; // Die Google-ID
+        ETag = other.ETag;                 // Versionsstempel
+        PhotoUrl = other.PhotoUrl;         // Foto-Link
+        GroupNames.Clear();
+        if (other.GroupNames != null) { GroupNames.AddRange(other.GroupNames); } // Listen (Deep Copy ist wichtig!)
+        ResetSearchCache();  // Cache zurücksetzen, damit SearchText neu berechnet wird
     }
 }
