@@ -15,6 +15,15 @@ internal class AdressenDbContext(string dbPath) : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Case-Insensitivity für SQLite konfigurieren
+        modelBuilder.Entity<Adresse>(entity =>
+        {
+            entity.Property(e => e.Nachname).UseCollation("NOCASE");
+            entity.Property(e => e.Vorname).UseCollation("NOCASE");
+            entity.Property(e => e.Unternehmen).UseCollation("NOCASE");
+            entity.Property(e => e.Ort).UseCollation("NOCASE");
+            entity.Property(e => e.Strasse).UseCollation("NOCASE");
+        });
         // 1:1 Foto Beziehung
         modelBuilder.Entity<Adresse>()
             .HasOne(a => a.Foto)

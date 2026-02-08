@@ -14,8 +14,6 @@ public partial class FrmGroupFilter : Form
         tableLayoutPanel.SuspendLayout();
         tableLayoutPanel.RowCount = 0; // Bestehende Zeilen entfernen
         tableLayoutPanel.RowStyles.Clear();
-        //tableLayoutPanel.Controls.Add(new Label { Text = "Einschluss", Dock = DockStyle.Fill }, 1, 0);
-        //tableLayoutPanel.Controls.Add(new Label { Text = "Ausschluss", Dock = DockStyle.Fill }, 2, 0);
 
         foreach (var groupName in groupList.OrderBy(g => g))
         {

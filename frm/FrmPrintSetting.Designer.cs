@@ -584,9 +584,9 @@ partial class FrmPrintSetting
         recipientPage.Controls.Add(ckbAnredeOberhalb);
         recipientPage.Controls.Add(ckbAnredePrint);
         recipientPage.Controls.Add(ckbLandPrint);
-        recipientPage.Location = new Point(4, 26);
+        recipientPage.Location = new Point(4, 24);
         recipientPage.Name = "recipientPage";
-        recipientPage.Size = new Size(316, 171);
+        recipientPage.Size = new Size(316, 173);
         recipientPage.TabIndex = 4;
         recipientPage.Text = "Empfänger";
         recipientPage.UseVisualStyleBackColor = true;
@@ -594,26 +594,26 @@ partial class FrmPrintSetting
         // lblLineFactor
         // 
         lblLineFactor.AutoSize = true;
-        lblLineFactor.Location = new Point(288, 76);
+        lblLineFactor.Location = new Point(239, 76);
         lblLineFactor.Name = "lblLineFactor";
-        lblLineFactor.Size = new Size(20, 19);
+        lblLineFactor.Size = new Size(45, 19);
         lblLineFactor.TabIndex = 30;
-        lblLineFactor.Text = "Z.";
+        lblLineFactor.Text = "Zeilen";
         // 
         // lblLineHeight
         // 
         lblLineHeight.AutoSize = true;
         lblLineHeight.Location = new Point(8, 76);
         lblLineHeight.Name = "lblLineHeight";
-        lblLineHeight.Size = new Size(210, 19);
+        lblLineHeight.Size = new Size(163, 19);
         lblLineHeight.TabIndex = 29;
-        lblLineHeight.Text = "Genereller Zeilenabstand (★ 1,5):";
+        lblLineHeight.Text = "Genereller Zeilenabstand:";
         // 
         // nudLineHeightFactor
         // 
         nudLineHeightFactor.DecimalPlaces = 2;
         nudLineHeightFactor.Increment = new decimal(new int[] { 5, 0, 0, 131072 });
-        nudLineHeightFactor.Location = new Point(229, 74);
+        nudLineHeightFactor.Location = new Point(178, 74);
         nudLineHeightFactor.Maximum = new decimal(new int[] { 30, 0, 0, 65536 });
         nudLineHeightFactor.Minimum = new decimal(new int[] { 5, 0, 0, 65536 });
         nudLineHeightFactor.Name = "nudLineHeightFactor";
@@ -626,26 +626,26 @@ partial class FrmPrintSetting
         // lblLandRows
         // 
         lblLandRows.AutoSize = true;
-        lblLandRows.Location = new Point(288, 143);
+        lblLandRows.Location = new Point(239, 142);
         lblLandRows.Name = "lblLandRows";
-        lblLandRows.Size = new Size(20, 19);
+        lblLandRows.Size = new Size(45, 19);
         lblLandRows.TabIndex = 27;
-        lblLandRows.Text = "Z.";
+        lblLandRows.Text = "Zeilen";
         // 
         // lblLandGapFactor
         // 
         lblLandGapFactor.AutoSize = true;
-        lblLandGapFactor.Location = new Point(8, 143);
+        lblLandGapFactor.Location = new Point(8, 142);
         lblLandGapFactor.Name = "lblLandGapFactor";
-        lblLandGapFactor.Size = new Size(197, 19);
+        lblLandGapFactor.Size = new Size(130, 19);
         lblLandGapFactor.TabIndex = 26;
-        lblLandGapFactor.Text = "Zusätzlicher Abstand vor Land:";
+        lblLandGapFactor.Text = "Zusätzlich vor Land:";
         // 
         // nudLandGapFactor
         // 
         nudLandGapFactor.DecimalPlaces = 2;
         nudLandGapFactor.Increment = new decimal(new int[] { 5, 0, 0, 131072 });
-        nudLandGapFactor.Location = new Point(228, 141);
+        nudLandGapFactor.Location = new Point(178, 140);
         nudLandGapFactor.Maximum = new decimal(new int[] { 2, 0, 0, 0 });
         nudLandGapFactor.Name = "nudLandGapFactor";
         nudLandGapFactor.Size = new Size(55, 25);
@@ -657,26 +657,26 @@ partial class FrmPrintSetting
         // lblZipRows
         // 
         lblZipRows.AutoSize = true;
-        lblZipRows.Location = new Point(288, 112);
+        lblZipRows.Location = new Point(239, 109);
         lblZipRows.Name = "lblZipRows";
-        lblZipRows.Size = new Size(20, 19);
+        lblZipRows.Size = new Size(45, 19);
         lblZipRows.TabIndex = 24;
-        lblZipRows.Text = "Z.";
+        lblZipRows.Text = "Zeilen";
         // 
         // lblZipGapFactor
         // 
         lblZipGapFactor.AutoSize = true;
-        lblZipGapFactor.Location = new Point(8, 112);
+        lblZipGapFactor.Location = new Point(8, 109);
         lblZipGapFactor.Name = "lblZipGapFactor";
-        lblZipGapFactor.Size = new Size(216, 19);
+        lblZipGapFactor.Size = new Size(149, 19);
         lblZipGapFactor.TabIndex = 23;
-        lblZipGapFactor.Text = "Zusätzlicher Abstand vor PLZ/Ort:";
+        lblZipGapFactor.Text = "Zusätzlich vor PLZ/Ort:";
         // 
         // nudZipGapFactor
         // 
         nudZipGapFactor.DecimalPlaces = 2;
         nudZipGapFactor.Increment = new decimal(new int[] { 5, 0, 0, 131072 });
-        nudZipGapFactor.Location = new Point(229, 110);
+        nudZipGapFactor.Location = new Point(178, 107);
         nudZipGapFactor.Maximum = new decimal(new int[] { 2, 0, 0, 0 });
         nudZipGapFactor.Name = "nudZipGapFactor";
         nudZipGapFactor.Size = new Size(55, 25);
@@ -690,7 +690,7 @@ partial class FrmPrintSetting
         ckbLandGROSS.AutoSize = true;
         ckbLandGROSS.Checked = true;
         ckbLandGROSS.CheckState = CheckState.Checked;
-        ckbLandGROSS.Location = new Point(178, 38);
+        ckbLandGROSS.Location = new Point(178, 40);
         ckbLandGROSS.Name = "ckbLandGROSS";
         ckbLandGROSS.Size = new Size(130, 23);
         ckbLandGROSS.TabIndex = 21;
@@ -726,7 +726,7 @@ partial class FrmPrintSetting
         ckbLandPrint.AutoSize = true;
         ckbLandPrint.Checked = true;
         ckbLandPrint.CheckState = CheckState.Checked;
-        ckbLandPrint.Location = new Point(12, 38);
+        ckbLandPrint.Location = new Point(12, 40);
         ckbLandPrint.Name = "ckbLandPrint";
         ckbLandPrint.Size = new Size(130, 23);
         ckbLandPrint.TabIndex = 18;
@@ -935,6 +935,7 @@ partial class FrmPrintSetting
         printPreviewControl.TabIndex = 1;
         printPreviewControl.UseAntiAlias = true;
         printPreviewControl.Zoom = 0.5D;
+        printPreviewControl.ZoomChanged += PrintPreviewControl_ZoomChanged;
         printPreviewControl.DoubleClick += PrintPreviewControl_DoubleClick;
         // 
         // contextMenuStrip
@@ -995,7 +996,7 @@ partial class FrmPrintSetting
         // 
         toolStripStatusLabel.Font = new Font("Segoe UI", 10F);
         toolStripStatusLabel.Name = "toolStripStatusLabel";
-        toolStripStatusLabel.Size = new Size(283, 19);
+        toolStripStatusLabel.Size = new Size(314, 19);
         toolStripStatusLabel.Spring = true;
         toolStripStatusLabel.Text = "Drucker";
         toolStripStatusLabel.TextAlign = ContentAlignment.MiddleLeft;

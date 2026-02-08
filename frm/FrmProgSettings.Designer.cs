@@ -560,6 +560,7 @@ partial class FrmProgSettings
         ShowInTaskbar = false;
         StartPosition = FormStartPosition.CenterParent;
         Text = "Programmeinstellungen";
+        FormClosing += FrmProgSettings_FormClosing;
         Load += FrmProgSettings_Load;
         tabControl.ResumeLayout(false);
         tpAllgemein.ResumeLayout(false);

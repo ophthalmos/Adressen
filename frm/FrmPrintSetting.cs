@@ -5,49 +5,20 @@ namespace Adressen;
 
 public partial class FrmPrintSetting : Form
 {
-    public string Device => cbPrinter.Text; // printDocument.PrinterSettings.PrinterName;
-    public string Source => cbSources.Text;
-    public bool Landscape => rbLandscape.Checked;
-    public string Format => cbPapersize.Text;
-    public string Schrift => cbFont.Text;
-    public int SenderSize => int.Parse(cbFontsizeSender.Text);
-    public int RecipSize => int.Parse(cbFontSizeRecipient.Text);
-    public int SenderIndex => tcSender.SelectedIndex;  // nullbasiert
-    public string[] SenderLines1 => tbSender1.Lines;
-    public string[] SenderLines2 => tbSender2.Lines;
-    public string[] SenderLines3 => tbSender3.Lines;
-    public string[] SenderLines4 => tbSender4.Lines;
-    public string[] SenderLines5 => tbSender5.Lines;
-    public string[] SenderLines6 => tbSender6.Lines;
-    public bool SenderPrint => ckbPrintSender.Checked;
-    public decimal RecipX => nudRecipOffsetX.Value;
-    public decimal RecipY => nudRecipOffsetY.Value;
-    public decimal SendX => nudSenderOffsetX.Value;
-    public decimal SendY => nudSenderOffsetY.Value;
-    public bool RecipBold => ckbBoldRecipient.Checked;
-    public bool SendBold => ckbBoldSender.Checked;
-    public bool Salutation => ckbAnredePrint.Checked;
-    public bool SalutAbove => ckbAnredeOberhalb.Checked;
-    public bool Country => ckbLandPrint.Checked;
-    public bool CountryUpper => ckbLandGROSS.Checked;
-    public decimal LineHeightFactor => nudLineHeightFactor.Value;
-    public decimal ZipGapFactor => nudZipGapFactor.Value;
-    public decimal LandGapFactor => nudLandGapFactor.Value;
-
+    private readonly double _zoom = 0.50F;
+    private readonly AppSettings _settings;
+    private readonly BindingSource _bindingSource; // Der Vermittler für das DataBinding
     private readonly Dictionary<string, string> _recipientDict;
-    private readonly double _zoom = 0.50F; // double ist korrekt
 
-    public FrmPrintSetting(string colorScheme, Dictionary<string, string> recipientDict,
-                           string pDevice, string pSource, bool pLandscape,
-                           string pFormat, string pFont, int pSenderSize, int pRecipSize,
-                           int pSenderIndex, string[] pSenderLines1, string[] pSenderLines2, string[] pSenderLines3, string[] pSenderLines4, string[] pSenderLines5, string[] pSenderLines6, bool pSenderPrint,
-                           decimal pRecipX, decimal pRecipY, decimal pSendX, decimal pSendY, bool pRecipBold, bool pSendBold, bool pAnrede, bool pAbove, bool pLand, bool pUpper, decimal pLineHeight, decimal pZipGap, decimal pLandGap)
+    internal FrmPrintSetting(AppSettings settings, Dictionary<string, string> recipientDict)
     {
         InitializeComponent();
-        printPreviewControl.ZoomChanged += (s, e) => UpdateZoomDisplay();
+        _settings = settings;
+        _recipientDict = recipientDict;
+        _bindingSource = new BindingSource { DataSource = _settings };
         foreach (TabPage tabPage in tabControl.TabPages)
         {
-            tabPage.BackColor = colorScheme switch
+            tabPage.BackColor = _settings.ColorScheme switch
             {
                 "blue" => SystemColors.InactiveBorder,
                 "pale" => SystemColors.ControlLightLight,
@@ -55,67 +26,91 @@ public partial class FrmPrintSetting : Form
                 _ => SystemColors.ButtonFace,
             };
         }
-        _recipientDict = recipientDict;
-        cbFont.Items.AddRange([.. FontFamily.Families.Select(f => f.Name)]);
+        cbFont.Items.AddRange([.. FontFamily.Families.Select(f => f.Name)]);  // muss vor dem Binding passieren
         foreach (string s in PrinterSettings.InstalledPrinters) { cbPrinter.Items.Add(s); }
-        tcSender.SelectedIndex = pSenderIndex;
-        tbSender1.Lines = pSenderLines1;
-        tbSender2.Lines = pSenderLines2;
-        tbSender3.Lines = pSenderLines3;
-        tbSender4.Lines = pSenderLines4;
-        tbSender5.Lines = pSenderLines5;
-        tbSender6.Lines = pSenderLines6;
-        printDocument.DefaultPageSettings.Margins = new Margins(25, 25, 25, 25); // hundredths of an inch, default 100 (2,54 cm für alle Seitenränder)
-        cbFont.Text = pFont; // "Calibri";
-        cbFontSizeRecipient.Text = pRecipSize.ToString(); // "14";
-        cbFontsizeSender.Text = pSenderSize.ToString(); // "12";
+        InitializeDataBindings();
+        UpdateUiState();  // UI Logik (Enable/Disable) initial anstoßen
+        InitializePrinterSelection();  // Drucker initialisieren (für Papierformate etc.)
+    }
 
-        ckbPrintSender.Checked = pSenderPrint;
-        nudRecipOffsetX.Value = pRecipX;
-        nudRecipOffsetY.Value = pRecipY;
-        nudSenderOffsetX.Value = pSendX;
-        nudSenderOffsetY.Value = pSendY;
-        ckbBoldRecipient.Checked = pRecipBold;
-        ckbBoldSender.Checked = pSendBold;
-        ckbAnredePrint.Checked = pAnrede;
-        ckbAnredeOberhalb.Checked = pAbove;
-        ckbLandPrint.Checked = pLand;
-        ckbLandGROSS.Checked = pUpper;
-        nudLineHeightFactor.Value = pLineHeight;
-        nudZipGapFactor.Value = pZipGap;
-        nudLandGapFactor.Value = pLandGap;
+    private void InitializeDataBindings()
+    {
+        // Hilfsmethode um Schreibarbeit zu sparen
+        // OnPropertyChanged sorgt dafür, dass Änderungen sofort im Objekt landen (wichtig für Preview)
+        void Bind(Control control, string propertyName, string dataMember) { control.DataBindings.Add(propertyName, _bindingSource, dataMember, true, DataSourceUpdateMode.OnPropertyChanged); }
 
-        if (ckbAnredePrint.Checked) { ckbAnredeOberhalb.Enabled = true; }
-        else { ckbAnredeOberhalb.Enabled = false; }
-        if (ckbLandPrint.Checked) { lblLandGapFactor.Enabled = nudLandGapFactor.Enabled = lblLandRows.Enabled = ckbLandGROSS.Enabled = true; }
-        else { lblLandGapFactor.Enabled = nudLandGapFactor.Enabled = lblLandRows.Enabled = ckbLandGROSS.Enabled = false; }
+        // --- Tab 1: Format ---
+        Bind(cbPrinter, "Text", nameof(AppSettings.PrintDevice));
+        Bind(cbSources, "Text", nameof(AppSettings.PrintSource));
+        Bind(cbPapersize, "Text", nameof(AppSettings.PrintFormat));
 
-        if (!string.IsNullOrEmpty(pDevice) && Utils.IsPrinterAvailable(pDevice))
+        // RadioButtons: Wir binden nur den "Haupt"-Button. Der andere ergibt sich logisch.
+        Bind(rbLandscape, "Checked", nameof(AppSettings.PrintLandscape));
+        // Hinweis: rbPortrait muss nicht gebunden werden, da sie im gleichen Container sind und sich gegenseitig ausschalten.
+        // Wir setzen rbPortrait nur initial, falls Landscape false ist, passiert aber automatisch durch WinForms Logik oft schon.
+        // Um sicherzugehen, setzen wir einen Event-Handler im Designer oder Code, der rbPortrait toggelt, 
+        // aber das Binding auf Landscape reicht meistens als "Master".
+
+        // --- Tab 2: Schriftarten ---
+        Bind(cbFont, "Text", nameof(AppSettings.PrintFont));
+        Bind(cbFontsizeSender, "Text", nameof(AppSettings.SenderFontsize));     // Int zu String Konvertierung macht Binding automatisch
+        Bind(cbFontSizeRecipient, "Text", nameof(AppSettings.RecipientFontsize));
+
+        // --- Tab 3: Absender ---
+        Bind(ckbPrintSender, "Checked", nameof(AppSettings.PrintSender));
+        Bind(ckbBoldSender, "Checked", nameof(AppSettings.PrintSenderBold));
+        Bind(tcSender, "SelectedIndex", nameof(AppSettings.SenderIndex));
+        Bind(nudSenderOffsetX, "Value", nameof(AppSettings.SenderOffsetX));
+        Bind(nudSenderOffsetY, "Value", nameof(AppSettings.SenderOffsetY));
+
+        Bind(tbSender1, "Text", nameof(AppSettings.SenderLines1Joined));
+        Bind(tbSender2, "Text", nameof(AppSettings.SenderLines2Joined));
+        Bind(tbSender3, "Text", nameof(AppSettings.SenderLines3Joined));
+        Bind(tbSender4, "Text", nameof(AppSettings.SenderLines4Joined));
+        Bind(tbSender5, "Text", nameof(AppSettings.SenderLines5Joined));
+        Bind(tbSender6, "Text", nameof(AppSettings.SenderLines6Joined));
+
+        // --- Tab 4: Empfänger ---
+        Bind(ckbBoldRecipient, "Checked", nameof(AppSettings.PrintRecipientBold));
+        Bind(ckbAnredePrint, "Checked", nameof(AppSettings.PrintRecipientSalutation));
+        Bind(ckbAnredeOberhalb, "Checked", nameof(AppSettings.RecipientSalutationAbove));
+        Bind(ckbLandPrint, "Checked", nameof(AppSettings.PrintRecipientCountry));
+        Bind(ckbLandGROSS, "Checked", nameof(AppSettings.RecipientCountryUpper));
+
+        Bind(nudRecipOffsetX, "Value", nameof(AppSettings.RecipientOffsetX));
+        Bind(nudRecipOffsetY, "Value", nameof(AppSettings.RecipientOffsetY));
+
+        Bind(nudLineHeightFactor, "Value", nameof(AppSettings.LineHeightFactor));
+        Bind(nudZipGapFactor, "Value", nameof(AppSettings.ZipGapFactor));
+        Bind(nudLandGapFactor, "Value", nameof(AppSettings.LandGapFactor));
+    }
+
+    private void InitializePrinterSelection()
+    {
+        if (!string.IsNullOrEmpty(_settings.PrintDevice) && Utils.IsPrinterAvailable(_settings.PrintDevice))
         {
-            printDocument.PrinterSettings.PrinterName = pDevice;
+            printDocument.PrinterSettings.PrinterName = _settings.PrintDevice;
             if (printDocument.PrinterSettings.IsValid)
             {
-                cbPrinter.Text = printDocument.PrinterSettings.PrinterName;
+                // Papierschächte laden
+                cbSources.Items.Clear();
                 foreach (PaperSource ps in printDocument.PrinterSettings.PaperSources) { cbSources.Items.Add(ps.SourceName); }
-                cbSources.Text = pSource; // "Papiereinzug hinten";
-                printDocument.DefaultPageSettings.Landscape = pLandscape;
-                if (printDocument.DefaultPageSettings.Landscape) { rbLandscape.Checked = true; }
-                else { rbPortrait.Checked = true; }
-                foreach (PaperSize ps in printDocument.PrinterSettings.PaperSizes)
-                {
-                    if (ps.Kind != PaperKind.Custom) { cbPapersize.Items.Add(ps.PaperName); } // Nur Standardformate anzeigen
-                }
 
-                if (printDocument.DefaultPageSettings.PaperSize != null)
-                {
+                // Papierformate laden
+                cbPapersize.Items.Clear();
+                foreach (PaperSize ps in printDocument.PrinterSettings.PaperSizes) { if (ps.Kind != PaperKind.Custom) { cbPapersize.Items.Add(ps.PaperName); } }
 
-                    cbPapersize.Text = printDocument.DefaultPageSettings.PaperSize.PaperName; // wird ggfs. später überschrieben    
+                // Initial Landscape setzen für Preview
+                printDocument.DefaultPageSettings.Landscape = _settings.PrintLandscape;
+
+                // Papierformat im PrintDocument setzen (wichtig für Preview)
+                if (!string.IsNullOrEmpty(_settings.PrintFormat))
+                {
                     foreach (PaperSize size in printDocument.PrinterSettings.PaperSizes)
                     {
-                        if (size.PaperName == pFormat)
+                        if (size.PaperName == _settings.PrintFormat)
                         {
                             printDocument.DefaultPageSettings.PaperSize = size;
-                            cbPapersize.Text = pFormat;
                             break;
                         }
                     }
@@ -124,14 +119,144 @@ public partial class FrmPrintSetting : Form
         }
         else
         {
-            if (string.IsNullOrEmpty(pDevice)) { Utils.MsgTaskDlg(Handle, "Druckerfehler", $"Es wurde noch kein Drucker ausgewählt."); }
-            else { Utils.MsgTaskDlg(Handle, "Druckerfehler", $"Der Drucker '{pDevice}' ist nicht verfügbar."); }
+            if (string.IsNullOrEmpty(_settings.PrintDevice)) { Utils.MsgTaskDlg(Handle, "Druckerfehler", $"Es wurde noch kein Drucker ausgewählt."); }
+            else { Utils.MsgTaskDlg(Handle, "Druckerfehler", $"Der Drucker '{_settings.PrintDevice}' ist nicht verfügbar."); }
+        }
+    }
+
+    private void UpdateUiState()
+    {
+        // Logik für Abhängigkeiten
+        ckbAnredeOberhalb.Enabled = ckbAnredePrint.Checked;
+
+        var landActive = ckbLandPrint.Checked;
+        lblLandGapFactor.Enabled = landActive;
+        nudLandGapFactor.Enabled = landActive;
+        lblLandRows.Enabled = landActive;
+        ckbLandGROSS.Enabled = landActive;
+
+        // Portrait/Landscape Visualisierung
+        picPortrait.BorderStyle = rbPortrait.Checked ? BorderStyle.FixedSingle : BorderStyle.None;
+        picLandscape.BorderStyle = rbLandscape.Checked ? BorderStyle.FixedSingle : BorderStyle.None;
+    }
+
+    // --- Event Handler ---
+    private void PrintPreviewControl_ZoomChanged(object sender, EventArgs e) => UpdateZoomDisplay();
+
+    private void BtnSave_Click(object sender, EventArgs e) => printDocument.Print();
+
+    // Zentraler Handler für UI-Änderungen, die das Preview neu zeichnen müssen
+    private void GenericControl_ValueChanged(object sender, EventArgs e)
+    {
+        // Durch DataBinding ist _settings bereits aktuell, wenn DataSourceUpdateMode.OnPropertyChanged genutzt wurde.
+        // Wir müssen nur UI-Status updaten und Preview neu generieren.
+
+        if (sender == rbLandscape || sender == rbPortrait)
+        {
+            // Spezielle Behandlung für RadioButtons, da Binding manchmal tricky ist bei Gruppen
+            _settings.PrintLandscape = rbLandscape.Checked;
+            printDocument.DefaultPageSettings.Landscape = rbLandscape.Checked;
+        }
+
+        UpdateUiState();
+        printPreviewControl.GeneratePreviewSilently();
+    }
+
+    // Spezifische Handler, die mehr Logik brauchen als nur "Repaint"
+
+    private void CbPrinter_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (!cbPrinter.Visible || !cbPrinter.Focused) { return; }
+
+        // Binding aktualisiert _settings automatisch, aber wir müssen printDocument validieren
+        printDocument.PrinterSettings.PrinterName = cbPrinter.Text;
+
+        if (!printDocument.PrinterSettings.IsValid)
+        {
+            Utils.MsgTaskDlg(Handle, "Druckerfehler", $"Der Drucker '{cbPrinter.Text}' ist nicht gültig.");
             return;
         }
 
+        // Papierformate neu laden für gewählten Drucker
+        cbPapersize.Items.Clear();
+        foreach (PaperSize ps in printDocument.PrinterSettings.PaperSizes)
+        {
+            if (ps.Kind != PaperKind.Custom) { cbPapersize.Items.Add(ps.PaperName); }
+        }
+
+        // Papierschächte neu laden
+        cbSources.Items.Clear();
+        foreach (PaperSource ps in printDocument.PrinterSettings.PaperSources) { cbSources.Items.Add(ps.SourceName); }
+
+        // Defaults setzen falls leer
+        if (cbPapersize.Items.Count > 0) { cbPapersize.SelectedIndex = 0; }
+        if (cbSources.Items.Count > 0) { cbSources.SelectedIndex = 0; }
+
+        printPreviewControl.GeneratePreviewSilently();
+        UpdateStatusBarInfo();
     }
 
-    private void BtnSave_Click(object sender, EventArgs e) => printDocument.Print();
+    private void CbSources_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (!cbSources.Visible || !cbSources.Focused) { return; }
+
+        // Mapping Name -> PaperSource Objekt
+        if (cbSources.SelectedIndex >= 0 && cbSources.SelectedIndex < printDocument.PrinterSettings.PaperSources.Count)
+        {
+            printDocument.DefaultPageSettings.PaperSource = printDocument.PrinterSettings.PaperSources[cbSources.SelectedIndex];
+        }
+        printPreviewControl.GeneratePreviewSilently();
+    }
+
+    private void CbPapersize_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (!cbPapersize.Visible || !cbPapersize.Focused) { return; }
+
+        // Mapping Name -> PaperSize Objekt
+        if (cbPapersize.SelectedIndex >= 0 && cbPapersize.SelectedIndex < printDocument.PrinterSettings.PaperSizes.Count)
+        {
+            printDocument.DefaultPageSettings.PaperSize = printDocument.PrinterSettings.PaperSizes[cbPapersize.SelectedIndex];
+        }
+        printPreviewControl.GeneratePreviewSilently();
+        UpdateStatusBarInfo();
+    }
+
+    private void RbPortrait_CheckedChanged(object sender, EventArgs e)
+    {
+        // Wird durch GenericControl_ValueChanged mitbehandelt, aber hier explizit für UI Logik
+        printDocument.DefaultPageSettings.Landscape = !rbPortrait.Checked;
+        UpdateUiState();
+        printPreviewControl.GeneratePreviewSilently();
+    }
+
+    private void PicPortrait_Click(object sender, EventArgs e) => rbPortrait.Checked = true;
+    private void PicLandscape_Click(object sender, EventArgs e) => rbLandscape.Checked = true;
+
+    // --- Standard Funktionalität (Laden, Zeichnen, Tasten) ---
+
+    private void FrmPrintSetting_Load(object sender, EventArgs e)
+    {
+        tbSender1.SetInnerMargins(8, 8);
+        tbSender2.SetInnerMargins(8, 8);
+        tbSender3.SetInnerMargins(8, 8);
+        tbSender4.SetInnerMargins(8, 8);
+        tbSender5.SetInnerMargins(8, 8);
+        tbSender6.SetInnerMargins(8, 8);
+        printPreviewControl.Document = printDocument;
+        printPreviewControl.Zoom = _zoom;
+        UpdateStatusBarInfo();
+        UpdateZoomDisplay();
+    }
+
+    private void UpdateStatusBarInfo()
+    {
+        if (printDocument.PrinterSettings.IsValid && printDocument.DefaultPageSettings.PaperSize != null)
+        {
+            toolStripStatusLabel.Text = $"Format: {printDocument.DefaultPageSettings.PaperSize.PaperName}";
+        }
+        else { toolStripStatusLabel.Text = "Kein gültiger Drucker ausgewählt."; }
+        UpdateStatusBarLayout();
+    }
 
     private void PrintDocument_PrintPage(object sender, PrintPageEventArgs e)
     {
@@ -139,165 +264,103 @@ public partial class FrmPrintSetting : Form
         if (g == null) { return; }
         g.PageUnit = GraphicsUnit.Display;
         float lineH;
-        // --- Absender Block ---
-        if (ckbPrintSender.Checked)
+        var fontName = "Arial"; // Fallback
+        if (!string.IsNullOrEmpty(_settings.PrintFont))
         {
-            using var fntSender = new Font(cbFont.Text, float.Parse(cbFontsizeSender.Text), ckbBoldSender.Checked ? FontStyle.Bold : FontStyle.Regular);
-            var senderXPos = e.MarginBounds.Left + (float)nudSenderOffsetX.Value;
-            var senderYPos = e.MarginBounds.Top + (float)nudSenderOffsetY.Value;
+            var parts = _settings.PrintFont.Split(',');
+            fontName = parts[0].Trim();
+        }
+
+        // --- Absender Block ---
+        if (_settings.PrintSender)
+        {
+            var style = _settings.PrintSenderBold ? FontStyle.Bold : FontStyle.Regular;
+            using var fntSender = new Font(fontName, _settings.SenderFontsize, style);
+            var senderXPos = e.MarginBounds.Left + (float)_settings.SenderOffsetX;
+            var senderYPos = e.MarginBounds.Top + (float)_settings.SenderOffsetY;
             lineH = fntSender.GetHeight(g);
-            var controls = tcSender.TabPages[tcSender.SelectedIndex].Controls;
-            if (controls.Count == 1 && controls[0] is TextBox tb)
+            var linesToPrint = _settings.SenderIndex switch
             {
-                for (var i = 0; i < tb.Lines.Length; i++)
+                0 => _settings.SenderLines1,
+                1 => _settings.SenderLines2,
+                2 => _settings.SenderLines3,
+                3 => _settings.SenderLines4,
+                4 => _settings.SenderLines5,
+                5 => _settings.SenderLines6,
+                _ => _settings.SenderLines1
+            };
+            if (linesToPrint != null)
+            {
+                foreach (var line in linesToPrint)
                 {
-                    g.DrawString(tb.Lines[i], fntSender, Brushes.Black, senderXPos, senderYPos);
+                    g.DrawString(line, fntSender, Brushes.Black, senderXPos, senderYPos);
                     senderYPos += lineH;
                 }
             }
         }
+
         // --- Empfänger Block ---
-        using var fntRecipient = new Font(cbFont.Text, float.Parse(cbFontSizeRecipient.Text), ckbBoldRecipient.Checked ? FontStyle.Bold : FontStyle.Regular);
+        var recipStyle = _settings.PrintRecipientBold ? FontStyle.Bold : FontStyle.Regular;
+        using var fntRecipient = new Font(fontName, _settings.RecipientFontsize, recipStyle);
         using var sf = new StringFormat();
-        var lineHeightFactor = (float)nudLineHeightFactor.Value; // variabler Zeilenabstand
+        var lineHeightFactor = (float)_settings.LineHeightFactor;
         lineH = (float)(fntRecipient.GetHeight(g) * lineHeightFactor);
-
-        var recipXPos = e.MarginBounds.Left + (e.MarginBounds.Width / 2) + (float)nudRecipOffsetX.Value;
-        var recipYPos = e.MarginBounds.Top + (e.MarginBounds.Height / 2) + (float)nudRecipOffsetY.Value;
-
+        var recipXPos = e.MarginBounds.Left + (e.MarginBounds.Width / 2) + (float)_settings.RecipientOffsetX;
+        var recipYPos = e.MarginBounds.Top + (e.MarginBounds.Height / 2) + (float)_settings.RecipientOffsetY;
         var recipientLines = new string[6];
-        recipientLines[0] = (_recipientDict.TryGetValue("Anrede", out var anrede) && ckbAnredePrint.Checked && !string.IsNullOrEmpty(anrede) ? anrede : string.Empty)
-                          + (_recipientDict.TryGetValue("Titel", out var titel) && !string.IsNullOrEmpty(titel) ? " " + titel : string.Empty);
-        recipientLines[0] = recipientLines[0].Trim();
-        recipientLines[1] = (_recipientDict.TryGetValue("Praefix", out var praefix) && !string.IsNullOrEmpty(praefix) ? praefix + " " : string.Empty)
-                          + (_recipientDict.TryGetValue("Vorname", out var vorname) && !string.IsNullOrEmpty(vorname) ? vorname + " " : string.Empty)
-                          + (_recipientDict.TryGetValue("Nachname", out var nachname) && !string.IsNullOrEmpty(nachname) ? nachname : string.Empty);
+        var line1 = string.Empty;
+        if (_settings.PrintRecipientSalutation && _recipientDict.TryGetValue("Anrede", out var anrede) && !string.IsNullOrEmpty(anrede)) { line1 += anrede; }
+        if (_recipientDict.TryGetValue("Titel", out var titel) && !string.IsNullOrEmpty(titel)) { line1 += (line1.Length > 0 ? " " : "") + titel; }
+        recipientLines[0] = line1.Trim();
+        var line2 = string.Empty;
+        if (_recipientDict.TryGetValue("Praefix", out var praefix) && !string.IsNullOrEmpty(praefix)) { line2 += praefix + " "; }
+        if (_recipientDict.TryGetValue("Vorname", out var vorname) && !string.IsNullOrEmpty(vorname)) { line2 += vorname + " "; }
+        if (_recipientDict.TryGetValue("Nachname", out var nachname) && !string.IsNullOrEmpty(nachname)) { line2 += nachname; }
+        recipientLines[1] = line2.Trim();
         recipientLines[2] = _recipientDict.TryGetValue("Firma", out var firma) && !string.IsNullOrEmpty(firma) ? firma : string.Empty;
         recipientLines[3] = _recipientDict.TryGetValue("Strasse", out var strasse) && !string.IsNullOrEmpty(strasse) ? strasse : string.Empty;
-        recipientLines[4] = (_recipientDict.TryGetValue("PLZ", out var plz) && !string.IsNullOrEmpty(plz) ? plz + " " : string.Empty)
-                          + (_recipientDict.TryGetValue("Ort", out var ort) && !string.IsNullOrEmpty(ort) ? ort : string.Empty);
-        if (_recipientDict.TryGetValue("Land", out var land) && ckbLandPrint.Checked && !string.IsNullOrEmpty(land)) { recipientLines[5] = ckbLandGROSS.Checked ? land.ToUpper() : land; }
+        var line5 = string.Empty;
+        if (_recipientDict.TryGetValue("PLZ", out var plz) && !string.IsNullOrEmpty(plz)) { line5 += plz + " "; }
+        if (_recipientDict.TryGetValue("Ort", out var ort) && !string.IsNullOrEmpty(ort)) { line5 += ort; }
+        recipientLines[4] = line5.Trim();
+        if (_recipientDict.TryGetValue("Land", out var land) && _settings.PrintRecipientCountry && !string.IsNullOrEmpty(land)) { recipientLines[5] = _settings.RecipientCountryUpper ? land.ToUpper() : land; }
         else { recipientLines[5] = string.Empty; }
-        if (!string.IsNullOrWhiteSpace(recipientLines[0]) && ckbAnredeOberhalb.Checked) { recipYPos -= lineH; } // Platz für Anrede oberhalb schaffen
-        for (var i = 0; i < recipientLines.Length; i++)  // Zeichnen der Empfängerzeilen
+        if (!string.IsNullOrWhiteSpace(recipientLines[0]) && _settings.RecipientSalutationAbove) { recipYPos -= lineH; } // Korrektur Y-Position, wenn Anrede oberhalb gewünscht
+        for (var i = 0; i < recipientLines.Length; i++) // Druck-Schleife Empfänger
         {
             if (string.IsNullOrWhiteSpace(recipientLines[i])) { continue; }
-            if (i == 4) // PLZ-Ort-Zeile
+            if (i == 4) // Vor PLZ/Ort (Index 4) -> Abstand erhöhen
             {
-                var zipGap = (float)nudZipGapFactor.Value;
+                var zipGap = (float)_settings.ZipGapFactor;
                 recipYPos += lineH * zipGap;
             }
-            if (i == 5) // Land-Zeile
+            if (i == 5) // Vor Land (Index 5) -> Abstand erhöhen
             {
-                var landGap = (float)nudLandGapFactor.Value;
+                var landGap = (float)_settings.LandGapFactor;
                 recipYPos += lineH * landGap;
             }
             g.DrawString(recipientLines[i], fntRecipient, Brushes.Black, recipXPos, recipYPos, sf);
-            recipYPos += lineH;  // Nächste Zeile berechnen
+            recipYPos += lineH;
         }
         e.HasMorePages = false;
     }
 
-    private void CbPrinter_SelectedIndexChanged(object sender, EventArgs e)
-    {
-        if (!cbPrinter.Visible || !cbPrinter.Focused) { return; }
-
-        printDocument.PrinterSettings.PrinterName = cbPrinter.Text;
-        if (!printDocument.PrinterSettings.IsValid)
-        {
-            Utils.MsgTaskDlg(Handle, "Druckerfehler", $"Der Drucker '{cbPrinter.Text}' ist nicht gültig.");
-            return;
-        }
-
-        printDocument.DefaultPageSettings.PaperSize = printDocument.PrinterSettings.DefaultPageSettings.PaperSize;
-        if (printDocument.DefaultPageSettings.PaperSize != null)
-        {
-            cbPapersize.Items.Clear();
-            foreach (PaperSize ps in printDocument.PrinterSettings.PaperSizes)
-            {
-                if (ps.Kind != PaperKind.Custom) { cbPapersize.Items.Add(ps.PaperName); }
-            }
-            cbPapersize.SelectedItem = printDocument.PrinterSettings.DefaultPageSettings.PaperSize.PaperName;
-        }
-        else { cbPapersize.SelectedIndex = 0; }
-
-        cbSources.Items.Clear();
-        foreach (PaperSource ps in printDocument.PrinterSettings.PaperSources) { cbSources.Items.Add(ps.SourceName); }
-        printDocument.DefaultPageSettings.PaperSource = printDocument.PrinterSettings.DefaultPageSettings.PaperSource;
-        if (printDocument.DefaultPageSettings.PaperSource != null)
-        {
-            cbSources.SelectedItem = printDocument.DefaultPageSettings.PaperSource.SourceName;
-        }
-        else { cbSources.SelectedIndex = 0; }
-        printPreviewControl.GeneratePreviewSilently();
-        if (printDocument.DefaultPageSettings.PaperSize != null) { toolStripStatusLabel.Text = $"Format: {printDocument.DefaultPageSettings.PaperSize.PaperName}"; }
-    }
-
-    private void CbSources_SelectedIndexChanged(object sender, EventArgs e)
-    {
-        if (!cbSources.Visible || !cbSources.Focused) { return; } // Keine Auswahl getroffen 
-        printDocument.DefaultPageSettings.PaperSource = printDocument.PrinterSettings.PaperSources[cbSources.SelectedIndex] ?? printDocument.DefaultPageSettings.PaperSource;
-        printPreviewControl.GeneratePreviewSilently();
-        printPreviewControl.Zoom = _zoom; // 48 / 100f;
-    }
-
-    private void RbPortrait_CheckedChanged(object sender, EventArgs e)
-    {
-        printDocument.DefaultPageSettings.Landscape = !rbPortrait.Checked;
-        picPortrait.BorderStyle = rbPortrait.Checked ? BorderStyle.FixedSingle : BorderStyle.None;
-        picLandscape.BorderStyle = rbPortrait.Checked ? BorderStyle.None : BorderStyle.FixedSingle;
-        printPreviewControl.GeneratePreviewSilently();
-        printPreviewControl.Zoom = _zoom; // 48 / 100f;
-    }
-
-    private void CbPapersize_SelectedIndexChanged(object sender, EventArgs e)
-    {
-        if (!cbPapersize.Visible || !cbPapersize.Focused) { return; } // Keine Auswahl getroffen 
-
-        if (cbPapersize.SelectedIndex >= 0 && cbPapersize.SelectedIndex < printDocument.PrinterSettings.PaperSizes.Count)
-        {
-            printDocument.DefaultPageSettings.PaperSize = printDocument.PrinterSettings.PaperSizes[cbPapersize.SelectedIndex];
-        }
-        printPreviewControl.GeneratePreviewSilently();
-        printPreviewControl.Zoom = _zoom; // 48 / 100f;
-    }
-
     private void PrintDocument_BeginPrint(object sender, PrintEventArgs e) => printDocument.DocumentName = "Briefumschlag";
-
-    private void FrmPrintSetting_Load(object sender, EventArgs e)
-    {
-        NativeMethods.SendMessage(tbSender1.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_RIGHTMARGIN, 8 << 16);
-        NativeMethods.SendMessage(tbSender1.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_LEFTMARGIN, 8);
-        NativeMethods.SendMessage(tbSender2.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_RIGHTMARGIN, 8 << 16);
-        NativeMethods.SendMessage(tbSender2.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_LEFTMARGIN, 8);
-        NativeMethods.SendMessage(tbSender3.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_RIGHTMARGIN, 8 << 16);
-        NativeMethods.SendMessage(tbSender3.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_LEFTMARGIN, 8);
-        NativeMethods.SendMessage(tbSender4.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_RIGHTMARGIN, 8 << 16);
-        NativeMethods.SendMessage(tbSender4.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_LEFTMARGIN, 8);
-        NativeMethods.SendMessage(tbSender5.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_RIGHTMARGIN, 8 << 16);
-        NativeMethods.SendMessage(tbSender5.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_LEFTMARGIN, 8);
-        NativeMethods.SendMessage(tbSender6.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_RIGHTMARGIN, 8 << 16);
-        NativeMethods.SendMessage(tbSender6.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_LEFTMARGIN, 8);
-        printPreviewControl.Document = printDocument;
-        printPreviewControl.Zoom = _zoom; // 48 / 100f;
-        if (printDocument.PrinterSettings.IsValid && printDocument.DefaultPageSettings.PaperSize != null)
-        {
-            toolStripStatusLabel.Text = $"Format: {printDocument.DefaultPageSettings.PaperSize.PaperName}";
-        }
-        else { toolStripStatusLabel.Text = "Kein gültiger Drucker ausgewählt."; }
-        UpdateStatusBarLayout();
-        UpdateZoomDisplay();
-    }
-
-    private void PicPortrait_Click(object sender, EventArgs e) => rbPortrait.Checked = true;
-    private void PicLandscape_Click(object sender, EventArgs e) => rbLandscape.Checked = true;
 
     private void TabControl_SelectedIndexChanged(object sender, EventArgs e)
     {
-        if (tabControl.SelectedIndex == 0) { toolStripStatusLabel.Text = $"Format: {printDocument.DefaultPageSettings.PaperSize.PaperName}"; }
+        if (tabControl.SelectedIndex == 0 && printDocument.DefaultPageSettings.PaperSize != null) { toolStripStatusLabel.Text = $"Format: {printDocument.DefaultPageSettings.PaperSize.PaperName}"; }
         else if (tabControl.SelectedIndex == 1) { toolStripStatusLabel.Text = $"Drucker: {printDocument.PrinterSettings.PrinterName}"; }
-        else { toolStripStatusLabel.Text = $"{printDocument.PrinterSettings.PrinterName}, {printDocument.DefaultPageSettings.PaperSize.PaperName}"; }
+        else if (printDocument.DefaultPageSettings.PaperSize != null) { toolStripStatusLabel.Text = $"{printDocument.PrinterSettings.PrinterName}, {printDocument.DefaultPageSettings.PaperSize.PaperName}"; }
     }
+
+    private void UpdateStatusBarLayout()
+    {
+        if (lblZoomStatus != null && printPreviewControl != null) { lblZoomStatus.Width = printPreviewControl.Width; }
+    }
+
+    private void UpdateZoomDisplay() => lblZoomStatus?.Text = $"Zoom: {printPreviewControl.Zoom * 100:0}% (Doppelklick, Mausrad oder Strg++/-/0 für Änderung)";  // printPreviewControl_ZoomChanged
+    private void FrmPrintSetting_Layout(object sender, LayoutEventArgs e) => UpdateStatusBarLayout();
 
     private void ZoomInToolStripMenuItem_Click(object sender, EventArgs e)
     {
@@ -309,10 +372,7 @@ public partial class FrmPrintSetting : Form
         if (printPreviewControl.Zoom >= 0.3D) { printPreviewControl.Zoom -= 0.1; }
     }
 
-    private void ZoomDefaultToolStripMenuItem_Click(object sender, EventArgs e)
-    {
-        printPreviewControl.Zoom = _zoom; // 48 / 100f;
-    }
+    private void ZoomDefaultToolStripMenuItem_Click(object sender, EventArgs e) => printPreviewControl.Zoom = _zoom;
 
     private void ContextMenuStrip_Opening(object sender, System.ComponentModel.CancelEventArgs e)
     {
@@ -334,7 +394,7 @@ public partial class FrmPrintSetting : Form
             using var g = e.Graphics;
             Brush textBrush;
             e.DrawBackground();
-            var tabPage = tabControlSender.TabPages[e.Index]; // Get the item from the collection.
+            var tabPage = tabControlSender.TabPages[e.Index];
             if (e.State == DrawItemState.Selected)
             {
                 textBrush = new SolidBrush(Color.White);
@@ -346,28 +406,17 @@ public partial class FrmPrintSetting : Form
                 e.DrawBackground();
             }
             using var tabFont = new Font("Segoe UI", 10.0f, FontStyle.Bold, GraphicsUnit.Point);
-            using var stringFlags = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center }; // Draw string. Center the text.
-            var tabBounds = tabControlSender.GetTabRect(e.Index); // Get the real bounds for the tab rectangle.
-            tabBounds.Inflate(-2, -2); // Inflate the rectangle to make it smaller.
+            using var stringFlags = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+            var tabBounds = tabControlSender.GetTabRect(e.Index);
+            tabBounds.Inflate(-2, -2);
             g.DrawString(tabPage.Text, tabFont, textBrush, tabBounds, new StringFormat(stringFlags));
         }
     }
 
-    private void GenericControl_ValueChanged(object sender, EventArgs e)
-    {
-        if (sender is Control c && c.Visible)
-        {
-            if (c == ckbAnredePrint && ckbAnredePrint.Checked) { ckbAnredeOberhalb.Enabled = true; }
-            else if (c == ckbAnredePrint && !ckbAnredePrint.Checked) { ckbAnredeOberhalb.Enabled = false; }
-            else if (c == ckbLandPrint && ckbLandPrint.Checked) { lblLandGapFactor.Enabled = nudLandGapFactor.Enabled = lblLandRows.Enabled = ckbLandGROSS.Enabled = true; }
-            else if (c == ckbLandPrint && !ckbLandPrint.Checked) { lblLandGapFactor.Enabled = nudLandGapFactor.Enabled = lblLandRows.Enabled = ckbLandGROSS.Enabled = false; }
-            printPreviewControl.GeneratePreviewSilently();
-        }
-    }
-
+    // TextBox Debounce (Wichtig für Performance beim Tippen)
     private void TbSender_TextChanged(object sender, EventArgs e)
     {
-        timerDebounce.Stop(); // Beim Tippen wollen wir warten, bis der Nutzer kurz Pause macht
+        timerDebounce.Stop();
         timerDebounce.Start();
     }
 
@@ -377,63 +426,14 @@ public partial class FrmPrintSetting : Form
         printPreviewControl.GeneratePreviewSilently();
     }
 
-    private void UpdateStatusBarLayout()
-    {
-        if (lblZoomStatus != null && printPreviewControl != null) { lblZoomStatus.Width = printPreviewControl.Width; }
-    }
-
-    private void UpdateZoomDisplay() => lblZoomStatus?.Text = $"Zoom: {printPreviewControl.Zoom * 100:0}% (Doppelklick, Mausrad oder Strg++/-/0 für Änderung)";
-
     private void PrintPreviewControl_DoubleClick(object? sender, EventArgs e)
     {
         var fitZoom = GetBestFitZoom();
         var currentZoom = printPreviewControl.Zoom;
         if (Math.Abs(currentZoom - 1.0) < Math.Abs(currentZoom - fitZoom)) { printPreviewControl.Zoom = fitZoom; }
-        else { printPreviewControl.Zoom = 1.0; } // wenn näher an 100%, Best Fit, sonst 100%
+        else { printPreviewControl.Zoom = 1.0; }
         UpdateZoomDisplay();
     }
-
-    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
-    {
-        switch (keyData)
-        {
-            case Keys.Tab:
-                tabControl.SelectedIndex = (tabControl.SelectedIndex + 1) % tabControl.TabCount;
-                return true;
-            case Keys.Oemplus | Keys.Control:
-            case Keys.Add | Keys.Control:
-                if (printPreviewControl.Zoom < 1.0)
-                {
-                    printPreviewControl.Zoom = Math.Min(1.0, printPreviewControl.Zoom + 0.1);
-                    UpdateZoomDisplay();
-                }
-                else { Console.Beep(); }
-                return true;
-
-            case Keys.OemMinus | Keys.Control:
-            case Keys.Subtract | Keys.Control:
-                if (printPreviewControl.Zoom > 0.3)
-                {
-                    printPreviewControl.Zoom = Math.Max(0.3, printPreviewControl.Zoom - 0.1);
-                    UpdateZoomDisplay();
-                }
-                else { Console.Beep(); }
-                return true;
-
-            case Keys.NumPad0 | Keys.Control:
-            case Keys.D0 | Keys.Control:
-                var bestFit = GetBestFitZoom();
-                if (Math.Abs(printPreviewControl.Zoom - bestFit) < 0.001) { Console.Beep(); }
-                else
-                {
-                    printPreviewControl.Zoom = bestFit;
-                    UpdateZoomDisplay();
-                }
-                return true;
-        }
-        return base.ProcessCmdKey(ref msg, keyData);
-    }
-
 
     private double GetBestFitZoom()
     {
@@ -453,5 +453,39 @@ public partial class FrmPrintSetting : Form
         return Math.Max(Math.Min(zoomX, zoomY), 0.1);
     }
 
-    private void FrmPrintSetting_Layout(object sender, LayoutEventArgs e) => UpdateStatusBarLayout();  // Bei jedem Layout-Vorgang (Resize etc.) die Breite anpassen
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        switch (keyData)
+        {
+            case Keys.Tab:
+                tabControl.SelectedIndex = (tabControl.SelectedIndex + 1) % tabControl.TabCount;
+                return true;
+            case Keys.Oemplus | Keys.Control:
+            case Keys.Add | Keys.Control:
+                if (printPreviewControl.Zoom < 1.0)
+                {
+                    printPreviewControl.Zoom = Math.Min(1.0, printPreviewControl.Zoom + 0.1);
+                    UpdateZoomDisplay();
+                }
+                else { Console.Beep(); }
+                return true;
+            case Keys.OemMinus | Keys.Control:
+            case Keys.Subtract | Keys.Control:
+                if (printPreviewControl.Zoom > 0.3)
+                {
+                    printPreviewControl.Zoom = Math.Max(0.3, printPreviewControl.Zoom - 0.1);
+                    UpdateZoomDisplay();
+                }
+                else { Console.Beep(); }
+                return true;
+            case Keys.NumPad0 | Keys.Control:
+            case Keys.D0 | Keys.Control:
+                var bestFit = GetBestFitZoom();
+                if (Math.Abs(printPreviewControl.Zoom - bestFit) < 0.001) { Console.Beep(); }
+                else { printPreviewControl.Zoom = bestFit; UpdateZoomDisplay(); }
+                return true;
+        }
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
+
 }

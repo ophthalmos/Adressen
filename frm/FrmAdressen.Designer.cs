@@ -92,12 +92,6 @@ partial class FrmAdressen
         toolStripSeparator17 = new ToolStripSeparator();
         optionsToolStripMenuItem = new ToolStripMenuItem();
         manageGroupsToolStripMenuItem = new ToolStripMenuItem();
-        genderRecognitionToolStripMenuItem = new ToolStripMenuItem();
-        weiblicheVornamenToolStripMenuItem = new ToolStripMenuItem();
-        männlicheVornamenToolStripMenuItem = new ToolStripMenuItem();
-        toolStripSeparator18 = new ToolStripSeparator();
-        sortNamesToolStripMenuItem = new ToolStripMenuItem();
-        nameduplicatesToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator3 = new ToolStripSeparator();
         authentMenuItem = new ToolStripMenuItem();
         browserPeopleMenuItem = new ToolStripMenuItem();
@@ -109,6 +103,7 @@ partial class FrmAdressen
         privacypolicyToolStripMenuItem = new ToolStripMenuItem();
         licenseTxtToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator19 = new ToolStripSeparator();
+        updateCheckToolStripMenuItem = new ToolStripMenuItem();
         websiteToolStripMenuItem = new ToolStripMenuItem();
         githubToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator5 = new ToolStripSeparator();
@@ -140,6 +135,8 @@ partial class FrmAdressen
         toolStripStatusLabel = new ToolStripStatusLabel();
         flexiTSStatusLabel = new ToolStripStatusLabel();
         toolStripProgressBar = new ToolStripProgressBar();
+        springSpacer = new ToolStripStatusLabel();
+        btnUpdateAvailable = new ToolStripButton();
         splitContainer = new SplitContainer();
         tabControl = new TabControl();
         addressTabPage = new TabPage();
@@ -173,8 +170,8 @@ partial class FrmAdressen
         cbLand = new ComboBox();
         labelBetreff = new Label();
         tbBetreff = new TextBox();
-        grußformelLabel = new Label();
-        cbGrußformel = new ComboBox();
+        GrussformelLabel = new Label();
+        cbGrussformel = new ComboBox();
         schlussformelLabel = new Label();
         cbSchlussformel = new ComboBox();
         geburtstagLabel = new Label();
@@ -672,7 +669,7 @@ partial class FrmAdressen
         // 
         // extraToolStripMenuItem
         // 
-        extraToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { birthdaysToolStripMenuItem, toolStripSeparator17, optionsToolStripMenuItem, manageGroupsToolStripMenuItem, genderRecognitionToolStripMenuItem, toolStripSeparator3, authentMenuItem, browserPeopleMenuItem });
+        extraToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { birthdaysToolStripMenuItem, toolStripSeparator17, optionsToolStripMenuItem, manageGroupsToolStripMenuItem, toolStripSeparator3, authentMenuItem, browserPeopleMenuItem });
         extraToolStripMenuItem.Name = "extraToolStripMenuItem";
         extraToolStripMenuItem.Size = new Size(49, 20);
         extraToolStripMenuItem.Text = "Extras";
@@ -713,51 +710,6 @@ partial class FrmAdressen
         manageGroupsToolStripMenuItem.Text = "Gruppen bearbeiten…";
         manageGroupsToolStripMenuItem.Click += ManageGroupsToolStripMenuItem_Click;
         // 
-        // genderRecognitionToolStripMenuItem
-        // 
-        genderRecognitionToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { weiblicheVornamenToolStripMenuItem, männlicheVornamenToolStripMenuItem, toolStripSeparator18, sortNamesToolStripMenuItem, nameduplicatesToolStripMenuItem });
-        genderRecognitionToolStripMenuItem.Image = (Image)resources.GetObject("genderRecognitionToolStripMenuItem.Image");
-        genderRecognitionToolStripMenuItem.Name = "genderRecognitionToolStripMenuItem";
-        genderRecognitionToolStripMenuItem.Size = new Size(263, 22);
-        genderRecognitionToolStripMenuItem.Text = "Gruß&formel-Geschlechtserkennung";
-        // 
-        // weiblicheVornamenToolStripMenuItem
-        // 
-        weiblicheVornamenToolStripMenuItem.Image = (Image)resources.GetObject("weiblicheVornamenToolStripMenuItem.Image");
-        weiblicheVornamenToolStripMenuItem.Name = "weiblicheVornamenToolStripMenuItem";
-        weiblicheVornamenToolStripMenuItem.Size = new Size(239, 22);
-        weiblicheVornamenToolStripMenuItem.Text = "&Weibliche Vornamen öffnen";
-        weiblicheVornamenToolStripMenuItem.Click += WeiblicheVornamenToolStripMenuItem_Click;
-        // 
-        // männlicheVornamenToolStripMenuItem
-        // 
-        männlicheVornamenToolStripMenuItem.Image = (Image)resources.GetObject("männlicheVornamenToolStripMenuItem.Image");
-        männlicheVornamenToolStripMenuItem.Name = "männlicheVornamenToolStripMenuItem";
-        männlicheVornamenToolStripMenuItem.Size = new Size(239, 22);
-        männlicheVornamenToolStripMenuItem.Text = "&Männliche Vornamen öffnen";
-        männlicheVornamenToolStripMenuItem.Click += MännlicheVornamenToolStripMenuItem_Click;
-        // 
-        // toolStripSeparator18
-        // 
-        toolStripSeparator18.Name = "toolStripSeparator18";
-        toolStripSeparator18.Size = new Size(236, 6);
-        // 
-        // sortNamesToolStripMenuItem
-        // 
-        sortNamesToolStripMenuItem.Image = (Image)resources.GetObject("sortNamesToolStripMenuItem.Image");
-        sortNamesToolStripMenuItem.Name = "sortNamesToolStripMenuItem";
-        sortNamesToolStripMenuItem.Size = new Size(239, 22);
-        sortNamesToolStripMenuItem.Text = "&Vornamen prüfen und sortieren";
-        sortNamesToolStripMenuItem.Click += SortNamesToolStripMenuItem_Click;
-        // 
-        // nameduplicatesToolStripMenuItem
-        // 
-        nameduplicatesToolStripMenuItem.Image = (Image)resources.GetObject("nameduplicatesToolStripMenuItem.Image");
-        nameduplicatesToolStripMenuItem.Name = "nameduplicatesToolStripMenuItem";
-        nameduplicatesToolStripMenuItem.Size = new Size(239, 22);
-        nameduplicatesToolStripMenuItem.Text = "&Übereinstimmungen suchen";
-        nameduplicatesToolStripMenuItem.Click += NameduplicatesToolStripMenuItem_Click;
-        // 
         // toolStripSeparator3
         // 
         toolStripSeparator3.Name = "toolStripSeparator3";
@@ -782,7 +734,7 @@ partial class FrmAdressen
         // 
         // helpToolStripMenuItem
         // 
-        helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { wordHelpToolStripMenuItem, helpdokuTSMenuItem, toolStripSeparator12, termsofuseToolStripMenuItem, privacypolicyToolStripMenuItem, licenseTxtToolStripMenuItem, toolStripSeparator19, websiteToolStripMenuItem, githubToolStripMenuItem, toolStripSeparator5, aboutToolStripMenuItem });
+        helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { wordHelpToolStripMenuItem, helpdokuTSMenuItem, toolStripSeparator12, termsofuseToolStripMenuItem, privacypolicyToolStripMenuItem, licenseTxtToolStripMenuItem, toolStripSeparator19, updateCheckToolStripMenuItem, websiteToolStripMenuItem, githubToolStripMenuItem, toolStripSeparator5, aboutToolStripMenuItem });
         helpToolStripMenuItem.Name = "helpToolStripMenuItem";
         helpToolStripMenuItem.Size = new Size(44, 20);
         helpToolStripMenuItem.Text = "Hilfe";
@@ -840,6 +792,14 @@ partial class FrmAdressen
         // 
         toolStripSeparator19.Name = "toolStripSeparator19";
         toolStripSeparator19.Size = new Size(258, 6);
+        // 
+        // updateCheckToolStripMenuItem
+        // 
+        updateCheckToolStripMenuItem.Image = Properties.Resources.RunUpdate16;
+        updateCheckToolStripMenuItem.Name = "updateCheckToolStripMenuItem";
+        updateCheckToolStripMenuItem.Size = new Size(261, 22);
+        updateCheckToolStripMenuItem.Text = "Prüfe auf &Updates…";
+        updateCheckToolStripMenuItem.Click += UpdateCheckToolStripMenuItem_Click;
         // 
         // websiteToolStripMenuItem
         // 
@@ -1068,7 +1028,7 @@ partial class FrmAdressen
         // 
         // statusStrip
         // 
-        statusStrip.Items.AddRange(new ToolStripItem[] { sepTSStatusLabel, toolStripStatusLabel, flexiTSStatusLabel, toolStripProgressBar });
+        statusStrip.Items.AddRange(new ToolStripItem[] { sepTSStatusLabel, toolStripStatusLabel, flexiTSStatusLabel, toolStripProgressBar, springSpacer, btnUpdateAvailable });
         statusStrip.LayoutStyle = ToolStripLayoutStyle.HorizontalStackWithOverflow;
         statusStrip.Location = new Point(0, 794);
         statusStrip.Name = "statusStrip";
@@ -1103,7 +1063,25 @@ partial class FrmAdressen
         toolStripProgressBar.Name = "toolStripProgressBar";
         toolStripProgressBar.Size = new Size(150, 16);
         toolStripProgressBar.Style = ProgressBarStyle.Continuous;
+        toolStripProgressBar.Value = 15;
         toolStripProgressBar.Visible = false;
+        // 
+        // springSpacer
+        // 
+        springSpacer.Name = "springSpacer";
+        springSpacer.Size = new Size(0, 17);
+        springSpacer.Spring = true;
+        // 
+        // btnUpdateAvailable
+        // 
+        btnUpdateAvailable.Alignment = ToolStripItemAlignment.Right;
+        btnUpdateAvailable.Image = Properties.Resources.RunUpdate16;
+        btnUpdateAvailable.ImageTransparentColor = Color.Magenta;
+        btnUpdateAvailable.Name = "btnUpdateAvailable";
+        btnUpdateAvailable.Size = new Size(119, 20);
+        btnUpdateAvailable.Text = "Update verfügbar";
+        btnUpdateAvailable.Visible = false;
+        btnUpdateAvailable.Click += BtnUpdateAvailable_ButtonClick;
         // 
         // splitContainer
         // 
@@ -1265,6 +1243,7 @@ partial class FrmAdressen
         contactDGV.CellClick += ContactDGV_CellClick;
         contactDGV.CellMouseDown += DGV_CellMouseDown_SelectRow;
         contactDGV.ColumnHeaderMouseClick += ContactDGV_ColumnHeaderMouseClick;
+        contactDGV.DataError += ContactDGV_DataError;
         contactDGV.RowPrePaint += ContactDGV_RowPrePaint;
         contactDGV.RowValidating += ContactDGV_RowValidating;
         contactDGV.SelectionChanged += ContactDGV_SelectionChanged;
@@ -1360,8 +1339,8 @@ partial class FrmAdressen
         tableLayoutPanel.Controls.Add(cbLand, 3, 6);
         tableLayoutPanel.Controls.Add(labelBetreff, 0, 7);
         tableLayoutPanel.Controls.Add(tbBetreff, 2, 7);
-        tableLayoutPanel.Controls.Add(grußformelLabel, 0, 8);
-        tableLayoutPanel.Controls.Add(cbGrußformel, 2, 8);
+        tableLayoutPanel.Controls.Add(GrussformelLabel, 0, 8);
+        tableLayoutPanel.Controls.Add(cbGrussformel, 2, 8);
         tableLayoutPanel.Controls.Add(schlussformelLabel, 0, 9);
         tableLayoutPanel.Controls.Add(cbSchlussformel, 2, 9);
         tableLayoutPanel.Controls.Add(geburtstagLabel, 0, 10);
@@ -1759,34 +1738,34 @@ partial class FrmAdressen
         tbBetreff.Leave += TextBox_Leave;
         tbBetreff.MouseDown += TextBox_MouseDown;
         // 
-        // grußformelLabel
+        // GrussformelLabel
         // 
-        tableLayoutPanel.SetColumnSpan(grußformelLabel, 2);
-        grußformelLabel.Dock = DockStyle.Fill;
-        grußformelLabel.Location = new Point(3, 262);
-        grußformelLabel.Name = "grußformelLabel";
-        grußformelLabel.Padding = new Padding(0, 0, 0, 3);
-        grußformelLabel.Size = new Size(95, 32);
-        grußformelLabel.TabIndex = 14;
-        grußformelLabel.Text = "Grußformel:";
-        grußformelLabel.TextAlign = ContentAlignment.MiddleRight;
+        tableLayoutPanel.SetColumnSpan(GrussformelLabel, 2);
+        GrussformelLabel.Dock = DockStyle.Fill;
+        GrussformelLabel.Location = new Point(3, 262);
+        GrussformelLabel.Name = "GrussformelLabel";
+        GrussformelLabel.Padding = new Padding(0, 0, 0, 3);
+        GrussformelLabel.Size = new Size(95, 32);
+        GrussformelLabel.TabIndex = 14;
+        GrussformelLabel.Text = "Grussformel:";
+        GrussformelLabel.TextAlign = ContentAlignment.MiddleRight;
         // 
-        // cbGrußformel
+        // cbGrussformel
         // 
-        cbGrußformel.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
-        cbGrußformel.AutoCompleteSource = AutoCompleteSource.ListItems;
-        tableLayoutPanel.SetColumnSpan(cbGrußformel, 5);
-        cbGrußformel.Dock = DockStyle.Fill;
-        cbGrußformel.DrawMode = DrawMode.OwnerDrawFixed;
-        cbGrußformel.Location = new Point(104, 265);
-        cbGrußformel.Name = "cbGrußformel";
-        cbGrußformel.Size = new Size(443, 26);
-        cbGrußformel.TabIndex = 15;
-        cbGrußformel.DrawItem += ComboBox_DrawItem;
-        cbGrußformel.TextChanged += TextBox_ComboBox_TextChanged;
-        cbGrußformel.KeyDown += TextBox_ComboBox_KeyDown;
-        cbGrußformel.Leave += ComboBox_Leave;
-        cbGrußformel.Resize += ComboBox_Resize;
+        cbGrussformel.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+        cbGrussformel.AutoCompleteSource = AutoCompleteSource.ListItems;
+        tableLayoutPanel.SetColumnSpan(cbGrussformel, 5);
+        cbGrussformel.Dock = DockStyle.Fill;
+        cbGrussformel.DrawMode = DrawMode.OwnerDrawFixed;
+        cbGrussformel.Location = new Point(104, 265);
+        cbGrussformel.Name = "cbGrussformel";
+        cbGrussformel.Size = new Size(443, 26);
+        cbGrussformel.TabIndex = 15;
+        cbGrussformel.DrawItem += ComboBox_DrawItem;
+        cbGrussformel.TextChanged += TextBox_ComboBox_TextChanged;
+        cbGrussformel.KeyDown += TextBox_ComboBox_KeyDown;
+        cbGrussformel.Leave += ComboBox_Leave;
+        cbGrussformel.Resize += ComboBox_Resize;
         // 
         // schlussformelLabel
         // 
@@ -2561,13 +2540,11 @@ partial class FrmAdressen
         Controls.Add(toolStrip);
         Controls.Add(menuStrip);
         DoubleBuffered = true;
-        Enabled = false;
         Font = new Font("Segoe UI", 10F);
         Icon = (Icon)resources.GetObject("$this.Icon");
         MainMenuStrip = menuStrip;
         MinimumSize = new Size(932, 576);
         Name = "FrmAdressen";
-        Opacity = 0D;
         Text = "Adressen & Kontakte";
         FormClosing += FrmAdressen_FormClosing;
         Load += FrmAdressen_Load;
@@ -2652,7 +2629,7 @@ partial class FrmAdressen
     private ToolStripSeparator toolStripSeparator4;
     private ToolStripButton saveTSButton;
     private Label anredetitelLabel;
-    private Label grußformelLabel;
+    private Label GrussformelLabel;
     private Label landLabel;
     private Label plzortLabel;
     private TextBox tbStraße;
@@ -2674,7 +2651,7 @@ partial class FrmAdressen
     private TextBox tbMail2;
     private TextBox tbMail1;
     private ComboBox cbSchlussformel;
-    private ComboBox cbGrußformel;
+    private ComboBox cbGrussformel;
     private ComboBox cbLand;
     private Label faxLabel;
     private LinkLabel mail1LinkLabel;
@@ -2781,12 +2758,6 @@ partial class FrmAdressen
     private ToolStripMenuItem websiteToolStripMenuItem;
     private ToolStripMenuItem githubToolStripMenuItem;
     private ToolStripSeparator toolStripSeparator5;
-    private ToolStripMenuItem genderRecognitionToolStripMenuItem;
-    private ToolStripMenuItem sortNamesToolStripMenuItem;
-    private ToolStripMenuItem weiblicheVornamenToolStripMenuItem;
-    private ToolStripMenuItem männlicheVornamenToolStripMenuItem;
-    private ToolStripSeparator toolStripSeparator18;
-    private ToolStripMenuItem nameduplicatesToolStripMenuItem;
     private ToolStripMenuItem termsofuseToolStripMenuItem;
     private ToolStripMenuItem privacypolicyToolStripMenuItem;
     private ToolStripSeparator toolStripSeparator19;
@@ -2831,4 +2802,7 @@ partial class FrmAdressen
     private System.Windows.Forms.Timer scrollTimer;
     private TextBox tbPosition;
     private TextBox tbPostfach;
+    private ToolStripMenuItem updateCheckToolStripMenuItem;
+    private ToolStripStatusLabel springSpacer;
+    private ToolStripButton btnUpdateAvailable;
 }

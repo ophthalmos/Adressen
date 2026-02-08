@@ -2,6 +2,7 @@
   "profiles": {
     "Adressen": {
       "commandName": "Project",
+      "commandLineArgs": "-migrate",
       "dotnetRunMessages": true,
       "hotReloadEnabled": true
     }
