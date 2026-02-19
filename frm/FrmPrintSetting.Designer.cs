@@ -69,6 +69,7 @@ partial class FrmPrintSetting
         tbSender6 = new TextBox();
         ckbPrintSender = new CheckBox();
         recipientPage = new TabPage();
+        ckbPrintRecipient = new CheckBox();
         lblLineFactor = new Label();
         lblLineHeight = new Label();
         nudLineHeightFactor = new NumericUpDown();
@@ -571,6 +572,7 @@ partial class FrmPrintSetting
         // 
         // recipientPage
         // 
+        recipientPage.Controls.Add(ckbPrintRecipient);
         recipientPage.Controls.Add(lblLineFactor);
         recipientPage.Controls.Add(lblLineHeight);
         recipientPage.Controls.Add(nudLineHeightFactor);
@@ -584,17 +586,30 @@ partial class FrmPrintSetting
         recipientPage.Controls.Add(ckbAnredeOberhalb);
         recipientPage.Controls.Add(ckbAnredePrint);
         recipientPage.Controls.Add(ckbLandPrint);
-        recipientPage.Location = new Point(4, 24);
+        recipientPage.Location = new Point(4, 26);
         recipientPage.Name = "recipientPage";
-        recipientPage.Size = new Size(316, 173);
+        recipientPage.Size = new Size(316, 171);
         recipientPage.TabIndex = 4;
         recipientPage.Text = "Empfänger";
         recipientPage.UseVisualStyleBackColor = true;
         // 
+        // ckbPrintRecipient
+        // 
+        ckbPrintRecipient.AutoSize = true;
+        ckbPrintRecipient.Checked = true;
+        ckbPrintRecipient.CheckState = CheckState.Checked;
+        ckbPrintRecipient.Location = new Point(12, 145);
+        ckbPrintRecipient.Name = "ckbPrintRecipient";
+        ckbPrintRecipient.Size = new Size(282, 23);
+        ckbPrintRecipient.TabIndex = 31;
+        ckbPrintRecipient.Text = "Empfängertext auf Briefumschlag drucken";
+        ckbPrintRecipient.UseVisualStyleBackColor = true;
+        ckbPrintRecipient.CheckedChanged += GenericControl_ValueChanged;
+        // 
         // lblLineFactor
         // 
         lblLineFactor.AutoSize = true;
-        lblLineFactor.Location = new Point(239, 76);
+        lblLineFactor.Location = new Point(239, 61);
         lblLineFactor.Name = "lblLineFactor";
         lblLineFactor.Size = new Size(45, 19);
         lblLineFactor.TabIndex = 30;
@@ -603,7 +618,7 @@ partial class FrmPrintSetting
         // lblLineHeight
         // 
         lblLineHeight.AutoSize = true;
-        lblLineHeight.Location = new Point(8, 76);
+        lblLineHeight.Location = new Point(8, 61);
         lblLineHeight.Name = "lblLineHeight";
         lblLineHeight.Size = new Size(163, 19);
         lblLineHeight.TabIndex = 29;
@@ -613,7 +628,7 @@ partial class FrmPrintSetting
         // 
         nudLineHeightFactor.DecimalPlaces = 2;
         nudLineHeightFactor.Increment = new decimal(new int[] { 5, 0, 0, 131072 });
-        nudLineHeightFactor.Location = new Point(178, 74);
+        nudLineHeightFactor.Location = new Point(178, 59);
         nudLineHeightFactor.Maximum = new decimal(new int[] { 30, 0, 0, 65536 });
         nudLineHeightFactor.Minimum = new decimal(new int[] { 5, 0, 0, 65536 });
         nudLineHeightFactor.Name = "nudLineHeightFactor";
@@ -626,7 +641,7 @@ partial class FrmPrintSetting
         // lblLandRows
         // 
         lblLandRows.AutoSize = true;
-        lblLandRows.Location = new Point(239, 142);
+        lblLandRows.Location = new Point(239, 119);
         lblLandRows.Name = "lblLandRows";
         lblLandRows.Size = new Size(45, 19);
         lblLandRows.TabIndex = 27;
@@ -635,7 +650,7 @@ partial class FrmPrintSetting
         // lblLandGapFactor
         // 
         lblLandGapFactor.AutoSize = true;
-        lblLandGapFactor.Location = new Point(8, 142);
+        lblLandGapFactor.Location = new Point(8, 119);
         lblLandGapFactor.Name = "lblLandGapFactor";
         lblLandGapFactor.Size = new Size(130, 19);
         lblLandGapFactor.TabIndex = 26;
@@ -645,7 +660,7 @@ partial class FrmPrintSetting
         // 
         nudLandGapFactor.DecimalPlaces = 2;
         nudLandGapFactor.Increment = new decimal(new int[] { 5, 0, 0, 131072 });
-        nudLandGapFactor.Location = new Point(178, 140);
+        nudLandGapFactor.Location = new Point(178, 117);
         nudLandGapFactor.Maximum = new decimal(new int[] { 2, 0, 0, 0 });
         nudLandGapFactor.Name = "nudLandGapFactor";
         nudLandGapFactor.Size = new Size(55, 25);
@@ -657,7 +672,7 @@ partial class FrmPrintSetting
         // lblZipRows
         // 
         lblZipRows.AutoSize = true;
-        lblZipRows.Location = new Point(239, 109);
+        lblZipRows.Location = new Point(239, 90);
         lblZipRows.Name = "lblZipRows";
         lblZipRows.Size = new Size(45, 19);
         lblZipRows.TabIndex = 24;
@@ -666,7 +681,7 @@ partial class FrmPrintSetting
         // lblZipGapFactor
         // 
         lblZipGapFactor.AutoSize = true;
-        lblZipGapFactor.Location = new Point(8, 109);
+        lblZipGapFactor.Location = new Point(8, 90);
         lblZipGapFactor.Name = "lblZipGapFactor";
         lblZipGapFactor.Size = new Size(149, 19);
         lblZipGapFactor.TabIndex = 23;
@@ -676,7 +691,7 @@ partial class FrmPrintSetting
         // 
         nudZipGapFactor.DecimalPlaces = 2;
         nudZipGapFactor.Increment = new decimal(new int[] { 5, 0, 0, 131072 });
-        nudZipGapFactor.Location = new Point(178, 107);
+        nudZipGapFactor.Location = new Point(178, 88);
         nudZipGapFactor.Maximum = new decimal(new int[] { 2, 0, 0, 0 });
         nudZipGapFactor.Name = "nudZipGapFactor";
         nudZipGapFactor.Size = new Size(55, 25);
@@ -690,7 +705,7 @@ partial class FrmPrintSetting
         ckbLandGROSS.AutoSize = true;
         ckbLandGROSS.Checked = true;
         ckbLandGROSS.CheckState = CheckState.Checked;
-        ckbLandGROSS.Location = new Point(178, 40);
+        ckbLandGROSS.Location = new Point(178, 32);
         ckbLandGROSS.Name = "ckbLandGROSS";
         ckbLandGROSS.Size = new Size(130, 23);
         ckbLandGROSS.TabIndex = 21;
@@ -702,22 +717,22 @@ partial class FrmPrintSetting
         // 
         ckbAnredeOberhalb.AutoSize = true;
         ckbAnredeOberhalb.Enabled = false;
-        ckbAnredeOberhalb.Location = new Point(178, 9);
+        ckbAnredeOberhalb.Location = new Point(178, 6);
         ckbAnredeOberhalb.Name = "ckbAnredeOberhalb";
-        ckbAnredeOberhalb.Size = new Size(85, 23);
+        ckbAnredeOberhalb.Size = new Size(82, 23);
         ckbAnredeOberhalb.TabIndex = 20;
-        ckbAnredeOberhalb.Text = "Oberhalb";
+        ckbAnredeOberhalb.Text = "oberhalb";
         ckbAnredeOberhalb.UseVisualStyleBackColor = true;
         ckbAnredeOberhalb.CheckedChanged += GenericControl_ValueChanged;
         // 
         // ckbAnredePrint
         // 
         ckbAnredePrint.AutoSize = true;
-        ckbAnredePrint.Location = new Point(12, 9);
+        ckbAnredePrint.Location = new Point(12, 6);
         ckbAnredePrint.Name = "ckbAnredePrint";
-        ckbAnredePrint.Size = new Size(144, 23);
+        ckbAnredePrint.Size = new Size(147, 23);
         ckbAnredePrint.TabIndex = 17;
-        ckbAnredePrint.Text = "Anrede hinzufügen";
+        ckbAnredePrint.Text = "Anrede hinzufügen,";
         ckbAnredePrint.UseVisualStyleBackColor = true;
         ckbAnredePrint.CheckedChanged += GenericControl_ValueChanged;
         // 
@@ -726,11 +741,11 @@ partial class FrmPrintSetting
         ckbLandPrint.AutoSize = true;
         ckbLandPrint.Checked = true;
         ckbLandPrint.CheckState = CheckState.Checked;
-        ckbLandPrint.Location = new Point(12, 40);
+        ckbLandPrint.Location = new Point(12, 32);
         ckbLandPrint.Name = "ckbLandPrint";
-        ckbLandPrint.Size = new Size(130, 23);
+        ckbLandPrint.Size = new Size(148, 23);
         ckbLandPrint.TabIndex = 18;
-        ckbLandPrint.Text = "Land hinzufügen";
+        ckbLandPrint.Text = "Land hinzufügen, in";
         ckbLandPrint.UseVisualStyleBackColor = true;
         ckbLandPrint.CheckedChanged += GenericControl_ValueChanged;
         // 
@@ -1014,7 +1029,7 @@ partial class FrmPrintSetting
         // 
         // timerDebounce
         // 
-        timerDebounce.Interval = 1000;
+        timerDebounce.Interval = 300;
         timerDebounce.Tick += TimerDebounce_Tick;
         // 
         // FrmPrintSetting
@@ -1165,4 +1180,5 @@ partial class FrmPrintSetting
     private Label lblLineFactor;
     private Label lblLineHeight;
     private NumericUpDown nudLineHeightFactor;
+    private CheckBox ckbPrintRecipient;
 }

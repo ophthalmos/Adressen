@@ -11,8 +11,8 @@
     <SourceRevisionId>build$([System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss"))</SourceRevisionId>
     <NeutralLanguage>de</NeutralLanguage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion>1.1.2</AssemblyVersion>
-    <FileVersion>1.1.2</FileVersion>
+    <AssemblyVersion>1.1.6</AssemblyVersion>
+    <FileVersion>1.1.6</FileVersion>
     <StartupObject>Adressen.Program</StartupObject>
     <Product>$(AssemblyName) &amp; Kontakte</Product>
     <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
@@ -42,6 +42,7 @@
 
   <ItemGroup>
     <Compile Remove="cls\ForenameService.cs" />
+    <Compile Remove="frm\FrmAdressen %28Original%29.cs" />
     <Compile Remove="LibreOffice.cs" />
   </ItemGroup>
 
@@ -51,6 +52,7 @@
     <None Remove="Adressen96.png" />
     <None Remove="AdressenSetup.exe" />
     <None Remove="client_secret.json.old" />
+    <None Remove="frm.7z" />
     <None Remove="FrmAdressen.zip" />
     <None Remove="frm\FrmAdressen.zip" />
     <None Remove="Icon16.png" />

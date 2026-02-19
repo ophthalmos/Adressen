@@ -6,10 +6,8 @@ namespace Adressen.cls;
 
 public class AppSettings
 {
-    public const int DatabaseSchemaVersion = 2; // Wird ignoriert (da const); kein JsonIgnore erforderlich
-    public const int MaxRecentFiles = 10;
-    // --- KONSTANTE STANDARDWERTE (Factory Defaults) ---
-    // Diese Werte gelten, wenn das Programm zum ersten Mal startet oder die Config leer ist.
+    public const int DatabaseSchemaVersion = 3; // Wird ignoriert (da const)
+    public const int MaxRecentFiles = 10;      // kein JsonIgnore erforderlich
 
     [JsonIgnore]
     public static readonly int[] DefaultColumnWidths =
@@ -88,6 +86,7 @@ public class AppSettings
     public decimal SenderOffsetX { get; set; } = 0m;
     public decimal SenderOffsetY { get; set; } = 0m;
 
+    public bool PrintRecipient { get; set; } = true;
     public bool PrintRecipientBold { get; set; } = false;
     public bool PrintSenderBold { get; set; } = false;
     public bool PrintRecipientSalutation { get; set; } = true;
@@ -116,7 +115,7 @@ public class AppSettings
     public string DatabaseFolder { get; set; } = string.Empty;
 
     public int CopyPatternIndex { get; set; } = 0;
-    public string[] CopyPattern1 { get; set; } = ["Anrede", "Präfix_Vorname_Zwischenname_Nachname", "Strasse", "PLZ_Ort"];
+    public string[] CopyPattern1 { get; set; } = ["Anrede", "Praefix_Vorname_Zwischenname_Nachname", "Strasse", "PLZ_Ort"];
     public string[] CopyPattern2 { get; set; } = ["Telefon1", "Telefon2", "Mobil", "Fax"];
     public string[] CopyPattern3 { get; set; } = ["Mail1", "Mail2", "Internet"];
     public string[] CopyPattern4 { get; set; } = [];

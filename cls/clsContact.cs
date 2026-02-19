@@ -1,178 +1,207 @@
 ﻿using System.ComponentModel;
+using System.Text;
 
 namespace Adressen.cls;
+
+[AttributeUsage(AttributeTargets.Property)]
+internal class GoogleFieldAttribute(string category) : Attribute
+{
+    public string Category { get; } = category;
+}
 
 internal class Contact : ICloneable, IContactEntity
 {
     private string? _searchTextCache;
 
-    // --- 1. Eigenschaften in der gewünschten Anzeige-Reihenfolge ---
+    // ========================================================================
+    // 1. EIGENSCHAFTEN MIT MAPPING-ATTRIBUTEN
+    // ========================================================================
 
+    [GoogleField("userDefined")]
     public string? Anrede
     {
         get; set;
     }
+    [GoogleField("names")]
     public string? Praefix
     {
         get; set;
     }
+    [GoogleField("names")]
     public string? Nachname
     {
         get; set;
     }
+    [GoogleField("names")]
     public string? Vorname
     {
         get; set;
     }
+    [GoogleField("names")]
     public string? Zwischenname
     {
         get; set;
     }
+    [GoogleField("nicknames")]
     public string? Nickname
     {
         get; set;
     }
+    [GoogleField("names")]
     public string? Suffix
     {
         get; set;
     }
+    [GoogleField("organizations")]
     public string? Unternehmen
     {
         get; set;
     }
+    [GoogleField("organizations")]
     public string? Position
     {
         get; set;
     }
+    [GoogleField("addresses")]
     public string? Strasse
     {
         get; set;
     }
+    [GoogleField("addresses")]
     public string? PLZ
     {
         get; set;
     }
+    [GoogleField("addresses")]
     public string? Ort
     {
         get; set;
     }
+    [GoogleField("addresses")]
     public string? Postfach
     {
         get; set;
     }
+    [GoogleField("addresses")]
     public string? Land
     {
         get; set;
     }
+    [GoogleField("userDefined")]
     public string? Betreff
     {
         get; set;
     }
+    [GoogleField("userDefined")]
     public string? Grussformel
     {
         get; set;
     }
+    [GoogleField("userDefined")]
     public string? Schlussformel
     {
         get; set;
     }
+    [GoogleField("birthdays")]
     public DateOnly? Geburtstag
     {
         get; set;
     }
+    [GoogleField("emailAddresses")]
     public string? Mail1
     {
         get; set;
     }
+    [GoogleField("emailAddresses")]
     public string? Mail2
     {
         get; set;
     }
+    [GoogleField("phoneNumbers")]
     public string? Telefon1
     {
         get; set;
     }
+    [GoogleField("phoneNumbers")]
     public string? Telefon2
     {
         get; set;
     }
+    [GoogleField("phoneNumbers")]
     public string? Mobil
     {
         get; set;
     }
+    [GoogleField("phoneNumbers")]
     public string? Fax
     {
         get; set;
     }
+    [GoogleField("urls")]
     public string? Internet
     {
         get; set;
     }
+    [GoogleField("biographies")]
     public string? Notizen
     {
         get; set;
     }
 
-    // ResourceName (UniqueId) an letzter Stelle
+    // Eigenschaften ohne Attribut (werden manuell oder gar nicht geprüft)
     public string ResourceName { get; set; } = string.Empty;
 
+    // ========================================================================
+    // 2. HILFS-PROPERTIES (Browsable false)
+    // ========================================================================
 
-    // --- 2. Ausgeblendete Hilfs-Properties ---
-
-    [Browsable(false)]
-    public List<string> GroupNames { get; set; } = [];
-
+    [Browsable(false)] public List<string> GroupNames { get; set; } = [];
     [Browsable(false)]
     public string? PhotoUrl
     {
         get; set;
     }
+    [Browsable(false)] public string ETag { get; set; } = string.Empty;
 
-    [Browsable(false)]
-    public string ETag { get; set; } = string.Empty;
+    // ========================================================================
+    // 3. IContactEntity IMPLEMENTIERUNG
+    // ========================================================================
 
-
-    // --- 3. IContactEntity Implementierung (Ausgeblendet) ---
-
-    [Browsable(false)]
-    public string UniqueId => ResourceName;
-
-    [Browsable(false)] // Soll nicht angezeigt werden
-    public string DisplayName => $"{Vorname} {Nachname}".Trim();
+    [Browsable(false)] public string UniqueId => ResourceName;
+    [Browsable(false)] public string DisplayName => $"{Vorname} {Nachname}".Trim();
+    [Browsable(false)] public IList<string> GroupList => GroupNames;
+    [Browsable(false)] public DateOnly? BirthdayDate => Geburtstag;
 
     [Browsable(false)]
     public string SearchText
     {
         get
         {
-            _searchTextCache ??= $"{Vorname} {Nachname} {Unternehmen} {Position} {Ort} {PLZ} {Strasse} {Nickname} {Telefon1} {Telefon2} {Mobil} {Mail1} {Mail2} {Notizen} {Internet}".ToLowerInvariant();
+            if (_searchTextCache == null)
+            {
+                var sb = new StringBuilder();
+                sb.Append(Vorname).Append(' ').Append(Nachname).Append(' ');
+                sb.Append(Unternehmen).Append(' ').Append(Position).Append(' ');
+                sb.Append(Ort).Append(' ').Append(PLZ).Append(' ').Append(Strasse).Append(' ');
+                sb.Append(Nickname).Append(' ');
+                sb.Append(Telefon1).Append(' ').Append(Telefon2).Append(' ').Append(Mobil).Append(' ');
+                sb.Append(Mail1).Append(' ').Append(Mail2).Append(' ');
+                sb.Append(Notizen).Append(' ').Append(Internet);
+                _searchTextCache = sb.ToString().ToLowerInvariant();
+            }
             return _searchTextCache;
         }
     }
 
-    [Browsable(false)]
-    public IList<string> GroupList => GroupNames;
+    // ========================================================================
+    // 4. METHODEN (Refactored & Vereinfacht)
+    // ========================================================================
 
-    //[Browsable(false)] // Nicht im Grid anzeigen
-    //[System.Text.Json.Serialization.JsonIgnore] // Nicht in JSON serialisieren (falls genutzt)
-    //public Image? TempProfileImage
-    //{
-    //    get; set;
-    //}
-
-    [Browsable(false)]
-    public DateOnly? BirthdayDate => Geburtstag;
-
-    // --- 4. Methoden ---
-    public void ResetSearchCache()
-    {
-        _searchTextCache = null;
-    }
+    public void ResetSearchCache() => _searchTextCache = null;
 
     public async Task<Image?> GetPhotoAsync()
     {
         if (string.IsNullOrEmpty(PhotoUrl)) { return null; }
-
         try
         {
             var bytes = await HttpService.Client.GetByteArrayAsync(PhotoUrl);
@@ -185,106 +214,51 @@ internal class Contact : ICloneable, IContactEntity
     public object Clone()
     {
         var clone = (Contact)MemberwiseClone();
-        clone.GroupNames = [.. GroupNames]; // Erstelle eine neue Liste mit denselben Einträgen für den Klon
+        clone.GroupNames = [.. GroupNames];
         return clone;
-    }
-
-    public List<string> GetChangedFields(Contact original)
-    {
-        var changes = new List<string>();
-
-        static bool IsChanged(string? s1, string? s2)
-        {
-            return (s1 ?? string.Empty) != (s2 ?? string.Empty);
-        }
-
-        if (IsChanged(Vorname, original.Vorname) ||
-            IsChanged(Nachname, original.Nachname) ||
-            IsChanged(Praefix, original.Praefix) ||
-            IsChanged(Zwischenname, original.Zwischenname) ||
-            IsChanged(Suffix, original.Suffix))
-        {
-            changes.Add("names");
-        }
-
-        if (IsChanged(Nickname, original.Nickname)) { changes.Add("nicknames"); }
-        if (IsChanged(Unternehmen, original.Unternehmen) || IsChanged(Position, original.Position)) { changes.Add("organizations"); }
-
-        if (IsChanged(Strasse, original.Strasse) ||
-            IsChanged(PLZ, original.PLZ) ||
-            IsChanged(Ort, original.Ort) ||
-            IsChanged(Postfach, original.Postfach) ||
-            IsChanged(Land, original.Land))
-        {
-            changes.Add("addresses");
-        }
-
-        if (IsChanged(Mail1, original.Mail1) || IsChanged(Mail2, original.Mail2)) { changes.Add("emailAddresses"); }
-
-        if (IsChanged(Telefon1, original.Telefon1) ||
-            IsChanged(Telefon2, original.Telefon2) ||
-            IsChanged(Mobil, original.Mobil) ||
-            IsChanged(Fax, original.Fax))
-        {
-            changes.Add("phoneNumbers");
-        }
-
-        if (IsChanged(Notizen, original.Notizen)) { changes.Add("biographies"); }
-        if (IsChanged(Internet, original.Internet)) { changes.Add("urls"); }
-        if (Geburtstag != original.Geburtstag) { changes.Add("birthdays"); }
-
-        if (IsChanged(Anrede, original.Anrede) ||
-            IsChanged(Betreff, original.Betreff) ||
-            IsChanged(Grussformel, original.Grussformel) ||
-            IsChanged(Schlussformel, original.Schlussformel))
-        {
-            changes.Add("userDefined");
-        }
-
-        if (IsChanged(PhotoUrl, original.PhotoUrl)) { changes.Add("photos"); }
-
-        if (!GroupNames.OrderBy(static x => x).SequenceEqual(original.GroupNames.OrderBy(static x => x)))
-        {
-            changes.Add("memberships");
-        }
-
-        return [.. changes.Distinct()];
     }
 
     public void CopyFrom(Contact other)
     {
         if (other == null) { return; }
-        Anrede = other.Anrede;
-        Praefix = other.Praefix;
-        Nachname = other.Nachname;
-        Vorname = other.Vorname;
-        Zwischenname = other.Zwischenname;
-        Nickname = other.Nickname;
-        Suffix = other.Suffix;
-        Unternehmen = other.Unternehmen;
-        Position = other.Position;
-        Strasse = other.Strasse;
-        PLZ = other.PLZ;
-        Ort = other.Ort;
-        Postfach = other.Postfach;
-        Land = other.Land;
-        Betreff = other.Betreff;
-        Grussformel = other.Grussformel;
-        Schlussformel = other.Schlussformel;
-        Geburtstag = other.Geburtstag;  // Geburtstag ist DateOnly?, daher direkte Zuweisung okay
-        Mail1 = other.Mail1;
-        Mail2 = other.Mail2;
-        Telefon1 = other.Telefon1;
-        Telefon2 = other.Telefon2;
-        Mobil = other.Mobil;
-        Fax = other.Fax;
-        Internet = other.Internet;
-        Notizen = other.Notizen;
-        ResourceName = other.ResourceName; // Die Google-ID
-        ETag = other.ETag;                 // Versionsstempel
-        PhotoUrl = other.PhotoUrl;         // Foto-Link
+
+        // 1. Alle Standard-Properties kopieren
+        var props = typeof(Contact).GetProperties();
+        foreach (var prop in props)
+        {
+            // Wir kopieren nur, wenn man schreiben und lesen kann und es keine Liste ist
+            if (prop.CanWrite && prop.CanRead && prop.Name != nameof(GroupNames)) { prop.SetValue(this, prop.GetValue(other)); }
+        }
+
+        // 2. Listen und Spezialfelder manuell behandeln (Deep Copy)
         GroupNames.Clear();
-        if (other.GroupNames != null) { GroupNames.AddRange(other.GroupNames); } // Listen (Deep Copy ist wichtig!)
-        ResetSearchCache();  // Cache zurücksetzen, damit SearchText neu berechnet wird
+        if (other.GroupNames != null) { GroupNames.AddRange(other.GroupNames); }
+
+        ResetSearchCache();
+    }
+
+    // --- AUTOMATISCH: Nutzt die [GoogleField] Attribute zur Erkennung ---
+    public List<string> GetChangedFields(Contact original)
+    {
+        if (original == null) { return []; }
+
+        var changes = new HashSet<string>(); // HashSet verhindert Duplikate automatisch
+        var props = typeof(Contact).GetProperties();
+
+        foreach (var prop in props)
+        {
+            // Hat die Property unser [GoogleField] Attribut?
+            if (Attribute.GetCustomAttribute(prop, typeof(GoogleFieldAttribute)) is GoogleFieldAttribute attr)
+            {
+                var valCurrent = prop.GetValue(this);
+                var valOriginal = prop.GetValue(original);
+                if (!Equals(valCurrent, valOriginal)) { changes.Add(attr.Category); }
+            }
+        }
+
+        // Spezialfälle prüfen (die kein einfaches Attribut haben)
+        //if (PhotoUrl != original.PhotoUrl) { changes.Add("photos"); }
+        if (!GroupNames.OrderBy(x => x).SequenceEqual(original.GroupNames.OrderBy(x => x))) { changes.Add("memberships"); }
+        return [.. changes];
     }
 }

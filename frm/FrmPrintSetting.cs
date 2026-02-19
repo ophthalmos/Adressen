@@ -5,7 +5,7 @@ namespace Adressen;
 
 public partial class FrmPrintSetting : Form
 {
-    private readonly double _zoom = 0.50F;
+    //private readonly double _zoom = 0.50F;
     private readonly AppSettings _settings;
     private readonly BindingSource _bindingSource; // Der Vermittler für das DataBinding
     private readonly Dictionary<string, string> _recipientDict;
@@ -71,6 +71,7 @@ public partial class FrmPrintSetting : Form
         Bind(tbSender6, "Text", nameof(AppSettings.SenderLines6Joined));
 
         // --- Tab 4: Empfänger ---
+        Bind(ckbPrintRecipient, "Checked", nameof(AppSettings.PrintRecipient));
         Bind(ckbBoldRecipient, "Checked", nameof(AppSettings.PrintRecipientBold));
         Bind(ckbAnredePrint, "Checked", nameof(AppSettings.PrintRecipientSalutation));
         Bind(ckbAnredeOberhalb, "Checked", nameof(AppSettings.RecipientSalutationAbove));
@@ -145,24 +146,21 @@ public partial class FrmPrintSetting : Form
 
     private void BtnSave_Click(object sender, EventArgs e) => printDocument.Print();
 
-    // Zentraler Handler für UI-Änderungen, die das Preview neu zeichnen müssen
     private void GenericControl_ValueChanged(object sender, EventArgs e)
     {
-        // Durch DataBinding ist _settings bereits aktuell, wenn DataSourceUpdateMode.OnPropertyChanged genutzt wurde.
-        // Wir müssen nur UI-Status updaten und Preview neu generieren.
-
-        if (sender == rbLandscape || sender == rbPortrait)
+        if (sender is Control control)  // CheckBoxen reagieren sonst manchmal nicht sofort, was zu einem "inversen" Verhalten führen kann.
         {
-            // Spezielle Behandlung für RadioButtons, da Binding manchmal tricky ist bei Gruppen
+            foreach (Binding binding in control.DataBindings) { binding.WriteValue(); }
+        }
+        if (sender == rbLandscape || sender == rbPortrait)  // Spezielle Behandlung für RadioButtons
+        {
             _settings.PrintLandscape = rbLandscape.Checked;
             printDocument.DefaultPageSettings.Landscape = rbLandscape.Checked;
         }
-
-        UpdateUiState();
-        printPreviewControl.GeneratePreviewSilently();
+        UpdateUiState();  // UI Logik (Enable/Disable) anstoßen
+        timerDebounce.Stop();  // gibt der UI Zeit, alle Bindings zu aktualisieren, bevor die Preview neu generiert wird 
+        timerDebounce.Start(); // wichtig für Performance, damit nicht bei jedem kleinen Tippen sofort neu gerendert wird
     }
-
-    // Spezifische Handler, die mehr Logik brauchen als nur "Repaint"
 
     private void CbPrinter_SelectedIndexChanged(object sender, EventArgs e)
     {
@@ -211,12 +209,17 @@ public partial class FrmPrintSetting : Form
     private void CbPapersize_SelectedIndexChanged(object sender, EventArgs e)
     {
         if (!cbPapersize.Visible || !cbPapersize.Focused) { return; }
-
-        // Mapping Name -> PaperSize Objekt
-        if (cbPapersize.SelectedIndex >= 0 && cbPapersize.SelectedIndex < printDocument.PrinterSettings.PaperSizes.Count)
+        var selectedName = cbPapersize.Text;
+        foreach (PaperSize ps in printDocument.PrinterSettings.PaperSizes)
         {
-            printDocument.DefaultPageSettings.PaperSize = printDocument.PrinterSettings.PaperSizes[cbPapersize.SelectedIndex];
+            if (ps.PaperName == selectedName)  // Wir suchen das Objekt, das dem ausgewählten Namen entspricht
+            {
+                printDocument.DefaultPageSettings.PaperSize = ps;
+                break;
+            }
         }
+        printPreviewControl.Zoom = GetBestFitZoom();
+        UpdateZoomDisplay();
         printPreviewControl.GeneratePreviewSilently();
         UpdateStatusBarInfo();
     }
@@ -232,8 +235,6 @@ public partial class FrmPrintSetting : Form
     private void PicPortrait_Click(object sender, EventArgs e) => rbPortrait.Checked = true;
     private void PicLandscape_Click(object sender, EventArgs e) => rbLandscape.Checked = true;
 
-    // --- Standard Funktionalität (Laden, Zeichnen, Tasten) ---
-
     private void FrmPrintSetting_Load(object sender, EventArgs e)
     {
         tbSender1.SetInnerMargins(8, 8);
@@ -243,7 +244,7 @@ public partial class FrmPrintSetting : Form
         tbSender5.SetInnerMargins(8, 8);
         tbSender6.SetInnerMargins(8, 8);
         printPreviewControl.Document = printDocument;
-        printPreviewControl.Zoom = _zoom;
+        printPreviewControl.Zoom = GetBestFitZoom();
         UpdateStatusBarInfo();
         UpdateZoomDisplay();
     }
@@ -270,14 +271,12 @@ public partial class FrmPrintSetting : Form
             var parts = _settings.PrintFont.Split(',');
             fontName = parts[0].Trim();
         }
-
-        // --- Absender Block ---
-        if (_settings.PrintSender)
+        if (_settings.PrintSender)  // --- Absender Block ---
         {
             var style = _settings.PrintSenderBold ? FontStyle.Bold : FontStyle.Regular;
             using var fntSender = new Font(fontName, _settings.SenderFontsize, style);
-            var senderXPos = e.MarginBounds.Left + (float)_settings.SenderOffsetX;
-            var senderYPos = e.MarginBounds.Top + (float)_settings.SenderOffsetY;
+            var senderXPos = e.PageBounds.Left + 24.0f + (float)_settings.SenderOffsetX; // Einheit = 1/100 Zoll => Mal 4 = Millimeter
+            var senderYPos = e.PageBounds.Top + 24.0f + (float)_settings.SenderOffsetY;  // 5 mm, also 20 = absolutes Minimum (Hardware-Sicherheit)
             lineH = fntSender.GetHeight(g);
             var linesToPrint = _settings.SenderIndex switch
             {
@@ -298,49 +297,50 @@ public partial class FrmPrintSetting : Form
                 }
             }
         }
-
-        // --- Empfänger Block ---
-        var recipStyle = _settings.PrintRecipientBold ? FontStyle.Bold : FontStyle.Regular;
-        using var fntRecipient = new Font(fontName, _settings.RecipientFontsize, recipStyle);
-        using var sf = new StringFormat();
-        var lineHeightFactor = (float)_settings.LineHeightFactor;
-        lineH = (float)(fntRecipient.GetHeight(g) * lineHeightFactor);
-        var recipXPos = e.MarginBounds.Left + (e.MarginBounds.Width / 2) + (float)_settings.RecipientOffsetX;
-        var recipYPos = e.MarginBounds.Top + (e.MarginBounds.Height / 2) + (float)_settings.RecipientOffsetY;
-        var recipientLines = new string[6];
-        var line1 = string.Empty;
-        if (_settings.PrintRecipientSalutation && _recipientDict.TryGetValue("Anrede", out var anrede) && !string.IsNullOrEmpty(anrede)) { line1 += anrede; }
-        if (_recipientDict.TryGetValue("Titel", out var titel) && !string.IsNullOrEmpty(titel)) { line1 += (line1.Length > 0 ? " " : "") + titel; }
-        recipientLines[0] = line1.Trim();
-        var line2 = string.Empty;
-        if (_recipientDict.TryGetValue("Praefix", out var praefix) && !string.IsNullOrEmpty(praefix)) { line2 += praefix + " "; }
-        if (_recipientDict.TryGetValue("Vorname", out var vorname) && !string.IsNullOrEmpty(vorname)) { line2 += vorname + " "; }
-        if (_recipientDict.TryGetValue("Nachname", out var nachname) && !string.IsNullOrEmpty(nachname)) { line2 += nachname; }
-        recipientLines[1] = line2.Trim();
-        recipientLines[2] = _recipientDict.TryGetValue("Firma", out var firma) && !string.IsNullOrEmpty(firma) ? firma : string.Empty;
-        recipientLines[3] = _recipientDict.TryGetValue("Strasse", out var strasse) && !string.IsNullOrEmpty(strasse) ? strasse : string.Empty;
-        var line5 = string.Empty;
-        if (_recipientDict.TryGetValue("PLZ", out var plz) && !string.IsNullOrEmpty(plz)) { line5 += plz + " "; }
-        if (_recipientDict.TryGetValue("Ort", out var ort) && !string.IsNullOrEmpty(ort)) { line5 += ort; }
-        recipientLines[4] = line5.Trim();
-        if (_recipientDict.TryGetValue("Land", out var land) && _settings.PrintRecipientCountry && !string.IsNullOrEmpty(land)) { recipientLines[5] = _settings.RecipientCountryUpper ? land.ToUpper() : land; }
-        else { recipientLines[5] = string.Empty; }
-        if (!string.IsNullOrWhiteSpace(recipientLines[0]) && _settings.RecipientSalutationAbove) { recipYPos -= lineH; } // Korrektur Y-Position, wenn Anrede oberhalb gewünscht
-        for (var i = 0; i < recipientLines.Length; i++) // Druck-Schleife Empfänger
+        if (_settings.PrintRecipient)   // --- Empfänger Block ---
         {
-            if (string.IsNullOrWhiteSpace(recipientLines[i])) { continue; }
-            if (i == 4) // Vor PLZ/Ort (Index 4) -> Abstand erhöhen
+            var recipStyle = _settings.PrintRecipientBold ? FontStyle.Bold : FontStyle.Regular;
+            using var fntRecipient = new Font(fontName, _settings.RecipientFontsize, recipStyle);
+            using var sf = new StringFormat();
+            var lineHeightFactor = (float)_settings.LineHeightFactor;
+            lineH = (float)(fntRecipient.GetHeight(g) * lineHeightFactor);
+            var recipXPos = e.MarginBounds.Left + (e.MarginBounds.Width / 2) + (float)_settings.RecipientOffsetX;
+            var recipYPos = e.MarginBounds.Top + (e.MarginBounds.Height / 2) + (float)_settings.RecipientOffsetY;
+            var recipientLines = new string[6];
+            var line1 = string.Empty;
+            if (_settings.PrintRecipientSalutation && _recipientDict.TryGetValue("Anrede", out var anrede) && !string.IsNullOrEmpty(anrede)) { line1 += anrede; }
+            if (_recipientDict.TryGetValue("Titel", out var titel) && !string.IsNullOrEmpty(titel)) { line1 += (line1.Length > 0 ? " " : "") + titel; }
+            recipientLines[0] = line1.Trim();
+            var line2 = string.Empty;
+            if (_recipientDict.TryGetValue("Praefix", out var praefix) && !string.IsNullOrEmpty(praefix)) { line2 += praefix + " "; }
+            if (_recipientDict.TryGetValue("Vorname", out var vorname) && !string.IsNullOrEmpty(vorname)) { line2 += vorname + " "; }
+            if (_recipientDict.TryGetValue("Nachname", out var nachname) && !string.IsNullOrEmpty(nachname)) { line2 += nachname; }
+            recipientLines[1] = line2.Trim();
+            recipientLines[2] = _recipientDict.TryGetValue("Firma", out var firma) && !string.IsNullOrEmpty(firma) ? firma : string.Empty;
+            recipientLines[3] = _recipientDict.TryGetValue("Strasse", out var strasse) && !string.IsNullOrEmpty(strasse) ? strasse : string.Empty;
+            var line5 = string.Empty;
+            if (_recipientDict.TryGetValue("PLZ", out var plz) && !string.IsNullOrEmpty(plz)) { line5 += plz + " "; }
+            if (_recipientDict.TryGetValue("Ort", out var ort) && !string.IsNullOrEmpty(ort)) { line5 += ort; }
+            recipientLines[4] = line5.Trim();
+            if (_recipientDict.TryGetValue("Land", out var land) && _settings.PrintRecipientCountry && !string.IsNullOrEmpty(land)) { recipientLines[5] = _settings.RecipientCountryUpper ? land.ToUpper() : land; }
+            else { recipientLines[5] = string.Empty; }
+            if (!string.IsNullOrWhiteSpace(recipientLines[0]) && _settings.RecipientSalutationAbove) { recipYPos -= lineH; } // Korrektur Y-Position, wenn Anrede oberhalb gewünscht
+            for (var i = 0; i < recipientLines.Length; i++) // Druck-Schleife Empfänger
             {
-                var zipGap = (float)_settings.ZipGapFactor;
-                recipYPos += lineH * zipGap;
+                if (string.IsNullOrWhiteSpace(recipientLines[i])) { continue; }
+                if (i == 4) // Vor PLZ/Ort (Index 4) -> Abstand erhöhen
+                {
+                    var zipGap = (float)_settings.ZipGapFactor;
+                    recipYPos += lineH * zipGap;
+                }
+                if (i == 5) // Vor Land (Index 5) -> Abstand erhöhen
+                {
+                    var landGap = (float)_settings.LandGapFactor;
+                    recipYPos += lineH * landGap;
+                }
+                g.DrawString(recipientLines[i], fntRecipient, Brushes.Black, recipXPos, recipYPos, sf);
+                recipYPos += lineH;
             }
-            if (i == 5) // Vor Land (Index 5) -> Abstand erhöhen
-            {
-                var landGap = (float)_settings.LandGapFactor;
-                recipYPos += lineH * landGap;
-            }
-            g.DrawString(recipientLines[i], fntRecipient, Brushes.Black, recipXPos, recipYPos, sf);
-            recipYPos += lineH;
         }
         e.HasMorePages = false;
     }
@@ -372,19 +372,18 @@ public partial class FrmPrintSetting : Form
         if (printPreviewControl.Zoom >= 0.3D) { printPreviewControl.Zoom -= 0.1; }
     }
 
-    private void ZoomDefaultToolStripMenuItem_Click(object sender, EventArgs e) => printPreviewControl.Zoom = _zoom;
+    private void ZoomDefaultToolStripMenuItem_Click(object sender, EventArgs e) => printPreviewControl.Zoom = GetBestFitZoom();
 
     private void ContextMenuStrip_Opening(object sender, System.ComponentModel.CancelEventArgs e)
     {
-        if (printPreviewControl.Zoom == _zoom) { zoomDefaultToolStripMenuItem.Enabled = false; }
-        else if (printPreviewControl.Zoom < 0.3D) { zoomOutToolStripMenuItem.Enabled = false; }
-        else if (printPreviewControl.Zoom > 1D) { zoomInToolStripMenuItem.Enabled = false; }
-        else
-        {
-            zoomDefaultToolStripMenuItem.Enabled = true;
-            zoomInToolStripMenuItem.Enabled = true;
-            zoomOutToolStripMenuItem.Enabled = true;
-        }
+        var bestFit = GetBestFitZoom();
+        var currentZoom = printPreviewControl.Zoom;
+        if (Math.Abs(currentZoom - bestFit) < 0.001) { zoomDefaultToolStripMenuItem.Enabled = false; }
+        else { zoomDefaultToolStripMenuItem.Enabled = true; }
+        if (currentZoom <= 0.3) { zoomOutToolStripMenuItem.Enabled = false; }
+        else { zoomOutToolStripMenuItem.Enabled = true; }
+        if (currentZoom >= 1.0) { zoomInToolStripMenuItem.Enabled = false; }
+        else { zoomInToolStripMenuItem.Enabled = true; }
     }
 
     private void TcSender_DrawItem(object sender, DrawItemEventArgs e)
@@ -413,8 +412,7 @@ public partial class FrmPrintSetting : Form
         }
     }
 
-    // TextBox Debounce (Wichtig für Performance beim Tippen)
-    private void TbSender_TextChanged(object sender, EventArgs e)
+    private void TbSender_TextChanged(object sender, EventArgs e)  // TextBox Debounce (Wichtig für Performance beim Tippen)
     {
         timerDebounce.Stop();
         timerDebounce.Start();
