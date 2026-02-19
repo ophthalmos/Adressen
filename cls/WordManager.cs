@@ -127,7 +127,7 @@ internal class WordManager
             props[Word.WdBuiltInProperty.wdPropertyTitle].Value = "Adressen-Vorlage";
             props[Word.WdBuiltInProperty.wdPropertyAuthor].Value = "AdressenApp";
 
-            AddParagraph(wordDoc, "Präfix_Vorname_Zwischenname_Nachname", 12, 0, true);
+            AddParagraph(wordDoc, "Praefix_Vorname_Zwischenname_Nachname", 12, 0, true);
             AddParagraph(wordDoc, "Strasse", 12, 6, true);
             AddParagraph(wordDoc, "PLZ_Ort", 12, 12, true);
 

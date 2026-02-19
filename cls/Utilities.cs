@@ -42,6 +42,49 @@ internal static class Utils
         TaskDialog.ShowDialog(hwnd ?? IntPtr.Zero, page);
     }
 
+    public static async Task<bool> RunWithProgressDialogAsync(IWin32Window owner, string caption, string text, Func<CancellationToken, Task> work)
+    {
+        using var cts = new CancellationTokenSource();
+        var btnCancel = TaskDialogButton.Cancel;
+
+        var pageProgress = new TaskDialogPage()
+        {
+            Caption = caption,
+            Heading = "Bitte warten…",
+            Text = text,
+            Icon = TaskDialogIcon.None,
+            SizeToContent = true,
+            ProgressBar = new TaskDialogProgressBar() { State = TaskDialogProgressBarState.Marquee },
+            Buttons = { btnCancel }
+        };
+        btnCancel.Click += (s, e) => { cts.Cancel(); };
+        var success = false;
+
+        pageProgress.Created += async (s, args) =>
+        {
+            try
+            {
+                if (owner is Control c) { c.Cursor = Cursors.WaitCursor; }  // Cursor auf dem Owner ändern, falls möglich 
+                await work(cts.Token);
+                success = true;
+                pageProgress.BoundDialog?.Close();
+            }
+            catch (OperationCanceledException) { pageProgress.BoundDialog?.Close(); }
+            catch (Exception ex)
+            {
+                pageProgress.BoundDialog?.Close();
+                ErrTaskDlg(owner.Handle, ex);
+            }
+            finally
+            {
+                if (owner is Control c) { c.Cursor = Cursors.Default; }
+            }
+        };
+
+        TaskDialog.ShowDialog(owner, pageProgress);
+        return success;
+    }
+
     public static void SortContacts(BindingList<Contact>? contacts)
     {
         if (contacts == null || contacts.Count == 0) { return; }
@@ -50,75 +93,18 @@ internal static class Utils
         foreach (var c in sortedList) { contacts.Add(c); }
     }
 
-    //public static int GetAddressInsertIndex(BindingSource source, Adresse newItem)
-    //{
-    //    // Wir nutzen die Kultur des Systems (Deutsch), damit "ü", "ß" und Leerzeichen 
-    //    // so behandelt werden, wie SQLite es (hoffentlich) auch tut.
-    //    var comparison = StringComparison.CurrentCultureIgnoreCase;
-
-    //    for (var i = 0; i < source.Count; i++)
-    //    {
-    //        if (source[i] is Adresse current)
-    //        {
-    //            // 1. Nachname
-    //            var cmp = string.Compare(newItem.Nachname, current.Nachname, comparison);
-
-    //            // 2. Vorname (nur wenn Nachname identisch)
-    //            if (cmp == 0)
-    //            {
-    //                cmp = string.Compare(newItem.Vorname, current.Vorname, comparison);
-    //            }
-
-    //            // 3. Unternehmen (nur wenn alles andere identisch)
-    //            if (cmp == 0)
-    //            {
-    //                cmp = string.Compare(newItem.Unternehmen, current.Unternehmen, comparison);
-    //            }
-
-    //            // WICHTIG: Wenn cmp < 0 ist, haben wir den ersten Eintrag gefunden, 
-    //            // der ALPHABETISCH HINTER unserem neuen Element liegt. 
-    //            // Hier müssen wir uns "reindrängeln".
-    //            if (cmp < 0)
-    //            {
-    //                return i;
-    //            }
-    //        }
-    //    }
-    //    return source.Count;
-    //}
-
     public static int GetAddressInsertIndex(BindingSource source, Adresse newItem)
     {
-        // Wir nutzen InvariantCulture, da SQLite's NOCASE nur ASCII-Werte 
-        // zuverlässig case-insensitive behandelt. StringSort bleibt für die 
-        // korrekte Behandlung von Leerzeichen/Sonderzeichen wichtig.
-        var compareInfo = CultureInfo.InvariantCulture.CompareInfo;
-        var options = CompareOptions.IgnoreCase | CompareOptions.StringSort;
-
+        var compareInfo = CultureInfo.InvariantCulture.CompareInfo;  // SQLite's NOCASE nur ASCII-Werte 
+        var options = CompareOptions.IgnoreCase | CompareOptions.StringSort;  // behandelt Sonderzeichen und Leerzeichen korrekt
         for (var i = 0; i < source.Count; i++)
         {
             if (source[i] is Adresse current)
             {
-                // 1. Nachname vergleichen
                 var cmp = compareInfo.Compare(newItem.Nachname ?? "", current.Nachname ?? "", options);
-
-                // 2. Vorname
-                if (cmp == 0)
-                {
-                    cmp = compareInfo.Compare(newItem.Vorname ?? "", current.Vorname ?? "", options);
-                }
-
-                // 3. Unternehmen
-                if (cmp == 0)
-                {
-                    cmp = compareInfo.Compare(newItem.Unternehmen ?? "", current.Unternehmen ?? "", options);
-                }
-
-                // Wenn cmp < 0, ist newItem alphabetisch VOR current.
-                if (cmp < 0)
-                {
-                    return i;
-                }
+                if (cmp == 0) { cmp = compareInfo.Compare(newItem.Vorname ?? "", current.Vorname ?? "", options); }
+                if (cmp == 0) { cmp = compareInfo.Compare(newItem.Unternehmen ?? "", current.Unternehmen ?? "", options); }
+                if (cmp < 0) { return i; }  // Wenn cmp < 0, ist newItem alphabetisch VOR current.
             }
         }
         return source.Count;
@@ -209,48 +195,49 @@ internal static class Utils
         }
     }
 
-    internal static string GenerateDetailedDiff(Contact current, Contact old)
+    internal static string GenerateDetailedDiff(Contact current, Contact old, string[] fields)
     {
         var sb = new StringBuilder();
-        void Check(string label, string? oldVal, string? newVal)
+        var type = typeof(Contact);
+
+        foreach (var fieldName in fields)
         {
-            var o = oldVal ?? string.Empty; // Normalisieren um null/empty gleich zu behandeln
-            var n = newVal ?? string.Empty;
-            if (o != n)
+            // PropertyInfo holen
+            var prop = type.GetProperty(fieldName);
+            if (prop == null) { continue; } // Sollte nicht passieren, wenn Array korrekt ist
+
+            var valOld = prop.GetValue(old);
+            var valNew = prop.GetValue(current);
+
+            // Unterscheidung nach Typ für korrekte Formatierung/Vergleich
+            if (prop.PropertyType == typeof(string))
             {
-                var displayOld = string.IsNullOrEmpty(o) ? "" : o; // Formatierung: Leere Werte sichtbar machen
-                var displayNew = string.IsNullOrEmpty(n) ? "∅" : n;
-                sb.AppendLine($"{label}: {displayOld} ➔ {displayNew}");
+                // Strings normalisieren (null == empty)
+                var sOld = (valOld as string) ?? string.Empty;
+                var sNew = (valNew as string) ?? string.Empty;
+
+                if (sOld != sNew)
+                {
+                    var displayOld = string.IsNullOrEmpty(sOld) ? "" : sOld;
+                    var displayNew = string.IsNullOrEmpty(sNew) ? "∅" : sNew;
+                    sb.AppendLine($"{fieldName}: {displayOld} ➔ {displayNew}");
+                }
             }
-        }
-        Check("Anrede", old.Anrede, current.Anrede);
-        Check("Präfix", old.Praefix, current.Praefix);
-        Check("Nachname", old.Nachname, current.Nachname);
-        Check("Vorname", old.Vorname, current.Vorname);
-        Check("Zwischenname", old.Zwischenname, current.Zwischenname);
-        Check("Nickname", old.Nickname, current.Nickname);
-        Check("Suffix", old.Suffix, current.Suffix);
-        Check("Unternehmen", old.Unternehmen, current.Unternehmen);
-        Check("Straße", old.Strasse, current.Strasse);
-        Check("PLZ", old.PLZ, current.PLZ);
-        Check("Ort", old.Ort, current.Ort);
-        Check("Land", old.Land, current.Land);
-        Check("Betreff", old.Betreff, current.Betreff);
-        Check("Grussformel", old.Grussformel, current.Grussformel);
-        Check("Schlussformel", old.Schlussformel, current.Schlussformel);
-        Check("E-Mail 1", old.Mail1, current.Mail1);
-        Check("Mail 2", old.Mail2, current.Mail2);
-        Check("Telefon 1", old.Telefon1, current.Telefon1);
-        Check("Telefon 2", old.Telefon2, current.Telefon2);
-        Check("Mobil", old.Mobil, current.Mobil);
-        Check("Fax", old.Fax, current.Fax);
-        Check("Internet", old.Internet, current.Internet);
-        Check("Notizen", old.Notizen, current.Notizen);
-        if (old.Geburtstag != current.Geburtstag)
-        {
-            var oldDate = old.Geburtstag.HasValue ? old.Geburtstag.Value.ToShortDateString() : "[Leer]";
-            var newDate = current.Geburtstag.HasValue ? current.Geburtstag.Value.ToShortDateString() : "[Leer]";
-            sb.AppendLine($"Geburtstag: {oldDate} ➔ {newDate}");
+            else // z.B. Datum (Geburtstag) oder Zahlen
+            {
+                if (!Equals(valOld, valNew))
+                {
+                    // Formatierung für Nicht-Strings (übernimmt Ihre Logik für [Leer])
+                    static string FormatObj(object? o)
+                    {
+                        if (o == null) { return "[Leer]"; }
+                        if (o is DateTime d) { return d.ToShortDateString(); }
+                        if (o is DateOnly dO) { return dO.ToString(); }  // Falls .NET 10 DateOnly nutzt
+                        return o.ToString() ?? "";
+                    }
+                    sb.AppendLine($"{fieldName}: {FormatObj(valOld)} ➔ {FormatObj(valNew)}");
+                }
+            }
         }
         return sb.ToString();
     }
@@ -348,15 +335,6 @@ internal static class Utils
         return $"{dBytes.ToString("F2", CultureInfo.GetCultureInfo("de-DE"))} {suffix[i]}";  // Verwendet die de-DE Kultur für das Komma
     }
 
-    //internal static string CleanTemporaryWordPrefix(string fullPath)
-    //{
-    //    if (string.IsNullOrEmpty(fullPath)) { return fullPath; }
-    //    var directory = Path.GetDirectoryName(fullPath);
-    //    var fileName = Path.GetFileName(fullPath);
-    //    if (fileName.StartsWith("~$")) { fileName = fileName[2..]; }
-    //    return Path.Combine(directory ?? string.Empty, fileName);
-    //}
-
     internal static void StartDir(nint handle, string dirPath)
     {
         try
@@ -379,7 +357,7 @@ internal static class Utils
         return false;
     }
 
-    public static async Task<(Version? Version, string? ReleaseDate)> GetLatestVersionInfoAsync()
+    public static async Task<(Version? Version, string? ReleaseDate)> GetLatestVersionInfoAsync(CancellationToken ct = default)
     {
         var xmlUrl = "https://www.netradio.info/download/adressen.xml";
         try
@@ -387,10 +365,10 @@ internal static class Utils
             using var requestMessage = new HttpRequestMessage(HttpMethod.Get, xmlUrl);
             requestMessage.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/xml"));
 
-            using var response = await HttpService.Client.SendAsync(requestMessage);
+            using var response = await HttpService.Client.SendAsync(requestMessage, ct);
             response.EnsureSuccessStatusCode();
 
-            var xmlContent = await response.Content.ReadAsStringAsync();
+            var xmlContent = await response.Content.ReadAsStringAsync(ct);
             var doc = XDocument.Parse(xmlContent);
 
             var rawVersion = doc.Element("adressen")?.Element("version")?.Value;
@@ -404,13 +382,14 @@ internal static class Utils
                 if (Version.TryParse(cleanVersionString, out var parsedVersion)) { return (parsedVersion, releaseDate); }
             }
         }
+        catch (OperationCanceledException) { } // Abbruch durch CancellationToken, nichts tun
         catch (Exception ex) { Debug.WriteLine($"Fehler beim Abrufen der Versionsinfo: {ex.Message}"); }
         return (null, null);
     }
 
     public static bool IsUpdateCheckDue(int updateIndex, DateTime lastUpdateCheck)
     {
-        if (updateIndex == 3)        {            return false; }  // "Niemals"
+        if (updateIndex == 3) { return false; }  // "Niemals"
         var elapsed = DateTime.Now - lastUpdateCheck;
         return updateIndex switch
         {
@@ -423,7 +402,7 @@ internal static class Utils
 
     internal static void HelpMsgTaskDlg(nint hwnd, string appName, Icon? icon, int? dbVersion = null)
     {
-        
+
         var curVersion = Assembly.GetExecutingAssembly().GetName().Version;
         var threeVersion = curVersion?.ToString(3) ?? "unbekannt"; //curVersion is not null ? $"{curVersion.Major}.{curVersion.Minor}.{curVersion.Build}" : "unbekannt";
         var buildDate = GetBuildDate();
@@ -448,93 +427,10 @@ internal static class Utils
             DefaultButton = TaskDialogButton.OK,
             Footnote = foot
         };
-
-        //TaskDialogButton downloadButton = new TaskDialogCommandLinkButton("AdressenSetup.exe herunterladen", "AdressenSetup.exe wird im Download-Ordner\ngespeichert. Führen Sie das Setupprogramm\naus, um die neueste Version zu installieren.");
-        //var updatePage = new TaskDialogPage()
-        //{
-        //    Caption = appName,
-        //    Heading = $"{appName} ist auf dem neuesten Stand.",
-        //    Text = $"Version {threeVersion} (Offizielles Build, 64-Bit)", //\n\nAutomatische Suche nach Updates:",
-        //    Icon = TaskDialogIcon.Information,
-        //    AllowCancel = true,
-        //    SizeToContent = true,
-        //    Buttons = { TaskDialogButton.Close }
-        //};
-
-        //var radioButton1 = updatePage.RadioButtons.Add("täglich");
-        //var radioButton2 = updatePage.RadioButtons.Add("wöchentlich");
-        //var radioButton3 = updatePage.RadioButtons.Add("monatlich");
-        //var radioButton4 = updatePage.RadioButtons.Add("niemals");
-        //radioButton4.Checked = true;
-
-        //radioButton1.CheckedChanged += (s, e) => Console.WriteLine("RadioButton1 CheckedChanged: " + radioButton1.Checked);
-        //radioButton2.CheckedChanged += (s, e) => Console.WriteLine("RadioButton2 CheckedChanged: " + radioButton2.Checked);
-        //radioButton3.CheckedChanged += (s, e) => Console.WriteLine("RadioButton3 CheckedChanged: " + radioButton3.Checked);
-        //radioButton4.CheckedChanged += (s, e) => Console.WriteLine("RadioButton4 CheckedChanged: " + radioButton4.Checked);
-
-
-        //var urlString = string.Empty;
-        //updateButton.Click += async (sender, e) =>
-        //{
-        //    updateButton.Enabled = false; // um doppelte Klicks zu verhindern
-        //    var xmlURL = "https://www.netradio.info/download/adressen.xml";
-        //    Version? updateVersion = null;
-        //    var dateString = string.Empty;
-        //    try
-        //    {
-        //        using var requestMessage = new HttpRequestMessage(HttpMethod.Get, xmlURL);
-        //        requestMessage.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/xml"));
-        //        using var response = await HttpService.Client.SendAsync(requestMessage);
-        //        response.EnsureSuccessStatusCode(); // Wirft eine Exception bei Fehlern wie 404 oder 500
-        //        var xmlContent = await response.Content.ReadAsStringAsync();
-        //        var doc = XDocument.Parse(xmlContent);
-        //        var versionString = doc.Element("adressen")?.Element("version")?.Value;
-        //        if (versionString != null) { updateVersion = new Version(versionString); }
-        //        dateString = doc.Element("adressen")?.Element("date")?.Value;
-        //        urlString = doc.Element("adressen")?.Element("url64")?.Value;
-        //    }
-        //    catch (HttpRequestException ex) // when (ex is WebException or NullReferenceException or ArgumentNullException or XmlException or ArgumentException or IOException)
-        //    {
-        //        updatePage.Icon = TaskDialogIcon.Error;
-        //        updatePage.Heading = "Es ist ein Fehler aufgetreten.";
-        //        var exStatusCode = ex.StatusCode;
-        //        if (exStatusCode == HttpStatusCode.NotFound) { updatePage.Text = "Die Update-Informationen wurden nicht gefunden."; }
-        //        else { updatePage.Text = exStatusCode?.ToString().Length > 0 ? $"Status-Code: {exStatusCode}\nFehlermeldung: {ex.Message}" : $"Fehlermeldung: {ex.Message}"; } // + "\n\nAutomatische Suche nach Updates:"; }
-        //    }
-        //    catch (Exception ex) // when (ex is WebException or NullReferenceException or ArgumentNullException or XmlException or ArgumentException or IOException)
-        //    {
-        //        updatePage.Icon = TaskDialogIcon.Error;
-        //        updatePage.Heading = ex.GetType().ToString();
-        //        updatePage.Text = ex.Message;  // + "\n\nAutomatische Suche nach Updates:"; 
-        //    }
-        //    if (updateVersion != null && updateVersion.CompareTo(curVersion) > 0)
-        //    {
-        //        updatePage.Heading = "Es steht ein Update zur Verfügung!";
-        //        updatePage.Text = $"Version {updateVersion?.ToString()} vom {dateString}";  //\n\nAutomatische Suche nach Updates:";
-        //        updatePage.Buttons.Add(downloadButton);
-        //    }
-        //    initialPage.Navigate(updatePage);  // When the user clicks updateButton, navigate to the second page.
-        //};
-
         var result = TaskDialog.ShowDialog(hwnd, initialPage);
         if (result == paypalButton) { StartLink(hwnd, "https://www.paypal.com/donate/?hosted_button_id=3HRQZCUW37BQ6"); }
         //else if (result == downloadButton) { StartLink(hwnd, urlString); }
     }
-
-
-    //public static bool IsLibreOfficeInstalled()
-    //{
-    //    foreach (var root in new[] { RegistryHive.CurrentUser, RegistryHive.LocalMachine })  // Sowohl HKCU als auch HKLM prüfen
-    //    {
-    //        using var key = RegistryKey.OpenBaseKey(root, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\LibreOffice\UNO\InstallPath");
-    //        if (key != null && key.ValueCount > 0)
-    //        {
-    //            var path = key.GetValue(key.GetValueNames()[0]) as string;
-    //            if (!string.IsNullOrEmpty(path)) { return true; }
-    //        }
-    //    }
-    //    return false;
-    //}
 
     internal static bool? AskWordProcessingProgram(nint hwnd)
     {
@@ -555,7 +451,6 @@ internal static class Utils
         if (result == libreButton) { return false; }
         return null;
     }
-
 
     internal static (bool IsYes, bool IsNo, bool IsCancelled) YesNo_TaskDialog(IWin32Window? owner, string caption, string heading, string text, string yes = "", string no = "", bool defBtn = true)
     {
@@ -588,16 +483,6 @@ internal static class Utils
         return string.Equals(a?.ToString(), b?.ToString(), StringComparison.Ordinal); // Fallback: ToString-Vergleich
     }
 
-    //internal static IEnumerable<string> DeserializeGroups(nint hwnd, string json, JsonSerializerOptions options)
-    //{
-    //    try { return JsonSerializer.Deserialize<List<string>>(json, options) ?? Enumerable.Empty<string>(); }
-    //    catch (JsonException ex)
-    //    {
-    //        ErrTaskDlg(hwnd, ex);
-    //        return [];
-    //    }
-    //}
-
     public static string BuildMask(params string[] fields) => string.Join(",", fields.Where(f => !string.IsNullOrWhiteSpace(f)).Select(f => f.Trim()));
 
     internal static (bool askBefore, bool deleteNow) AskBeforeDeleteContact(nint handle, IContactEntity contact, bool askBeforeDelete, bool showVerification = true)
@@ -614,11 +499,11 @@ internal static class Utils
             var zusatzInfo = "";
             if (contact is Contact c)
             {
-                zusatzInfo = $"\n{c.Unternehmen}\n{c.Strasse}\n{c.PLZ} {c.Ort}".Trim();
+                zusatzInfo = $"\n{c.Unternehmen}\n{c.Strasse}\n{c.PLZ} {c.Ort}";
             }
             else if (contact is Adresse a)
             {
-                zusatzInfo = $"\n{a.Unternehmen}\n{a.Strasse}\n{a.PLZ} {a.Ort}".Trim();
+                zusatzInfo = $"\n{a.Unternehmen}\n{a.Strasse}\n{a.PLZ} {a.Ort}";
             }
 
             using TaskDialogIcon questionDialogIcon = new(Properties.Resources.question32);
