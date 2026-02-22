@@ -117,10 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="lblBackup.Text" xml:space="preserve">
-    <value>Die Datensicherung erfolgt nach dem Speichern einer Datenbank. Diese wird in einen wochentäglichen Unterordner kopiert.
-Wenn sich in dem Ordner bereits eine ältere Sicherung der selben Datenbank befindet, wird diese gelöscht.</value>
-  </data>
   <metadata name="folderBrowserDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>

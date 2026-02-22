@@ -83,15 +83,12 @@ public partial class FrmAdressen : Form
     private readonly string[] pictureBoxExtensions = [".bmp", ".jpg", ".jpeg", ".png", ".gif"];
     private readonly SortedSet<string> allAddressMemberships = new(StringComparer.OrdinalIgnoreCase);
     private readonly SortedSet<string> curAddressMemberships = new(StringComparer.OrdinalIgnoreCase);
-    //private readonly SortedSet<string> allAddressMemberships = [];
-    //private readonly SortedSet<string> curAddressMemberships = [];
     private readonly SortedSet<string> allContactMemberships = [];
     private SortedSet<string> curContactMemberships = [];
     private Contact? _lastActiveContact; // Merkt sich den Kontakt, der VOR dem Wechsel aktiv war
     private Contact? _originalContactSnapshot;
     private Dictionary<string, string> contactGroupsDict = [];
-    //private static readonly HashSet<string> excludedGroups = ["My Contacts", "All Contacts", "Blocked", "Chat contacts", "Coworkers", "Family", "Friends"];
-    private string userEmail = string.Empty;
+    //private string userEmail = string.Empty;
     private bool _isClosing = false; // Flag, um Endlosschleife zu verhindern
     private bool _isFiltering = false; // Verhindert Speichern während der Suche
     private BindingList<Contact> _allGoogleContacts = []; // Klassenvariable
@@ -100,7 +97,6 @@ public partial class FrmAdressen : Form
     private int _currentDbVersion;
     private bool _isTabSwitchingProgrammatically = false; // Verhindert unerwünschte Event-Auslösung bei Tab-Wechseln durch Code
     private TabPage? _previousTab;  // innerhalb des Selecting-Events kann man sich nicht auf tabControl.SelectedTab verlassen
-    //private bool _migrationRequested;
 
     public FrmAdressen(FrmSplashScreen? splashScreen, string[] args)
     {
@@ -287,7 +283,7 @@ public partial class FrmAdressen : Form
         try
         {
             CloseDatabaseConnection();
-            _databaseFilePath = file;
+            _databaseFilePath = Utils.CorrectUNC(file);  // hier einmalig CorrectUNC aufrufen, damit wir konsistenten Pfad haben
 
             _currentDbVersion = DatabaseMigrator.GetDatabaseVersion(_databaseFilePath);
             //MessageBox.Show($"Datenbankversion: {_currentDbVersion}\nErwartete Version: {AppSettings.DatabaseSchemaVersion}", "Debug Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -486,13 +482,25 @@ public partial class FrmAdressen : Form
             TaskDialogPage page = new()
             {
                 Caption = $"{appName} - {Path.GetFileName(_databaseFilePath)}",
-                Heading = analysis.DialogHeading, // Kommt jetzt aus der Klasse
-                Text = analysis.DialogText,       // Kommt jetzt aus der Klasse
+                Heading = analysis.DialogHeading,
+                Text = analysis.DialogText,
                 Icon = TaskDialogIcon.ShieldWarningYellowBar,
                 AllowCancel = true,
                 SizeToContent = true,
                 Buttons = { saveButton, dontSaveButton, cancelButton }
             };
+
+            // NEU: Expander hinzufügen
+            if (!string.IsNullOrWhiteSpace(analysis.ExpanderText))
+            {
+                page.Expander = new TaskDialogExpander()
+                {
+                    Text = analysis.ExpanderText,
+                    Position = TaskDialogExpanderPosition.AfterText,
+                    Expanded = false // Standardmäßig eingeklappt
+                };
+            }
+
             var result = TaskDialog.ShowDialog(this, page);
             if (result == cancelButton) { return DialogResult.Cancel; }
             if (result == dontSaveButton)
@@ -517,6 +525,7 @@ public partial class FrmAdressen : Form
         try
         {
             await _context.SaveChangesAsync();
+            await _context.Database.ExecuteSqlRawAsync("PRAGMA wal_checkpoint(TRUNCATE);");  // WAL-Checkpoint erzwingen, damit die .db-Datei für das Backup vollständig ist!
             if (!isFormClosing)
             {
                 Invoke(() =>
@@ -525,10 +534,15 @@ public partial class FrmAdressen : Form
                     flexiTSStatusLabel.Text = $"Letztes Speichern: {DateTime.Now:HH:mm:ss}";
                 });
             }
-            if (_settings.DailyBackup && File.Exists(Utils.CorrectUNC(_databaseFilePath)) && Directory.Exists(_settings.BackupDirectory))
+            if (_settings.DailyBackup && File.Exists(_databaseFilePath) && Directory.Exists(_settings.BackupDirectory))
             {
-                if (isFormClosing) { await Utils.DailyBackupAsync(Utils.CorrectUNC(_databaseFilePath), _settings.BackupDirectory); }
-                else { _ = Utils.DailyBackupAsync(Utils.CorrectUNC(_databaseFilePath), _settings.BackupDirectory); }
+                if (isFormClosing) { await Utils.DailyBackupAsync(_databaseFilePath, _settings.BackupDirectory); }  // Beim Schließen geht Sicherheit vor! Kein Beenden bevor die Sicherung fertig ist!
+                else { _ = Utils.DailyBackupAsync(_databaseFilePath, _settings.BackupDirectory); }  // "Fire-and-Forget", Programm soll sofort wieder bedienbar sein, ohne auf die Sicherung zu warten.
+            }
+            if (_settings.AddZipBackup && File.Exists(_databaseFilePath) && !string.IsNullOrWhiteSpace(_settings.AddZipDirectory))
+            {
+                if (isFormClosing) { await Utils.UpdateZipBackupAsync(_databaseFilePath, _settings.AddZipDirectory); }
+                else { _ = Utils.UpdateZipBackupAsync(_databaseFilePath, _settings.AddZipDirectory); }
             }
             return DialogResult.Yes;
         }
@@ -587,7 +601,7 @@ public partial class FrmAdressen : Form
         {
             openFileDialog.Filter = "Adressen-Datenbank (*.adb)|*.adb|Alle Dateien (*.*)|*.*";
 
-            var fullPath = Utils.CorrectUNC(_databaseFilePath);
+            var fullPath = _databaseFilePath;
             var fileName = Path.GetFileName(fullPath) ?? "Adressen.adb";
             var dirName = Path.GetDirectoryName(fullPath);
 
@@ -800,7 +814,7 @@ public partial class FrmAdressen : Form
         if (addressDGV.DataSource != null)
         {
             ApplyColumnSettings(addressDGV); // Einfacher Aufruf statt Tuple-Destructuring
-            Text = appName + " – " + (string.IsNullOrEmpty(_databaseFilePath) ? "unbenannt" : Utils.CorrectUNC(_databaseFilePath));
+            Text = appName + " – " + (string.IsNullOrEmpty(_databaseFilePath) ? "unbenannt" : _databaseFilePath);
         }
         else { Text = appLong; }
     }
@@ -866,7 +880,7 @@ public partial class FrmAdressen : Form
         activeDGV.AllowUserToAddRows = isSearchEmpty;
 
         var currencyManager = BindingContext?[activeBs] as CurrencyManager;
-        currencyManager?.SuspendBinding();
+        //currencyManager?.SuspendBinding(); // Nicht verwenden wenn DataSource der BindingSource getauscht wird!
 
         try
         {
@@ -908,7 +922,7 @@ public partial class FrmAdressen : Form
         catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); }
         finally
         {
-            currencyManager?.ResumeBinding();
+            //currencyManager?.ResumeBinding(); // Nicht verwenden wenn DataSource der BindingSource getauscht wird!
             _isFiltering = false;
             if (tabControl.SelectedTab == contactTabPage && !isSearchEmpty) // Snapshot zurücksetzen nur bei Google Kontakten
             {
@@ -2238,7 +2252,7 @@ public partial class FrmAdressen : Form
                 contactBirthdayFlag = false;
             }
 
-            userEmail = result.UserEmail;
+            //userEmail = result.UserEmail;
 
             // E. Gruppen verarbeiten
             contactGroupsDict = result.GroupMap;
@@ -2281,12 +2295,9 @@ public partial class FrmAdressen : Form
                 SwitchDataBinding(contactBindingSource);
 
                 tabControl.SelectedIndex = 1;
-                Text = $"Kontakte - {userEmail}";
+                Text = $"Kontakte - Google Kontakte";  // $"Kontakte - {userEmail}"
             }
-            finally
-            {
-                isSelectionChanging = false;
-            }
+            finally { isSelectionChanging = false; }
 
             // G. UI Finalisierung
             var hasRows = contactDGV.Rows.Count > 0;
@@ -2657,7 +2668,7 @@ public partial class FrmAdressen : Form
             // UI Status
             if (addressBindingSource?.Count > 0)
             {
-                Text = $"{appName} – {(string.IsNullOrEmpty(_databaseFilePath) ? "unbenannt" : Utils.CorrectUNC(_databaseFilePath))}";
+                Text = $"{appName} – {(string.IsNullOrEmpty(_databaseFilePath) ? "unbenannt" : _databaseFilePath)}";
                 btnEditContact.Visible = false;
                 UpdateSaveButton();
 
@@ -2709,7 +2720,8 @@ public partial class FrmAdressen : Form
             // UI Status
             if (contactBindingSource.Count > 0)
             {
-                Text = !string.IsNullOrWhiteSpace(userEmail) ? $"Kontakte - {userEmail}" : "Google-Kontakte";
+                //Text = !string.IsNullOrWhiteSpace(userEmail) ? $"Kontakte - {userEmail}" : "Google-Kontakte";
+                Text = "Kontakte - Google Kontakte";
                 btnEditContact.Visible = true;
 
                 // Menü Items gemäß Logik (Google-Tab hat andere Regeln für Neu/Löschen im Menü)
@@ -5487,7 +5499,7 @@ public partial class FrmAdressen : Form
                 adresse.Gruppen.Add(gruppe);  // Verknüpfung herstellen
                 curAddressMemberships.Add(newMembershipName);
 
-                _context?.Entry(adresse).State = EntityState.Modified;  // Adresse als modifiziert markieren
+                //_context?.Entry(adresse).State = EntityState.Modified;  // Adresse als modifiziert markieren
                 UpdateMembershipTags();
                 UpdateMembershipCBox();
                 addressBindingSource.ResetCurrentItem();

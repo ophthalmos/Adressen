@@ -9,7 +9,7 @@ using Google.Apis.Util.Store; // Für FileDataStore
 namespace Adressen.cls;
 
 // Definition des Rückgabewerts für LoadContacts
-internal record LoadContactsResult(List<Contact> Contacts, string UserEmail, Dictionary<string, string> GroupMap);
+internal record LoadContactsResult(List<Contact> Contacts, Dictionary<string, string> GroupMap);  // (List<Contact> Contacts, string UserEmail, Dictionary<string, string> GroupMap)
 
 internal class GooglePeopleManager(string secretPath, string tokenDir)
 {
@@ -17,35 +17,28 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
     // 1. PUBLIC API: LOAD, CREATE, UPDATE, DELETE
     // ========================================================================
 
-    //public async Task<LoadContactsResult> LoadContactsAsync(HashSet<string> excludedGroups, CancellationToken token = default)
     public async Task<LoadContactsResult> LoadContactsAsync(CancellationToken token = default)
     {
         try
         {
             var service = await GetServiceAsync(token);
-            // A. Email abrufen (Direkt über People Service, statt Oauth2Service)
-            var userEmail = string.Empty;
-            try
-            {
-                var meReq = service.People.Get("people/me");
-                meReq.PersonFields = "emailAddresses";
-                var me = await meReq.ExecuteAsync(token);
-                if (me.EmailAddresses != null && me.EmailAddresses.Count > 0)
-                {
-                    userEmail = me.EmailAddresses.FirstOrDefault()?.Value ?? string.Empty;
-                }
-            }
-            catch //(Exception ex)
-            {
-                //Utils.ErrTaskDlg(nint.Zero, ex); // sollte nicht den gesamten Import stoppen
-            }
-            finally
-            {
-                if (string.IsNullOrEmpty(userEmail)) { userEmail = "Meine Kontakte"; }
-            }
+
             //var userEmail = string.Empty;
-            //var emailReq = await oauthService.Userinfo.Get().ExecuteAsync();
-            //if (emailReq.VerifiedEmail == true) { userEmail = emailReq.Email; }
+            //try
+            //{
+            //    var meReq = service.People.Get("people/me");
+            //    meReq.PersonFields = "emailAddresses";
+            //    var me = await meReq.ExecuteAsync(token);
+            //    if (me.EmailAddresses != null && me.EmailAddresses.Count > 0)
+            //    {
+            //        userEmail = me.EmailAddresses.FirstOrDefault()?.Value ?? string.Empty;
+            //    }
+            //}
+            //catch { }
+            //finally
+            //{
+            //    if (string.IsNullOrEmpty(userEmail)) { userEmail = "Meine Kontakte"; }
+            //}
 
             // B. Gruppen laden (Mapping ID -> Name)
             var groupMap = await GetContactGroupsMapAsync(service, token);
@@ -66,7 +59,7 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
                     contactList.Add(MapPersonToContact(person, groupMap));
                 }
             }
-            return new LoadContactsResult(contactList, userEmail, groupMap);
+            return new LoadContactsResult(contactList, groupMap); // (contactList, userEmail, groupMap);
         }
         catch (TokenResponseException ex) { throw new UnauthorizedAccessException("Google Token abgelaufen", ex); }
     }
@@ -215,23 +208,6 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
             var desiredGroupNames = new HashSet<string>(contact.GroupNames, StringComparer.OrdinalIgnoreCase);
             if (desiredGroupNames.Remove("★")) { desiredGroupNames.Add("starred"); }
             desiredGroupNames.Add("myContacts");
-            //foreach (var groupName in desiredGroupNames)
-            //{
-            //    string resourceName;
-            //    var existingEntry = groupMap.FirstOrDefault(x => x.Value.Equals(groupName, StringComparison.OrdinalIgnoreCase));
-            //    if (!string.IsNullOrEmpty(existingEntry.Key)) { resourceName = existingEntry.Key; }
-            //    //else if (groupName.Equals("myContacts", StringComparison.OrdinalIgnoreCase) || groupName.Equals("starred", StringComparison.OrdinalIgnoreCase))
-            //    //{
-            //    //    resourceName = "contactGroups/" + groupName.ToLowerInvariant(); // Google mag Kleinschreibung bei Systemgruppen
-            //    //}
-            //    else
-            //    {
-            //        resourceName = await CreateContactGroupInternalAsync(service, groupName);
-            //        if (string.IsNullOrEmpty(resourceName)) { continue; }
-            //        groupMap[resourceName] = groupName;
-            //    }
-            //    personToUpdate.Memberships.Add(new Membership { ContactGroupMembership = new ContactGroupMembership { ContactGroupResourceName = resourceName } });
-            //}
             foreach (var groupName in desiredGroupNames)
             {
                 var resourceName = string.Empty; // Initialisieren
@@ -323,7 +299,7 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
 
     private async Task<PeopleServiceService> GetServiceAsync(CancellationToken token)
     {
-        string[] scopes = [PeopleServiceService.Scope.Contacts, PeopleServiceService.Scope.UserinfoEmail, PeopleServiceService.Scope.UserinfoProfile];
+        string[] scopes = [PeopleServiceService.Scope.Contacts]; //, PeopleServiceService.Scope.UserinfoEmail, PeopleServiceService.Scope.UserinfoProfile];
         UserCredential credential;
         using (FileStream stream = new(secretPath, FileMode.Open, FileAccess.Read))
         {
@@ -340,30 +316,6 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
             ApplicationName = Application.ProductName,
         });
     }
-
-    //private static async Task<Dictionary<string, string>> GetContactGroupsMapAsync(PeopleServiceService service, CancellationToken token = default)
-    //{
-    //    var map = new Dictionary<string, string>();
-    //    try
-    //    {
-    //        var req = service.ContactGroups.List();
-    //        req.GroupFields = "name,clientData";
-    //        var res = await req.ExecuteAsync(token);
-    //        if (res.ContactGroups != null)
-    //        {
-    //            foreach (var g in res.ContactGroups)
-    //            {
-    //                var name = g.FormattedName ?? g.Name;
-    //                if (!string.IsNullOrEmpty(g.ResourceName))
-    //                {
-    //                    map[g.ResourceName] = name;
-    //                }
-    //            }
-    //        }
-    //    }
-    //    catch { }
-    //    return map;
-    //}
 
     private static async Task<Dictionary<string, string>> GetContactGroupsMapAsync(PeopleServiceService service, CancellationToken token = default)
     {

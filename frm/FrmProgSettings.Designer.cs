@@ -28,7 +28,6 @@ partial class FrmProgSettings
     /// </summary>
     private void InitializeComponent()
     {
-        var resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmProgSettings));
         tabControl = new TabControl();
         tpAllgemein = new TabPage();
         gbTextProcessing = new GroupBox();
@@ -62,6 +61,12 @@ partial class FrmProgSettings
         btnWatchFolder = new Button();
         tbWatchFolder = new TextBox();
         tpSicherung = new TabPage();
+        btnZipArchive = new Button();
+        lblZipArchive = new Label();
+        lblZipText = new Label();
+        lblHorizLine = new Label();
+        ckbZipArchive = new CheckBox();
+        tbZipArchive = new TextBox();
         lblBackupFolder = new Label();
         btnExplorer = new Button();
         lblBackup = new Label();
@@ -288,6 +293,7 @@ partial class FrmProgSettings
         tbStandard.Name = "tbStandard";
         tbStandard.Size = new Size(203, 25);
         tbStandard.TabIndex = 3;
+        tbStandard.Validating += TbStandard_Validating;
         // 
         // rbStandard
         // 
@@ -447,6 +453,12 @@ partial class FrmProgSettings
         // 
         tpSicherung.BackColor = SystemColors.ControlLightLight;
         tpSicherung.BorderStyle = BorderStyle.FixedSingle;
+        tpSicherung.Controls.Add(btnZipArchive);
+        tpSicherung.Controls.Add(lblZipArchive);
+        tpSicherung.Controls.Add(lblZipText);
+        tpSicherung.Controls.Add(lblHorizLine);
+        tpSicherung.Controls.Add(ckbZipArchive);
+        tpSicherung.Controls.Add(tbZipArchive);
         tpSicherung.Controls.Add(lblBackupFolder);
         tpSicherung.Controls.Add(btnExplorer);
         tpSicherung.Controls.Add(lblBackup);
@@ -459,6 +471,61 @@ partial class FrmProgSettings
         tpSicherung.TabIndex = 2;
         tpSicherung.Text = " Sicherung";
         // 
+        // btnZipArchive
+        // 
+        btnZipArchive.Location = new Point(220, 223);
+        btnZipArchive.Name = "btnZipArchive";
+        btnZipArchive.Size = new Size(36, 25);
+        btnZipArchive.TabIndex = 16;
+        btnZipArchive.Text = "⚙";
+        btnZipArchive.UseVisualStyleBackColor = true;
+        btnZipArchive.Click += BtnZipArchive_Click;
+        // 
+        // lblZipArchive
+        // 
+        lblZipArchive.AutoSize = true;
+        lblZipArchive.Location = new Point(12, 201);
+        lblZipArchive.Name = "lblZipArchive";
+        lblZipArchive.Size = new Size(69, 19);
+        lblZipArchive.TabIndex = 15;
+        lblZipArchive.Text = "Zip-Datei:";
+        // 
+        // lblZipText
+        // 
+        lblZipText.Location = new Point(12, 251);
+        lblZipText.Name = "lblZipText";
+        lblZipText.Size = new Size(250, 41);
+        lblZipText.TabIndex = 14;
+        lblZipText.Text = "Tipp: auf iCloud Drive speichern, für das Öffnen mit iPhone-App 'SQLed'.";
+        // 
+        // lblHorizLine
+        // 
+        lblHorizLine.BorderStyle = BorderStyle.Fixed3D;
+        lblHorizLine.Location = new Point(12, 162);
+        lblHorizLine.Name = "lblHorizLine";
+        lblHorizLine.Size = new Size(244, 2);
+        lblHorizLine.TabIndex = 13;
+        // 
+        // ckbZipArchive
+        // 
+        ckbZipArchive.AutoSize = true;
+        ckbZipArchive.Location = new Point(12, 175);
+        ckbZipArchive.Name = "ckbZipArchive";
+        ckbZipArchive.Size = new Size(233, 23);
+        ckbZipArchive.TabIndex = 11;
+        ckbZipArchive.Text = "Datenbanken in Zip-Datei sichern";
+        ckbZipArchive.UseVisualStyleBackColor = true;
+        ckbZipArchive.CheckedChanged += CkbZipArchive_CheckedChanged;
+        // 
+        // tbZipArchive
+        // 
+        tbZipArchive.Location = new Point(12, 223);
+        tbZipArchive.Name = "tbZipArchive";
+        tbZipArchive.Size = new Size(202, 25);
+        tbZipArchive.TabIndex = 9;
+        tbZipArchive.TextChanged += TbZipArchive_TextChanged;
+        tbZipArchive.Validating += TbZipArchive_Validating;
+        // 
         // lblBackupFolder
         // 
         lblBackupFolder.AutoSize = true;
@@ -470,7 +537,7 @@ partial class FrmProgSettings
         // 
         // btnExplorer
         // 
-        btnExplorer.Location = new Point(12, 265);
+        btnExplorer.Location = new Point(12, 128);
         btnExplorer.Name = "btnExplorer";
         btnExplorer.Size = new Size(244, 26);
         btnExplorer.TabIndex = 7;
@@ -482,9 +549,9 @@ partial class FrmProgSettings
         // 
         lblBackup.Location = new Point(12, 84);
         lblBackup.Name = "lblBackup";
-        lblBackup.Size = new Size(250, 136);
+        lblBackup.Size = new Size(250, 41);
         lblBackup.TabIndex = 6;
-        lblBackup.Text = resources.GetString("lblBackup.Text");
+        lblBackup.Text = "Das Backup erfolgt in wochentäglichen Unterordnern mit jeweils einer Kopie.";
         // 
         // ckbBackup
         // 
@@ -538,6 +605,7 @@ partial class FrmProgSettings
         // folderBrowserDialog
         // 
         folderBrowserDialog.RootFolder = Environment.SpecialFolder.MyComputer;
+        folderBrowserDialog.UseDescriptionForTitle = true;
         // 
         // openFileDialog
         // 
@@ -561,7 +629,6 @@ partial class FrmProgSettings
         StartPosition = FormStartPosition.CenterParent;
         Text = "Programmeinstellungen";
         FormClosing += FrmProgSettings_FormClosing;
-        Load += FrmProgSettings_Load;
         tabControl.ResumeLayout(false);
         tpAllgemein.ResumeLayout(false);
         gbTextProcessing.ResumeLayout(false);
@@ -629,4 +696,10 @@ partial class FrmProgSettings
     private Button btnWatchFolder;
     private TextBox tbWatchFolder;
     private Label lblWatcherInfo;
+    private Label lblHorizLine;
+    private CheckBox ckbZipArchive;
+    private TextBox tbZipArchive;
+    private Label lblZipText;
+    private Label lblZipArchive;
+    private Button btnZipArchive;
 }

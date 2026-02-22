@@ -107,10 +107,12 @@ public class AppSettings
     public string StandardFile { get; set; } = string.Empty;
 
     public bool DailyBackup { get; set; } = false;
+    public bool AddZipBackup { get; set; } = false;
     public bool WatchFolder { get; set; } = false;
     public bool BackupSuccess { get; set; } = true;
     public decimal SuccessDuration { get; set; } = 2500;
     public string BackupDirectory { get; set; } = string.Empty;
+    public string AddZipDirectory { get; set; } = string.Empty;
     public string DocumentFolder { get; set; } = string.Empty;
     public string DatabaseFolder { get; set; } = string.Empty;
 
@@ -153,10 +155,30 @@ public class AppSettings
     }
 
     // Stellt sicher, dass keine leeren Arrays existieren (wichtig nach dem Laden)
-    public void ValidateDefaults()
+    //public void ValidateAndCorrect()
+    //{
+    //    if (ColumnWidths == null || ColumnWidths.Length == 0) { ColumnWidths = (int[])DefaultColumnWidths.Clone(); }
+    //    if (HideColumnArr == null || HideColumnArr.Length == 0) { HideColumnArr = (bool[])DefaultHideColumns.Clone(); }
+    //}
+
+    public void ValidateAndCorrect()
     {
+        // 1. Arrays absichern
         if (ColumnWidths == null || ColumnWidths.Length == 0) { ColumnWidths = (int[])DefaultColumnWidths.Clone(); }
         if (HideColumnArr == null || HideColumnArr.Length == 0) { HideColumnArr = (bool[])DefaultHideColumns.Clone(); }
+
+        // 2. UNC-Pfade reparieren (einmalig beim Laden aus der JSON)
+        StandardFile = Utils.CorrectUNC(StandardFile ?? string.Empty);
+        BackupDirectory = Utils.CorrectUNC(BackupDirectory ?? string.Empty);
+        AddZipDirectory = Utils.CorrectUNC(AddZipDirectory ?? string.Empty);
+        DocumentFolder = Utils.CorrectUNC(DocumentFolder ?? string.Empty);
+        DatabaseFolder = Utils.CorrectUNC(DatabaseFolder ?? string.Empty);
+
+        // Auch die Liste der zuletzt geöffneten Dateien reparieren
+        if (RecentFiles != null && RecentFiles.Count > 0)
+        {
+            for (var i = 0; i < RecentFiles.Count; i++) { RecentFiles[i] = Utils.CorrectUNC(RecentFiles[i]); }
+        }
     }
 }
 
@@ -195,7 +217,7 @@ internal static class SettingsManager
 
             if (settings != null)
             {
-                settings.ValidateDefaults();
+                settings.ValidateAndCorrect();
                 return settings;
             }
             return new AppSettings();
