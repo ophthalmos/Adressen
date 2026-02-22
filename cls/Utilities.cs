@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
 using System.Globalization;
+using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.NetworkInformation;
@@ -658,6 +659,57 @@ internal static class Utils
     {
         using var reader = new StreamReader(filename);
         while (!reader.EndOfStream) { yield return reader.ReadLine()!; }
+    }
+
+    public static async Task UpdateZipBackupAsync(string sourceDbPath, string targetZipFilePath)
+    {
+        if (string.IsNullOrWhiteSpace(sourceDbPath)) { return; }
+        if (string.IsNullOrWhiteSpace(targetZipFilePath)) { return; }
+        var dbFileName = Path.GetFileName(sourceDbPath);
+        await Task.Run(async () =>  // weil File.Copy und File.Move blockierende I/O-Aufrufe sind
+        {
+            var targetDir = Path.GetDirectoryName(targetZipFilePath);
+            if (!string.IsNullOrEmpty(targetDir))
+            {
+                if (!Directory.Exists(targetDir)) { Directory.CreateDirectory(targetDir); }
+            }
+            var tempZipPath = targetZipFilePath + ".tmp";
+            var maxRetries = 3;
+            var delayMs = 500;
+            for (var i = 0; i < maxRetries; i++)
+            {
+                try
+                {
+
+                    if (File.Exists(targetZipFilePath)) { File.Copy(targetZipFilePath, tempZipPath, true); }  // Kopieren des Originals in eine Temp-Datei (falls es schon existiert)
+                    var mode = File.Exists(tempZipPath) ? ZipArchiveMode.Update : ZipArchiveMode.Create;
+                    using (var fileStream = new FileStream(tempZipPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))  // Temp-Datei öffnen (FileShare.None hält OneDrive fern)
+                    {
+                        using var archive = new ZipArchive(fileStream, mode);
+                        if (mode == ZipArchiveMode.Update)
+                        {
+                            var existingEntry = archive.GetEntry(dbFileName);
+                            existingEntry?.Delete();
+                        }
+                        var newEntry = archive.CreateEntry(dbFileName, CompressionLevel.Optimal);
+                        newEntry.LastWriteTime = File.GetLastWriteTime(sourceDbPath);  // Metadaten setzen: Die echte Modifikationszeit der Datenbank übernehmen
+                        using var entryStream = newEntry.Open();
+                        using var sourceStream = new FileStream(sourceDbPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        await sourceStream.CopyToAsync(entryStream);  // Asynchrones Kopieren
+                    }
+                    File.Move(tempZipPath, targetZipFilePath, overwrite: true);  // Atomarer Tausch: Die fertige Temp-Datei ersetzt das Original.
+                    break; // Erfolg! Schleife abbrechen.
+                }
+                catch (IOException) when (i < maxRetries - 1) { await Task.Delay(delayMs); }  // Wenn OneDrive die Datei blockiert, kurz warten und nochmal versuchen
+                catch
+                {
+                    if (File.Exists(tempZipPath))
+                    {
+                        try { File.Delete(tempZipPath); } catch { }  // Fehler ignorieren, temporäre Datei wird beim nächsten Lauf überschrieben
+                    }
+                }
+            }
+        });
     }
 
     internal static async Task DailyBackupAsync(string filePath, string backupDir)
