@@ -399,3 +399,14 @@ FodyWeavers.xsd
 /adressen.xml
 /cls.7z
 /Hinweise.txt
+/frm/backup_Sa.7z
+/frm/backup_So.7z
+/_Backups/backup_Mi.7z
+/_Backups/backup_Di.7z
+/_Backups/backup_Do.7z
+/_Backups/backup_Fr.7z
+/_Backups/backup_Mo.7z
+/_Backups/backup_Sa.7z
+/_Backups/backup_So.7z
+/.gitignore
+/Adressen.png
