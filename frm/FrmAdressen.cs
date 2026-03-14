@@ -5,7 +5,6 @@ using System.Drawing.Imaging;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Adressen.cls;
@@ -39,7 +38,6 @@ public partial class FrmAdressen : Form
         "Suffix", "Unternehmen", "Position", "Strasse", "PLZ", "Ort", "Postfach", "Land", "Betreff", "Grussformel", "Schlussformel", "Geburtstag",
         "Mail1", "Mail2", "Telefon1", "Telefon2", "Mobil", "Fax", "Internet", "Notizen"]; // Id fehlt absichtlich  
     private readonly bool argsPath = false;
-    //private int contactNewRowIndex = -1;
     private bool isSelectionChanging = false;
     private bool ignoreTextChange = false; // ignore when changing text in ContactEditFields
     private bool ignoreSearchChange = false;
@@ -88,7 +86,6 @@ public partial class FrmAdressen : Form
     private Contact? _lastActiveContact; // Merkt sich den Kontakt, der VOR dem Wechsel aktiv war
     private Contact? _originalContactSnapshot;
     private Dictionary<string, string> contactGroupsDict = [];
-    //private string userEmail = string.Empty;
     private bool _isClosing = false; // Flag, um Endlosschleife zu verhindern
     private bool _isFiltering = false; // Verhindert Speichern während der Suche
     private BindingList<Contact> _allGoogleContacts = []; // Klassenvariable
@@ -97,6 +94,15 @@ public partial class FrmAdressen : Form
     private int _currentDbVersion;
     private bool _isTabSwitchingProgrammatically = false; // Verhindert unerwünschte Event-Auslösung bei Tab-Wechseln durch Code
     private TabPage? _previousTab;  // innerhalb des Selecting-Events kann man sich nicht auf tabControl.SelectedTab verlassen
+    private string _lastSearchTerm = string.Empty;
+    private bool _lastMatchCase = false;
+    private bool _isCheckingContactChanges = false;
+    private object? _lastProcessedEntry;
+    private int _savedAddressScrollIndex = -1;
+    private int _savedContactScrollIndex = -1;
+
+    [GeneratedRegex("#(vorname|nickname|nachname|titel)", RegexOptions.IgnoreCase)]
+    private static partial Regex PlaceholderRegex();
 
     public FrmAdressen(FrmSplashScreen? splashScreen, string[] args)
     {
@@ -197,37 +203,39 @@ public partial class FrmAdressen : Form
             if (item is ToolStripDropDownItem dropDownItem) { dropDownItem.DropDown.Opening += new CancelEventHandler(MainDropDown_Opening); }
         }
         // 6. UI basierend auf geladenen Settings anwenden
-        ApplySettingsToUI();
-    }
-
-    private void ApplySettingsToUI()
-    {
-        FormStateManager.RestoreWindowBounds(this, _settings.WindowPosition, _settings.WindowMaximized);
+        //ApplySettingsToUI();
+        Utils.RestoreWindowBounds(this, _settings.MainWindowPosition, _settings.WindowMaximized);
         _settings.SplitterPosition = _settings.SplitterPosition > 0 ? _settings.SplitterPosition : splitContainer.SplitterDistance;
-        searchTSTextBox.TextBox.SetInnerMargins(4, 4);
-        tbNotizen.SetInnerMargins(4, 4);
-        maskedTextBox.SetInnerMargins(4, 4);
+        NativeMethods.SendMessage(searchTSTextBox.TextBox.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_LEFTMARGIN | NativeMethods.EC_RIGHTMARGIN, (AppSettings.TextBoxPadding << 16) | (AppSettings.TextBoxPadding & 0xFFFF));
+        //NativeMethods.SendMessage(maskedTextBox.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_LEFTMARGIN | NativeMethods.EC_RIGHTMARGIN, (AppSettings.TextBoxPadding << 16) | (AppSettings.TextBoxPadding & 0xFFFF));
         maskedTextBox.SetPlaceholder("TT.MM.JJJJ");
         SetColorScheme();
         tsClearLabel.Visible = false;
     }
 
-    private void FrmAdressen_Load(object sender, EventArgs e) => ApplyFileWatcherSettings();
+    private void FrmAdressen_Load(object sender, EventArgs e)
+    {
+        addressTabPage.ApplyMaxLengthFromEntity<Adresse>();
+        contactTabPage.ApplyMaxLengthFromEntity<Contact>();
+        ApplyEditControlsFont();
+        ApplyFileWatcherSettings();
+
+    }
 
     private async void FrmAdressen_Shown(object sender, EventArgs e)
     {
         Update();  // sicherer als DoEvents(), da es nur Painting betrifft; soll weiße Flächen verhindern
-        Cursor.Current = Cursors.WaitCursor;
+        UseWaitCursor = true; // NEU: Hält den Lade-Mauszeiger auch bei Mausbewegungen während 'await', statt Cursor.Current = Cursors.WaitCursor;
         try
         {
             splitContainer.SplitterDistance = _settings.SplitterPosition;
-            flexiTSStatusLabel.Width = 244 + splitContainer.SplitterDistance - 536;
+            UpdateStatusLabelWidth();  // flexiTSStatusLabel.Width = 244 + splitContainer.SplitterDistance - 536;
             if (Utils.IsUpdateCheckDue(_settings.UpdateIndex, _settings.LastUpdateCheck))
             {
                 var (version, date) = await Utils.GetLatestVersionInfoAsync();
                 RefreshUpdateUI(version, date);
             }
-            if (!argsPath) { _databaseFilePath = _settings.RecentFiles.Count > 0 ? _settings.RecentFiles[0] : string.Empty; }
+            if (!argsPath && _settings.ReloadRecent) { _databaseFilePath = _settings.RecentFiles.Count > 0 ? _settings.RecentFiles[0] : string.Empty; }
             if ((_settings.ReloadRecent || argsPath) && !string.IsNullOrEmpty(_databaseFilePath)) { await ConnectSQLDatabaseAsync(_databaseFilePath); }
             else if (!_settings.ReloadRecent && !_settings.NoAutoload && !string.IsNullOrEmpty(_settings.StandardFile)) { await ConnectSQLDatabaseAsync(_settings.StandardFile); }
             if (_settings.ContactsAutoload) { await LoadAndDisplayGoogleContactsAsync(); }
@@ -235,7 +243,7 @@ public partial class FrmAdressen : Form
         }
         finally
         {
-            Cursor.Current = Cursors.Default;
+            UseWaitCursor = false; // NEU: Cursor wieder freigeben, statt Cursor.Current = Cursors.Default;
             if (_splashScreen != null)
             {
                 _splashScreen.Close();
@@ -245,14 +253,30 @@ public partial class FrmAdressen : Form
         }
     }
 
+    private void UpdateStatusLabelWidth()
+    {
+        var startX = toolStripStatusLabel.Bounds.Right + flexiTSStatusLabel.Margin.Left;
+        var progressBarWidth = toolStripProgressBar.Width + toolStripProgressBar.Margin.Horizontal;
+        var targetWidth = splitContainer.SplitterDistance - startX - progressBarWidth - 1;
+        flexiTSStatusLabel.Width = Math.Max(0, targetWidth);
+    }
+
+    private void UpdateSearchBoxWidth()
+    {
+        var startX = toolStripSeparator2.Bounds.Right + searchTSTextBox.Margin.Left;
+        var clearLabelWidth = tsClearLabel.Visible ? (tsClearLabel.Width + tsClearLabel.Margin.Horizontal) : 0;
+        var availableWidth = splitContainer.SplitterDistance - startX - clearLabelWidth - 1;
+        searchTSTextBox.Width = Math.Max(50, availableWidth);
+    }
+
     private void SaveConfiguration()
     {
-        _settings.WindowMaximized = WindowState == FormWindowState.Maximized;
+        if (WindowState != FormWindowState.Minimized) { _settings.WindowMaximized = WindowState == FormWindowState.Maximized; }  // ignoriere "Minimized", da wir sonst den Maximiert-Status vergessen würden
         var bounds = WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
-        _settings.WindowPosition = new WindowPlacement { X = bounds.X, Y = bounds.Y, Width = bounds.Width, Height = bounds.Height };
+        _settings.MainWindowPosition = new WindowPlacement { X = bounds.X, Y = bounds.Y, Width = bounds.Width, Height = bounds.Height };
         _settings.SplitterPosition = splitContainer.SplitterDistance;
         var activeDGV = tabControl.SelectedTab == contactTabPage ? contactDGV : addressDGV;
-        if (activeDGV.Columns.Count > 0)
+        if (activeDGV != null && activeDGV.Columns.Count > 0)
         {
             _settings.HideColumnArr = [.. activeDGV.Columns.Cast<DataGridViewColumn>().Select(c => !c.Visible)];
             _settings.ColumnWidths = [.. activeDGV.Columns.Cast<DataGridViewColumn>().Select(c => c.Width)];
@@ -291,7 +315,7 @@ public partial class FrmAdressen : Form
             {
                 Utils.MsgTaskDlg(Handle, "Datenbank zu neu",
                     "Diese Datenbank wurde mit einer neueren Version der Software erstellt. " +
-                    "Bitte aktualisieren Sie Ihr Programm.", TaskDialogIcon.ShieldErrorRedBar);
+                    "Bitte aktualisiere das Programm.", TaskDialogIcon.ShieldErrorRedBar);
                 return;
             }
 
@@ -321,11 +345,20 @@ public partial class FrmAdressen : Form
             if (_currentDbVersion < AppSettings.DatabaseSchemaVersion)
             {
                 toolStripStatusLabel.Text = "Führe Migration durch...";
-                statusStrip.Update(); // Text sofort malen
+                statusStrip.Update();
 
-                var ownerHandle = Handle;
-                migrationDone = await Task.Run(() => DatabaseMigrator.MigrateLegacyData(_context, ownerHandle));
-                if (migrationDone) { _currentDbVersion = AppSettings.DatabaseSchemaVersion; }
+                // Wir rufen die Migration OHNE Handle auf
+                migrationDone = await Task.Run(() => DatabaseMigrator.MigrateLegacyData(_context));
+
+                if (migrationDone)
+                {
+                    _currentDbVersion = AppSettings.DatabaseSchemaVersion;
+
+                    // Erfolgsdialog sicher im UI-Thread anzeigen
+                    Utils.MsgTaskDlg(Handle, "Datenbank aktualisiert",
+                        $"Die Datenbank wurde erfolgreich migriert (v{AppSettings.DatabaseSchemaVersion}).",
+                        TaskDialogIcon.ShieldSuccessGreenBar);
+                }
             }
 
 
@@ -335,37 +368,47 @@ public partial class FrmAdressen : Form
             toolStripStatusLabel.Text = "Lade Datensätze...";
             statusStrip.Update();
 
-            // 1. NEU: Alle Gruppen vorab in den Cache laden
-            // Das löst das Problem, dass im Filter-Dialog nur benutzte Gruppen auftauchen.
-            // Jetzt kennt .Local sofort alle verfügbaren Gruppen.
-            await _context.Gruppen.LoadAsync();
+            // OPTIMIERUNG 2: ChangeTracker temporär pausieren
+            // Das verhindert, dass EF Core beim massenhaften Aufbau der Entities
+            // ständig intern prüft, ob sich Eigenschaften geändert haben.
+            _context.ChangeTracker.AutoDetectChangesEnabled = false;
 
-            // 2. Adressen laden (mit Optimierung)
-            await _context.Adressen
-                // NEU: Eager Loading für die Gruppen-Beziehung.
-                // Lädt die Verknüpfungen sofort mit. Das verhindert das "Nachploppen"
-                // und stellt sicher, dass ChangeTracker die Beziehungen sofort kennt.
-                .Include(a => a.Gruppen)
+            try
+            {
+                // 1. Alle Gruppen vorab in den Cache laden
+                await _context.Gruppen.LoadAsync();
 
-                // Sortierung (wie gehabt)
-                .OrderBy(a => EF.Functions.Collate(a.Nachname, "GERMAN"))
-                .ThenBy(a => EF.Functions.Collate(a.Vorname, "GERMAN"))
-                .LoadAsync();
+                // 2. Adressen laden (mit Split Query Optimierung)
+                await _context.Adressen
+                    .Include(a => a.Gruppen)
 
-            // SCHRITT D: UI Aufbau (Binding)
-            // Daten sind da, jetzt geht es ans Anzeigen
+                    // OPTIMIERUNG 3: AsSplitQuery verhindert riesige JOIN-Datenmengen
+                    .AsSplitQuery()
+
+                    .OrderBy(a => EF.Functions.Collate(a.Nachname, "GERMAN"))
+                    .ThenBy(a => EF.Functions.Collate(a.Vorname, "GERMAN"))
+                    .LoadAsync();
+            }
+            finally
+            {
+                // WICHTIG: Danach unbedingt wieder einschalten, damit spätere
+                // Eingaben des Benutzers im DataGridView auch als Änderung erkannt werden!
+                _context.ChangeTracker.AutoDetectChangesEnabled = true;
+            }
+
+
             toolStripProgressBar.Value = 80;
             toolStripStatusLabel.Text = "Erstelle Ansicht...";
             statusStrip.Update();
 
-            addressBindingSource.DataSource = _context.Adressen.Local.ToBindingList();
-            addressDGV.DataSource = addressBindingSource;
+            addressBSource.DataSource = _context.Adressen.Local.ToBindingList();
+            addressDGV.DataSource = addressBSource;
             AutoValidate = AutoValidate.EnableAllowFocusChange; // Fehler im Validating-Event anzeigen, aber Fokuswechsel erlauben; Standard = EnablePreventFocusChange
             ApplyColumnSettings(addressDGV);
             foreach (DataGridViewColumn column in addressDGV.Columns) { column.SortMode = DataGridViewColumnSortMode.NotSortable; }
 
             PopulateMemberships();
-            SwitchDataBinding(addressBindingSource);
+            SwitchDataBinding(addressBSource);
 
             if (_context != null)
             {
@@ -373,27 +416,28 @@ public partial class FrmAdressen : Form
                 _settings.RecentFiles.Insert(0, _databaseFilePath);
                 if (_settings.RecentFiles.Count > AppSettings.MaxRecentFiles) { _settings.RecentFiles = [.. _settings.RecentFiles.Take(AppSettings.MaxRecentFiles)]; }
 
-                newToolStripMenuItem.Enabled = duplicateToolStripMenuItem.Enabled = deleteToolStripMenuItem.Enabled = deleteTSButton.Enabled = newTSButton.Enabled = duplicateToolStripMenuItem.Enabled = copyTSButton.Enabled = wordTSButton.Enabled = envelopeTSButton.Enabled = true;
+                newToolStripMenuItem.Enabled = deleteToolStripMenuItem.Enabled = deleteTSButton.Enabled = newTSButton.Enabled = duplicateToolStripMenuItem.Enabled = copyTSButton.Enabled = wordTSButton.Enabled = envelopeTSButton.Enabled = true;
                 copyToOtherDGVTSMenuItem.Enabled = false;
 
                 tabControl.SelectTab(0);
 
                 _context.ChangeTracker.StateChanged += OnStateChanged;
-                addressBindingSource.CurrentChanged += AddressBindingSource_CurrentChanged;
+                addressBSource.CurrentChanged += AddressBindingSource_CurrentChanged;
 
-                if (addressBindingSource.Count > 0) { AddressBindingSource_CurrentChanged(this, EventArgs.Empty); }
+                if (addressBSource.Count > 0) { AddressBindingSource_CurrentChanged(this, EventArgs.Empty); }
 
                 if (!migrationDone && _settings.BirthdayAddressShow)
                 {
-                    BeginInvoke(new Action(() => { BirthdayReminder(addressDGV); }));
+                    _ = InvokeAsync(() => BirthdayReminder(addressDGV));  // erst ausführen, wenn die UI aktualisiert ist, damit der Dialog über dem Hauptfenster erscheint
                 }
 
                 _ = Task.Run(() => Utils.StartSearchCacheWarmup(_context.Adressen.Local));
 
                 // SCHRITT E: Fertig
-                AddressBindingSource_CurrentChanged(addressBindingSource, EventArgs.Empty);  // Einmalig feuern für den ersten Datensatz
+                _lastProcessedEntry = null;
+                AddressBindingSource_CurrentChanged(addressBSource, EventArgs.Empty);  // Einmalig feuern für den ersten Datensatz
                 toolStripProgressBar.Value = 100; // Voller Balken
-                toolStripStatusLabel.Text = $"{addressBindingSource.Count} Adressen geladen.";
+                toolStripStatusLabel.Text = $"{addressBSource.Count} Adressen";
                 statusStrip.Update();
             }
         }
@@ -409,19 +453,19 @@ public partial class FrmAdressen : Form
 
     private void PopulateMemberships()
     {
-        if (addressBindingSource is null || _context is null) { return; }
+        if (addressBSource is null || _context is null) { return; }
         allAddressMemberships.Clear();
         allAddressMemberships.Add("★"); // Favoriten immer zuerst
         var dbGruppen = _context.Gruppen.Select(g => g.Name).Distinct().ToList();
         allAddressMemberships.UnionWith(dbGruppen);
-        UpdateMembershipCBox();
+        UpdateTagComboBoxDataSource();
     }
 
     private void CreateNewDatabase(string filePath, bool addSampleRecord = false)
     {
         try
         {
-            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools(); // bestehende Pools leeren, um Dateisperren zu vermeiden
+            SqliteConnection.ClearAllPools(); // bestehende Pools leeren, um Dateisperren zu vermeiden
             if (File.Exists(filePath)) { File.Delete(filePath); }
             using var dbContext = new AdressenDbContext(filePath);
             dbContext.Database.EnsureCreated(); // Erstellt die Datenbank und ALLE Tabellen (Adressen, Gruppen, Dokumente, Foto)
@@ -458,9 +502,9 @@ public partial class FrmAdressen : Form
         contactDGV.CausesValidation = false;
         try
         {
-            ActiveControl = null;  // Zwingt das aktuelle Control (z.B. eine TextBox), den Wert zu pushen.
-            isInputValid = ValidateChildren(ValidationConstraints.Enabled);  // nur die relevanten Controls (Edit-Controls) validieren
-            addressBindingSource?.EndEdit();  // damit ein durch 'AddNew' erzeugter Datensatz final in die Liste übernommen und vom ChangeTracker erkannt wird
+            ActiveControl = null;
+            isInputValid = ValidateChildren(ValidationConstraints.Enabled);
+            addressBSource?.EndEdit();
         }
         finally
         {
@@ -470,62 +514,71 @@ public partial class FrmAdressen : Form
         var analysis = DbChangeAnalyzer.AnalyzeChanges(_context);
         if (_context == null || !analysis.HasChanges)
         {
-            if (closeDB) { CloseDatabaseConnection(); }
+            if (closeDB) { CloseDatabaseConnection(); } // Ok, hier dürfen wir schließen
             return DialogResult.None;
         }
         if (!askNever && _settings.AskBeforeSaveSQL)
         {
             if (tabControl.SelectedTab != addressTabPage) { tabControl.SelectTab(addressTabPage); }
-            TaskDialogButton saveButton = new("&Speichern");
-            TaskDialogButton dontSaveButton = new("&Nicht speichern");
+            var saveButton = new TaskDialogButton("&Speichern");
+            var dontSaveButton = new TaskDialogButton("&Nicht speichern");
             var cancelButton = TaskDialogButton.Cancel;
-            TaskDialogPage page = new()
+            using var questionDialogIcon = new TaskDialogIcon(Resources.question32); // Ggf. Properties.Resources.question32
+            var page = new TaskDialogPage()
             {
-                Caption = $"{appName} - {Path.GetFileName(_databaseFilePath)}",
+                Caption = appName,
                 Heading = analysis.DialogHeading,
                 Text = analysis.DialogText,
-                Icon = TaskDialogIcon.ShieldWarningYellowBar,
+                Icon = questionDialogIcon,
                 AllowCancel = true,
                 SizeToContent = true,
+                Verification = new TaskDialogVerificationCheckBox() { Text = "Immer fragen" },
                 Buttons = { saveButton, dontSaveButton, cancelButton }
             };
-
-            // NEU: Expander hinzufügen
-            if (!string.IsNullOrWhiteSpace(analysis.ExpanderText))
+            if (_settings.AskBeforeSaveSQLExpander && !string.IsNullOrEmpty(analysis.ExpanderText))
             {
-                page.Expander = new TaskDialogExpander()
-                {
-                    Text = analysis.ExpanderText,
-                    Position = TaskDialogExpanderPosition.AfterText,
-                    Expanded = false // Standardmäßig eingeklappt
-                };
+                page.Expander = new TaskDialogExpander() { Text = analysis.ExpanderText, Expanded = false };
             }
 
+            if (page.Verification is TaskDialogVerificationCheckBox check) { check.Checked = _settings.AskBeforeSaveSQL; }
             var result = TaskDialog.ShowDialog(this, page);
-            if (result == cancelButton) { return DialogResult.Cancel; }
+            if (result != cancelButton)  // CheckBox-Status nur übernehmen, wenn der Vorgang nicht komplett abgebrochen wurde
+            {
+                if (page.Verification is TaskDialogVerificationCheckBox finalCheck)
+                {
+                    if (_settings.AskBeforeSaveSQL && !finalCheck.Checked)
+                    {
+                        Utils.MsgTaskDlg(Handle, "Hinweis", "Du kannst die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.", new(Resources.info32));
+                        _settings.AskBeforeSaveSQL = false;
+                    }
+                    else if (finalCheck.Checked) { _settings.AskBeforeSaveSQL = true; }
+                }
+            }
+            if (result == cancelButton) { return DialogResult.Cancel; }  // WICHTIG: User hat abgebrochen! Nichts tun, DB bleibt offen.
             if (result == dontSaveButton)
             {
                 _isFiltering = true;
                 try
                 {
                     await DbChangeAnalyzer.RevertChangesAsync(analysis.RealChanges);
-                    _context.ChangeTracker.Entries().Where(e => e.State != EntityState.Unchanged).ToList().ForEach(e => e.State = EntityState.Unchanged);  // "Nachbeben" beseitigen
+                    var changedEntries = _context.ChangeTracker.Entries().Where(e => e.State != EntityState.Unchanged).ToList();
+                    foreach (var entry in changedEntries) { entry.State = EntityState.Unchanged; }
                 }
                 finally { _isFiltering = false; }
-                if (closeDB) { CloseDatabaseConnection(); }
+
+                if (closeDB) { CloseDatabaseConnection(); } // Ok, User will Änderungen verwerfen und beenden
                 return DialogResult.No;
             }
         }
         if (!isInputValid)
         {
             Utils.MsgTaskDlg(Handle, "Speichern nicht möglich", "Einige Eingaben sind ungültig oder unvollständig.", TaskDialogIcon.ShieldErrorRedBar);
-            return DialogResult.Cancel;
+            return DialogResult.Cancel; // WICHTIG: DB bleibt offen, damit der User den Fehler korrigieren kann!
         }
-
         try
         {
             await _context.SaveChangesAsync();
-            await _context.Database.ExecuteSqlRawAsync("PRAGMA wal_checkpoint(TRUNCATE);");  // WAL-Checkpoint erzwingen, damit die .db-Datei für das Backup vollständig ist!
+            await _context.Database.ExecuteSqlRawAsync("PRAGMA wal_checkpoint(TRUNCATE);");
             if (!isFormClosing)
             {
                 Invoke(() =>
@@ -536,35 +589,36 @@ public partial class FrmAdressen : Form
             }
             if (_settings.DailyBackup && File.Exists(_databaseFilePath) && Directory.Exists(_settings.BackupDirectory))
             {
-                if (isFormClosing) { await Utils.DailyBackupAsync(_databaseFilePath, _settings.BackupDirectory); }  // Beim Schließen geht Sicherheit vor! Kein Beenden bevor die Sicherung fertig ist!
-                else { _ = Utils.DailyBackupAsync(_databaseFilePath, _settings.BackupDirectory); }  // "Fire-and-Forget", Programm soll sofort wieder bedienbar sein, ohne auf die Sicherung zu warten.
+                if (isFormClosing) { await Utils.DailyBackupAsync(_databaseFilePath, _settings.BackupDirectory); }
+                else { _ = Utils.DailyBackupAsync(_databaseFilePath, _settings.BackupDirectory); }
             }
             if (_settings.AddZipBackup && File.Exists(_databaseFilePath) && !string.IsNullOrWhiteSpace(_settings.AddZipDirectory))
             {
                 if (isFormClosing) { await Utils.UpdateZipBackupAsync(_databaseFilePath, _settings.AddZipDirectory); }
                 else { _ = Utils.UpdateZipBackupAsync(_databaseFilePath, _settings.AddZipDirectory); }
             }
+            if (closeDB) { CloseDatabaseConnection(); } // Ok, erfolgreich gespeichert, wir können schließen
             return DialogResult.Yes;
         }
         catch (DbUpdateConcurrencyException dbEx)
         {
             Utils.MsgTaskDlg(Handle, "Konflikt beim Speichern", $"Details: {dbEx.Message}\nIhre lokalen Änderungen werden verworfen.");
             foreach (var entry in dbEx.Entries) { await entry.ReloadAsync(); }
-            saveTSButton.Enabled = false;
-            return DialogResult.Abort;
+            Invoke(() => { saveTSButton.Enabled = false; }); // Sicherheitshalber auch hier Invoke nutzen!
+            return DialogResult.Abort; // DB bleibt offen
         }
         catch (Exception ex)
         {
             Utils.ErrTaskDlg(Handle, ex);
-            return DialogResult.Abort;
+            return DialogResult.Abort; // DB bleibt offen
         }
-        finally { if (closeDB) { CloseDatabaseConnection(); } }
     }
 
     private void CloseDatabaseConnection()
     {
+        _lastProcessedEntry = null; // Ganz wichtig!
         // 1. Events abklemmen, damit keine Logik mehr getriggert wird
-        addressBindingSource.CurrentChanged -= AddressBindingSource_CurrentChanged;
+        addressBSource.CurrentChanged -= AddressBindingSource_CurrentChanged;
         _context?.ChangeTracker.StateChanged -= OnStateChanged;
 
         // 2. REIHENFOLGE GEÄNDERT: Erst das Grid vom Binding lösen!
@@ -585,8 +639,8 @@ public partial class FrmAdressen : Form
         // 4. BindingSources "neutralisieren"
         // Wir setzen sie auf den Typ zurück, damit Metadaten erhalten bleiben, 
         // aber keine Instanzen mehr da sind. Das verhindert Bindungsfehler.
-        addressBindingSource.DataSource = typeof(Adresse);
-        contactBindingSource.DataSource = typeof(Contact);
+        addressBSource.DataSource = typeof(Adresse);
+        contactBSource.DataSource = typeof(Contact);
 
         // 5. Context entsorgen
         _context?.Dispose();
@@ -599,6 +653,8 @@ public partial class FrmAdressen : Form
     {
         await CheckContactChanges(async () =>
         {
+            if (_context != null) { await SaveSQLDatabaseAsync(true); }  // CloseDatabaseConnection wird durch 'true' bereits aufgerufen.
+
             openFileDialog.Filter = "Adressen-Datenbank (*.adb)|*.adb|Alle Dateien (*.*)|*.*";
 
             var fullPath = _databaseFilePath;
@@ -606,56 +662,28 @@ public partial class FrmAdressen : Form
             var dirName = Path.GetDirectoryName(fullPath);
 
             openFileDialog.FileName = fileName;
-            //openFileDialog.InitialDirectory = !string.IsNullOrEmpty( sDatabaseFolder) && Directory.Exists(sDatabaseFolder) ? sDatabaseFolder : dirName ?? string.Empty;
             openFileDialog.InitialDirectory = (_settings.DatabaseFolder is { Length: > 0 } dbDir && Directory.Exists(dbDir)) ? dbDir : dirName ?? string.Empty;
             openFileDialog.Multiselect = false;
 
             if (openFileDialog.ShowDialog(this) == DialogResult.OK)
             {
-                // Falls schon eine DB offen ist, sauber schließen und speichern
-                if (_context != null)
-                {
-                    // WICHTIG: Hier speichern wir und schließen die Verbindung.
-                    // CloseDatabaseConnection wird durch 'true' bereits aufgerufen.
-                    await SaveSQLDatabaseAsync(true);
-                }
-
-                // Jetzt die neue Datenbank laden
                 await ConnectSQLDatabaseAsync(openFileDialog.FileName);
-
-                // UI-Reset nach dem Laden
-                ignoreSearchChange = true;
-                searchTSTextBox.Text = string.Empty;
-                ApplyGlobalSearch(string.Empty);
-                ignoreSearchChange = false;
+                SetSearchTextIgnoreChange(string.Empty);  // Textfeld sicher und ohne Event-Sturm leeren
+                ApplyGlobalSearch(string.Empty, jumpToFirstRow: true); // Hier true, da wir bei einer neuen DB oben starten wollen
             }
-
-            //if (openFileDialog.ShowDialog(this) == DialogResult.OK)
-            //{
-            //    if (addressBindingSource != null && _context != null) { await SaveSQLDatabaseAsync(true); }
-            //    //ConnectSQLDatabase(openFileDialog.FileName);
-            //    await ConnectSQLDatabaseAsync(openFileDialog.FileName);
-            //    ignoreSearchChange = true;
-            //    searchTSTextBox.Text = string.Empty;
-            //    ApplyGlobalSearch(string.Empty); // Filter komplett zurücksetzen
-            //    ignoreSearchChange = false;
-            //}
         });
     }
 
     private async void ExitToolStripMenuItem_Click(object? sender, EventArgs? e)
     {
-        if (addressBindingSource != null) { await SaveSQLDatabaseAsync(true); }
+        if (addressBSource != null) { await SaveSQLDatabaseAsync(true); }
         Close();
     }
 
     private async void AddressDGV_CellClick(object sender, DataGridViewCellEventArgs e)
     {
         // 1. Validitätsprüfung (Header-Klicks ausschließen)
-        if (e.RowIndex < 0 || e.ColumnIndex < 0)
-        {
-            return;
-        }
+        if (e.RowIndex < 0 || e.ColumnIndex < 0) { return; }
 
         // 2. Prüfung auf Strg-Taste (WinForms-Standard)
         if ((ModifierKeys & Keys.Control) == Keys.Control)
@@ -678,71 +706,38 @@ public partial class FrmAdressen : Form
                 targetControl.Focus();
 
                 // Zusätzlicher Komfort für Textboxen
-                if (targetControl is TextBoxBase tb)
-                {
-                    tb.SelectAll();
-                }
+                if (targetControl is TextBoxBase tb) { tb.SelectAll(); }
                 // Für ComboBoxen die Dropdown-Liste öffnen (optional)
-                else if (targetControl is ComboBox cb)
-                {
-                    cb.DroppedDown = true;
-                }
+                else if (targetControl is ComboBox cb) { cb.DroppedDown = true; }
             }
         }
     }
 
-    private async void AddressBindingSource_ListChanged(object? sender, ListChangedEventArgs e)
-    {
-        if (addressBindingSource.Current is Adresse currentAdresse && _context != null)
-        {
-            // Wir prüfen, ob die Relationen schon geladen sind. Wenn nicht, laden wir sie nach.
-            // Das passiert asynchron im Hintergrund, während die UI schon da ist.
-
-            var entry = _context.Entry(currentAdresse);
-
-            if (!entry.Collection(a => a.Gruppen).IsLoaded)
-            {
-                await entry.Collection(a => a.Gruppen).LoadAsync();
-                // Ggf. UI updaten, die Gruppen anzeigt
-            }
-
-            if (!entry.Collection(a => a.Dokumente).IsLoaded)
-            {
-                await entry.Collection(a => a.Dokumente).LoadAsync();
-                // Ggf. UI updaten, die Dokumente anzeigt
-            }
-
-            // Nachfolgender Code wird in ShowPhotoInPictureBoxy aufgerufen, wenn die Adresse gewechselt wird. Dort prüfen wir dann, ob das Foto geladen ist, und laden es bei Bedarf nach.
-            //// Foto ist 1:1, das laden wir auch explizit bei Bedarf  
-            //if (!entry.Reference(a => a.Foto).IsLoaded)
-            //{
-            //    await entry.Reference(a => a.Foto).LoadAsync();
-            //}
-        }
-        UpdateSaveButton();
-    }
+    private async void AddressBindingSource_ListChanged(object? sender, ListChangedEventArgs e) => UpdateSaveButton();  // ListChanged sollte niemals schwere Logik (DB-Zugriffe) enthalten!
 
     private void AddressBindingSource_CurrentChanged(object? sender, EventArgs e)
     {
-        if (_isFiltering) { return; } // Konflikte mit Suchfilter vermeiden
+        // Während der Filterung (Tippen im Suchfeld) blockieren wir, 
+        // um "Daten-Flackern" zu verhindern.
+        if (_isFiltering) { return; }
+
         try
         {
             ignoreTextChange = true;
-            if (addressBindingSource?.Current is Adresse currentAdresse)
+            if (addressBSource?.Current is Adresse currentAdresse)
             {
-                ErzeugeGrussformeln();
-                ShowPhotoInPictureBoxy(currentAdresse);
-                UpdateMembershipCBox();
-                LoadGroupsForCurrentAddress();
-                UpdateDocumentListView(currentAdresse);
+                ErzeugeGrussformeln();  // 1. UI-Elemente vorbereiten
+                ShowPhotoInPictureBox(currentAdresse);  // 2. Foto laden (is asynchron intern)
+                _ = LoadDetailsAsync(currentAdresse);  // 3. Gruppen & Dokumente laden (jetzt hier gebündelt)
                 if (currentAdresse.Geburtstag.HasValue) { AgeLabel_MaskedTB_Set(currentAdresse.Geburtstag.Value); }
-                else { AgeLabel_MaskedTB_Clear(); }
+                else { AgeLabel_MaskedTB_Clear(); }  // 4. Geburtstag/Alter
             }
-            else
+            else  // Reset bei leerer Auswahl
             {
                 topAlignZoomPictureBox.Image = Resources.AddressBild100;
                 delPictboxToolStripButton.Enabled = false;
-                flowLayoutPanel.Controls.Clear();
+                curAddressMemberships.Clear();
+                UpdateMembershipTags(); // Cleart den flowLayoutPanel UND setzt den Placeholder korrekt
                 dokuListView.Items.Clear();
                 AgeLabel_MaskedTB_Clear();
                 tabPageDoku.ImageIndex = 3;
@@ -752,6 +747,43 @@ public partial class FrmAdressen : Form
         }
         catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); }
         finally { ignoreTextChange = false; }
+    }
+
+    private async Task LoadDetailsAsync(Adresse adresse)
+    {
+        if (_context == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var entry = _context.Entry(adresse);
+
+            // Explizites Nachladen der Gruppen, falls noch nicht geschehen
+            if (!entry.Collection(a => a.Gruppen).IsLoaded)
+            {
+                await entry.Collection(a => a.Gruppen).LoadAsync();
+            }
+
+            // Explizites Nachladen der Dokumente
+            if (!entry.Collection(a => a.Dokumente).IsLoaded)
+            {
+                await entry.Collection(a => a.Dokumente).LoadAsync();
+            }
+
+            // Sobald die Daten da sind, die UI-Elemente im Main-Thread aktualisieren
+            // (Wir prüfen, ob der User nicht schon zum nächsten Kontakt weitergeklickt hat)
+            if (addressBSource.Current == adresse)
+            {
+                LoadGroupsForCurrentAddress(); // Deine Methode zum Zeichnen der Tags
+                UpdateDocumentListView(adresse); // Deine Methode für die Dokument-Liste
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Fehler beim asynchronen Detail-Laden: {ex.Message}");
+        }
     }
 
     private void UpdateDocumentListView(Adresse adresse) // Wird von AddressBindingSource_CurrentChanged aufgerufen
@@ -775,11 +807,12 @@ public partial class FrmAdressen : Form
     private void LoadGroupsForCurrentAddress()
     {
         curAddressMemberships.Clear();
-        if (addressBindingSource.Current is Adresse adresse)
+        if (addressBSource.Current is Adresse adresse)
         {
             foreach (var gruppe in adresse.Gruppen) { curAddressMemberships.Add(gruppe.Name); } // EF Core hat die Gruppen (hoffentlich via .Include) geladen
         }
         UpdateMembershipTags(); // UI aktualisieren
+        UpdateTagComboBoxDataSource(); // Zwingt die ComboBox, die zugewiesenen Gruppen auszublenden
     }
 
     private void AgeLabel_MaskedTB_Set(DateOnly date)
@@ -819,14 +852,34 @@ public partial class FrmAdressen : Form
         else { Text = appLong; }
     }
 
+    //private void ApplyColumnSettings(DataGridView dgv)
+    //{
+    //    var colCount = dgv.Columns.Count;
+    //    if (colCount == 0) { return; } // Nichts zu tun
+    //    for (var i = 0; i < colCount; i++)
+    //    {
+    //        if (i < _settings.HideColumnArr.Length) { dgv.Columns[i].Visible = !_settings.HideColumnArr[i]; }
+    //        if (i < _settings.ColumnWidths.Length) { dgv.Columns[i].Width = Math.Max(20, _settings.ColumnWidths[i]); }
+    //    }
+    //}
+
     private void ApplyColumnSettings(DataGridView dgv)
     {
         var colCount = dgv.Columns.Count;
-        if (colCount == 0) { return; } // Nichts zu tun
-        for (var i = 0; i < colCount; i++)
+        if (colCount == 0) { return; }
+
+        dgv.SuspendLayout(); // Grid einfrieren, verhindert Layout-Kettenreaktion
+        try
         {
-            if (i < _settings.HideColumnArr.Length) { dgv.Columns[i].Visible = !_settings.HideColumnArr[i]; }
-            if (i < _settings.ColumnWidths.Length) { dgv.Columns[i].Width = Math.Max(20, _settings.ColumnWidths[i]); }
+            for (var i = 0; i < colCount; i++)
+            {
+                if (i < _settings.HideColumnArr.Length) { dgv.Columns[i].Visible = !_settings.HideColumnArr[i]; }
+                if (i < _settings.ColumnWidths.Length) { dgv.Columns[i].Width = Math.Max(20, _settings.ColumnWidths[i]); }
+            }
+        }
+        finally
+        {
+            dgv.ResumeLayout(); // Grid neu zeichnen
         }
     }
 
@@ -834,101 +887,129 @@ public partial class FrmAdressen : Form
 
     private void FrmAdressen_Resize(object sender, EventArgs e)
     {
-        flexiTSStatusLabel.Width = 244 + splitContainer.SplitterDistance - 536;
-        searchTSTextBox.Width = 202 + splitContainer.SplitterDistance - 536 - (tsClearLabel.Visible ? tsClearLabel.Width : 0);
+        UpdateStatusLabelWidth();  // flexiTSStatusLabel.Width = 244 + splitContainer.SplitterDistance - 536;
+        UpdateSearchBoxWidth();  // searchTSTextBox.Width = 202 + splitContainer.SplitterDistance - 536 - (tsClearLabel.Visible ? tsClearLabel.Width : 0);
     }
 
     private void SearchTSTextBox_TextChanged(object sender, EventArgs e)
     {
         if (!searchTSTextBox.Focused || ignoreSearchChange) { return; } // Nur reagieren, wenn der User tippt
-        tsClearLabel.Visible = searchTSTextBox.TextBox.Text.Length > 0;  // "X"-Button Logik
+        tsClearLabel.Visible = !string.IsNullOrWhiteSpace(searchTSTextBox.Text);
+        flexiTSStatusLabel.Text = string.Empty;
         searchTimer.Stop();  // Laufenden Timer abbrechen
         searchTimer.Start();
     }
 
-    private void ApplyGlobalSearch(string searchText)
+    private void ApplyGlobalSearch(string searchText, bool jumpToFirstRow = true)
     {
-        var term = searchText.Trim().ToLower();  // ToLower für case-insensitive Suche ist evtl. nicht nötig wg. COLLATE NOCASE in AdressenDbContext
+        var term = searchText.Trim().ToLowerInvariant();
         var isSearchEmpty = string.IsNullOrWhiteSpace(term);
+        var terms = term.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        var isAddressTab = tabControl.SelectedTab == addressTabPage;
+        var activeBs = isAddressTab ? addressBSource : contactBSource;
+        var activeDgv = isAddressTab ? addressDGV : contactDGV;
+
+        if (activeBs == null || activeDgv == null) { return; }
+
+        if (activeBs.Current != null)
+        {
+            activeBs.EndEdit();
+        }
+
         _isFiltering = true;
-
-        BindingSource? activeBs = null;
-        DataGridView? activeDGV = null;
-
-        if (tabControl.SelectedTab == addressTabPage)
-        {
-            activeBs = addressBindingSource;
-            activeDGV = addressDGV;
-        }
-        else if (tabControl.SelectedTab == contactTabPage)
-        {
-            activeBs = contactBindingSource;
-            activeDGV = contactDGV;
-        }
-
-        if (activeBs == null || activeDGV == null)
-        {
-            _isFiltering = false;
-            return;
-        }
-
-        // WICHTIG 1: Laufende Editierung beenden, sonst entstehen Geister-Zeilen
-        activeBs.EndEdit();
-
-        // WICHTIG 2: Während gesucht wird, darf der User keine neuen Zeilen anlegen
-        // Das verhindert das "Aufploppen" leerer Zeilen beim Backspace
-        activeDGV.AllowUserToAddRows = isSearchEmpty;
-
-        var currencyManager = BindingContext?[activeBs] as CurrencyManager;
-        //currencyManager?.SuspendBinding(); // Nicht verwenden wenn DataSource der BindingSource getauscht wird!
 
         try
         {
-            // --- FALL A: SQL ADRESSEN ---
-            if (tabControl.SelectedTab == addressTabPage && _context != null)
+            activeDgv.SuspendLayout();
+
+            if (isAddressTab && _context != null)
             {
-                if (isSearchEmpty)  // Reset: Alle lokalen Daten anzeigen
-                {
-                    addressBindingSource.DataSource = _context.Adressen.Local.ToBindingList();
-                    filterRemoveToolStripMenuItem.Visible = false;
-                }
-                else
-                {
-                    var filteredList = _context.Adressen.Local.Where(a => a.SearchText.Contains(term)).ToList();
-                    addressBindingSource.DataSource = filteredList;
-                    filterRemoveToolStripMenuItem.Visible = true;
-                }
-                UpdateAddressStatusBar();
-                if (addressBindingSource.Current != null) { ShowPhotoInPictureBoxy(addressBindingSource.Current); }
-            }
-            // --- FALL B: GOOGLE KONTAKTE ---
-            else if (tabControl.SelectedTab == contactTabPage && _allGoogleContacts != null)
-            {
+                var source = _context.Adressen.Local;
+
+                // 1. Wir bestimmen die Liste explizit als IList, um den Bindungs-Fehler zu vermeiden
+                // WinForms braucht eine konkrete Liste für die Metadaten.
+                System.Collections.IList filtered;
                 if (isSearchEmpty)
                 {
-                    contactBindingSource.DataSource = _allGoogleContacts;
-                    filterRemoveToolStripMenuItem.Visible = false;
+                    filtered = source.ToBindingList();
                 }
                 else
                 {
-                    var filteredList = _allGoogleContacts.Where(c => c.SearchText.Contains(term)).ToList();
-                    contactBindingSource.DataSource = filteredList;
-                    filterRemoveToolStripMenuItem.Visible = true;
+                    filtered = source.Where(a => terms.All(t => a.SearchText.Contains(t))).ToList();
+                }
+
+                // 2. Flackerschutz: Nur bei echten Änderungen die DataSource tauschen
+                if (activeBs.DataSource is not System.Collections.IList currentList || !currentList.Cast<Adresse>().SequenceEqual(filtered.Cast<Adresse>()))
+                {
+                    activeBs.DataSource = filtered;
+                }
+                UpdateAddressStatusBar();
+            }
+            else if (!isAddressTab && _allGoogleContacts != null)
+            {
+                System.Collections.IList filtered;
+                if (isSearchEmpty)
+                {
+                    filtered = _allGoogleContacts;
+                }
+                else
+                {
+                    filtered = _allGoogleContacts.Where(c => terms.All(t => c.SearchText.Contains(t))).ToList();
+                }
+
+                if (activeBs.DataSource is not System.Collections.IList currentList || !currentList.Cast<Contact>().SequenceEqual(filtered.Cast<Contact>()))
+                {
+                    activeBs.DataSource = filtered;
                 }
                 UpdateContactStatusBar();
-                if (contactBindingSource.Current is Contact selectedContact) { ShowPhotoInPictureBoxy(selectedContact); }
             }
         }
-        catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); }
+        catch (Exception ex)
+        {
+            Utils.ErrTaskDlg(Handle, ex);
+        }
         finally
         {
-            //currencyManager?.ResumeBinding(); // Nicht verwenden wenn DataSource der BindingSource getauscht wird!
+            activeDgv.ResumeLayout();
             _isFiltering = false;
-            if (tabControl.SelectedTab == contactTabPage && !isSearchEmpty) // Snapshot zurücksetzen nur bei Google Kontakten
+
+            if (activeBs.Count > 0)
             {
-                _lastActiveContact = contactBindingSource.Current as Contact;
-                _originalContactSnapshot = _lastActiveContact != null ? (Contact)_lastActiveContact.Clone() : null;
+                var currentEntry = activeBs.Current;
+                var shouldFocusGrid = !searchTSTextBox.Focused;
+
+                _ = activeDgv.InvokeAsync(() =>
+                {
+                    if (jumpToFirstRow)
+                    {
+                        SyncGridToPosition(activeDgv, activeBs, 0, shouldFocusGrid);
+                    }
+
+                    if (_lastProcessedEntry != currentEntry)
+                    {
+                        _lastProcessedEntry = currentEntry;
+                        activeBs.ResetCurrentItem();
+
+                        if (isAddressTab)
+                        {
+                            AddressBindingSource_CurrentChanged(null, EventArgs.Empty);
+                        }
+                        else
+                        {
+                            ContactBindingSource_CurrentChanged(null, EventArgs.Empty);
+                        }
+                    }
+                });
             }
+            else
+            {
+                _lastProcessedEntry = null;
+                if (isAddressTab) { AddressBindingSource_CurrentChanged(null, EventArgs.Empty); }
+                else { ContactBindingSource_CurrentChanged(null, EventArgs.Empty); }
+            }
+
+            UpdateFilterUIState();
         }
     }
 
@@ -936,27 +1017,70 @@ public partial class FrmAdressen : Form
     {
         if (_context == null) { return; }
         var totalCount = _context.Adressen.Local.Count;
-        var visibleCount = addressBindingSource.Count;
+        var visibleCount = addressBSource.Count;
         toolStripStatusLabel.Text = visibleCount == totalCount ? $"{totalCount} Adressen" : $"{visibleCount}/{totalCount} Adressen";
-        if (visibleCount > 0 && addressDGV.Rows.Count > 0)
+    }
+
+    private void SelectFirstAddressRow()
+    {
+        if (addressBSource.Count > 0 && addressDGV.Rows.Count > 0)
         {
             addressDGV.ClearSelection();
+            var firstCol = addressDGV.Columns.GetFirstColumn(DataGridViewElementStates.Visible);
+            if (firstCol != null) { addressDGV.CurrentCell = addressDGV.Rows[0].Cells[firstCol.Index]; }
             addressDGV.Rows[0].Selected = true;
+            addressBSource.Position = 0;
         }
+    }
+
+    private void SyncGridToPosition(DataGridView grid, BindingSource bs, int index, bool setFocus = false)
+    {
+        if (IsDisposed || grid.RowCount <= index || index < 0) { return; }
+        try
+        {
+            if (setFocus) { grid.Focus(); }
+            grid.ClearSelection();
+
+            var firstCol = grid.Columns.GetFirstColumn(DataGridViewElementStates.Visible);
+            if (firstCol is not null) { grid.CurrentCell = grid.Rows[index].Cells[firstCol.Index]; }
+
+            grid.Rows[index].Selected = true;
+            bs.Position = index;
+
+            var firstVisible = grid.FirstDisplayedScrollingRowIndex;
+            if (firstVisible >= 0)
+            {
+                var fullyVisibleRows = grid.DisplayedRowCount(true);
+                var lastVisible = firstVisible + fullyVisibleRows - 1;
+
+                // Nur scrollen, wenn die Zeile NICHT vollständig im aktuellen Sichtfeld liegt
+                if (index < firstVisible || index > lastVisible)
+                {
+                    var displayedRows = grid.DisplayedRowCount(false);
+                    if (displayedRows > 0)
+                    {
+                        var targetTopIndex = index - (displayedRows / 2);
+                        targetTopIndex = Math.Max(0, Math.Min(targetTopIndex, grid.RowCount - 1));
+                        grid.FirstDisplayedScrollingRowIndex = targetTopIndex;
+                    }
+                }
+            }
+        }
+        catch { }  // Stille Korrektur
     }
 
     private void UpdateContactStatusBar()
     {
         if (_allGoogleContacts == null) { return; }
         var total = _allGoogleContacts.Count;
-        var visible = contactBindingSource.Count;
+        var visible = contactBSource.Count;
         toolStripStatusLabel.Text = visible == total ? $"{total} Google Kontakte" : $"{visible}/{total} Google Kontakte";
     }
 
     private async void SaveTSButton_Click(object sender, EventArgs e)
     {
         // 1. Fall: Adressen-Tab
-        if (tabControl.SelectedTab == addressTabPage && addressBindingSource?.Current is Adresse)
+        if (tabControl.SelectedTab == addressTabPage && addressBSource?.Current is Adresse)
         {
             var result = await SaveSQLDatabaseAsync(false, true);
             if (result == DialogResult.Yes || result == DialogResult.None)
@@ -967,7 +1091,7 @@ public partial class FrmAdressen : Form
         }
 
         // 2. Fall: Kontakt-Tab (Guard Clause: Wenn falscher Tab oder falscher Datensatz -> Abbruch)
-        if (tabControl.SelectedTab != contactTabPage || contactBindingSource.Current != _lastActiveContact)
+        if (tabControl.SelectedTab != contactTabPage || contactBSource.Current != _lastActiveContact)
         {
             Console.Beep();
             return;
@@ -983,7 +1107,7 @@ public partial class FrmAdressen : Form
         //bool photoChanged = false;
         //if (contactDGV.CurrentRow?.IsNewRow == true) { photoChanged = true; }
 
-        contactBindingSource.EndEdit();
+        contactBSource.EndEdit();
         var changedFields = contactToSave.GetChangedFields(_originalContactSnapshot);
         //if (contactToSave is new Contact) { }
         //var photoChanged = changedFields.Remove("photos");
@@ -1011,12 +1135,9 @@ public partial class FrmAdressen : Form
         if (success)
         {
             saveTSButton.Enabled = false;
-            contactBindingSource.ResetBindings(false);
+            contactBSource.ResetBindings(false);
         }
     }
-
-    private void TbNotizen_SizeChanged(object sender, EventArgs e) => NativeMethods.ShowScrollBar(tbNotizen.Handle, 1, TextRenderer.MeasureText(tbNotizen.Text, tbNotizen.Font,
-        new Size(tbNotizen.Width - SystemInformation.VerticalScrollBarWidth, int.MaxValue), TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl).Height > tbNotizen.Height);
 
     private async void NewTSButton_Click(object sender, EventArgs e)
     {
@@ -1037,15 +1158,15 @@ public partial class FrmAdressen : Form
                 var newContact = new Contact();
 
                 // 3. Hinzufügen 
-                contactBindingSource.Add(newContact); // Löst evtl. Events aus -> werden durch Lock ignoriert
-                contactBindingSource.ResetBindings(false);
+                contactBSource.Add(newContact); // Löst evtl. Events aus -> werden durch Lock ignoriert
+                contactBSource.ResetBindings(false);
 
-                var realIndex = contactBindingSource.IndexOf(newContact);
+                var realIndex = contactBSource.IndexOf(newContact);
 
                 if (realIndex >= 0)
                 {
                     // 4. Position wechseln
-                    contactBindingSource.Position = realIndex; // Löst RowValidating aus -> wird durch Lock ignoriert
+                    contactBSource.Position = realIndex; // Löst RowValidating aus -> wird durch Lock ignoriert
 
                     if (contactDGV.RowCount > realIndex)
                     {
@@ -1055,11 +1176,12 @@ public partial class FrmAdressen : Form
                 }
 
                 // 5. Interne Referenzen auf den NEUEN Kontakt biegen
+                _lastProcessedEntry = null; // UI-Update erzwingen
                 _lastActiveContact = newContact;
                 _originalContactSnapshot = (Contact)newContact.Clone();
 
                 // UI Updates...
-                ShowPhotoInPictureBoxy(newContact);
+                ShowPhotoInPictureBox(newContact);
                 UpdateMembershipTags();
                 UpdateSaveButton();
             }
@@ -1067,10 +1189,11 @@ public partial class FrmAdressen : Form
 
             if (cbAnrede.CanFocus) { cbAnrede.Focus(); }
         }
-        else if (tabControl.SelectedTab == addressTabPage && addressBindingSource != null)
+        else if (tabControl.SelectedTab == addressTabPage && addressBSource != null)
         {
-            addressBindingSource.AddNew();  // noch nicht fest in die zugrunde liegende BindingList "committed".
-            addressBindingSource.EndEdit(); // dadurch wird der Status im EF ChangeTracker zuverlässig auf 'Added' gesetzt
+            _lastProcessedEntry = null; // UI-Update erzwingen
+            addressBSource.AddNew();  // noch nicht fest in die zugrunde liegende BindingList "committed".
+            addressBSource.EndEdit(); // dadurch wird der Status im EF ChangeTracker zuverlässig auf 'Added' gesetzt
             UpdateSaveButton();
             if (cbAnrede.CanFocus) { cbAnrede.Focus(); }
         }
@@ -1090,7 +1213,7 @@ public partial class FrmAdressen : Form
                 // ==============================================================================
                 // FALL 1: Google Kontakt duplizieren
                 // ==============================================================================
-                if (tabControl.SelectedTab == contactTabPage && contactBindingSource.Current is Contact originalContact)
+                if (tabControl.SelectedTab == contactTabPage && contactBSource.Current is Contact originalContact)
                 {
                     // Klonen (ResourceName/ETag leeren für neuen Datensatz)
                     var clone = (Contact)originalContact.Clone();
@@ -1103,13 +1226,14 @@ public partial class FrmAdressen : Form
 
                     // Sortieren und Bindings aktualisieren
                     Utils.SortContacts(_allGoogleContacts);
-                    contactBindingSource.ResetBindings(false);
+                    contactBSource.ResetBindings(false);
 
                     // Position finden und ansteuern
                     var newIndex = _allGoogleContacts.IndexOf(clone);
                     if (newIndex >= 0)
                     {
-                        contactBindingSource.Position = newIndex;
+                        _lastProcessedEntry = null; // UI-Update erzwingen
+                        contactBSource.Position = newIndex;
 
                         if (contactDGV.RowCount > 0 && newIndex < contactDGV.RowCount)
                         {
@@ -1138,7 +1262,7 @@ public partial class FrmAdressen : Form
                 // ==============================================================================
                 // FALL 2: Lokale Adresse duplizieren
                 // ==============================================================================
-                else if (tabControl.SelectedTab == addressTabPage && addressBindingSource?.Current is Adresse originalAdresse && _context != null)
+                else if (tabControl.SelectedTab == addressTabPage && addressBSource?.Current is Adresse originalAdresse && _context != null)
                 {
                     // Sauberes EF-Cloning via AsNoTracking
                     var duplikat = _context.Adressen
@@ -1151,15 +1275,16 @@ public partial class FrmAdressen : Form
                         return;
                     }
 
+                    _lastProcessedEntry = null;
                     duplikat.Id = 0;
                     duplikat.Foto?.Id = 0;
 
                     // Einfügeposition bestimmen
-                    var insertIndex = Utils.GetAddressInsertIndex(addressBindingSource, duplikat);
+                    var insertIndex = Utils.GetAddressInsertIndex(addressBSource, duplikat);
 
                     // In BindingSource einfügen
-                    addressBindingSource.Insert(insertIndex, duplikat);
-                    addressBindingSource.Position = insertIndex;
+                    addressBSource.Insert(insertIndex, duplikat);
+                    addressBSource.Position = insertIndex;
 
                     // UI Scrollen & Fokus
                     if (addressDGV.RowCount > 0 && insertIndex < addressDGV.RowCount)
@@ -1200,7 +1325,7 @@ public partial class FrmAdressen : Form
         // ==============================================================================
         // FALL 1: Von Google (Contact) -> Lokal (Adresse)
         // ==============================================================================
-        if (tabControl.SelectedTab == contactTabPage && contactBindingSource.Current is Contact selectedGoogleContact)
+        if (tabControl.SelectedTab == contactTabPage && contactBSource.Current is Contact selectedGoogleContact)
         {
             // A. Sofortiges Feedback
             tabControl.SelectedTab = addressTabPage;
@@ -1214,7 +1339,7 @@ public partial class FrmAdressen : Form
             {
                 if (addressDGV.RowCount > 0)
                 {
-                    var currentIdx = addressBindingSource.Position;
+                    var currentIdx = addressBSource.Position;
                     if (currentIdx >= 0 && currentIdx < addressDGV.RowCount)
                     {
                         // 1. Scrollen (funktioniert immer)
@@ -1244,7 +1369,7 @@ public partial class FrmAdressen : Form
         // ==============================================================================
         // FALL 2: Von Lokal (Adresse) -> Google (Contact)
         // ==============================================================================
-        else if (tabControl.SelectedTab == addressTabPage && addressBindingSource.Current is Adresse selectedLocalAddress)
+        else if (tabControl.SelectedTab == addressTabPage && addressBSource.Current is Adresse selectedLocalAddress)
         {
             // A. Sofortiges Feedback
             tabControl.SelectedTab = contactTabPage;
@@ -1258,7 +1383,7 @@ public partial class FrmAdressen : Form
             {
                 if (contactDGV.RowCount > 0)
                 {
-                    var currentIdx = contactBindingSource.Position;
+                    var currentIdx = contactBSource.Position;
                     if (currentIdx >= 0 && currentIdx < contactDGV.RowCount)
                     {
                         // 1. Scrollen
@@ -1269,10 +1394,7 @@ public partial class FrmAdressen : Form
 
                         // 3. Fokus auf erste SICHTBARE Zelle setzen (Fix für den Absturz)
                         var firstVisibleCol = contactDGV.Columns.GetFirstColumn(DataGridViewElementStates.Visible);
-                        if (firstVisibleCol != null)
-                        {
-                            contactDGV.CurrentCell = contactDGV.Rows[currentIdx].Cells[firstVisibleCol.Index];
-                        }
+                        if (firstVisibleCol != null) { contactDGV.CurrentCell = contactDGV.Rows[currentIdx].Cells[firstVisibleCol.Index]; }
                     }
                 }
 
@@ -1280,15 +1402,9 @@ public partial class FrmAdressen : Form
                 saveTSButton.Enabled = false;
                 flexiTSStatusLabel.Text = "Kontakt erfolgreich zu Google kopiert.";
             }
-            else
-            {
-                tabControl.SelectedTab = addressTabPage;
-            }
+            else { tabControl.SelectedTab = addressTabPage; }
         }
-        else
-        {
-            Console.Beep();
-        }
+        else { Console.Beep(); }
     }
 
     private async void DeleteTSButton_Click(object sender, EventArgs e)
@@ -1296,18 +1412,20 @@ public partial class FrmAdressen : Form
         // 1. Der Gatekeeper: Prüft auf ungespeicherte Änderungen
         await CheckContactChanges(async () =>
         {
-            if (tabControl.SelectedTab == contactTabPage && contactBindingSource.Current is Contact googleKontakt)
+            // === FALL A: GOOGLE KONTAKTE ===
+            if (tabControl.SelectedTab == contactTabPage && contactBSource.Current is Contact googleKontakt)
             {
                 var (askBefore, deleteNow) = Utils.AskBeforeDeleteContact(Handle, googleKontakt, _settings.AskBeforeDelete, false);
                 _settings.AskBeforeDelete = askBefore;
 
-                if (!deleteNow) { return; }
+                if (!deleteNow)
+                {
+                    return;
+                }
 
-                // Lock setzen
                 isSelectionChanging = true;
                 try
                 {
-                    // Aufruf über den TaskDialog aus der Utils-Klasse
                     var success = await Utils.RunWithProgressDialogAsync(
                         this,
                         "Kontakt löschen",
@@ -1317,41 +1435,61 @@ public partial class FrmAdressen : Form
                             await DeleteGoogleContactAsync(googleKontakt, token);
                         });
 
-                    // Nur bei Erfolg aus der Liste entfernen
                     if (success)
                     {
-                        _allGoogleContacts?.Remove(googleKontakt);
-                        contactBindingSource.RemoveCurrent();
+                        _lastProcessedEntry = null; // Cache leeren!
+                        contactBSource.Remove(googleKontakt);
 
-                        // State-Reset
                         _lastActiveContact = null;
                         _originalContactSnapshot = null;
 
                         UpdateContactStatusBar();
+
+                        // Synchronisation: Wir springen auf die neue Position (die BindingSource bleibt am gleichen Index)
+                        if (contactBSource.Count > 0)
+                        {
+                            var newPos = contactBSource.Position;
+                            _ = contactDGV.InvokeAsync(() => SyncGridToPosition(contactDGV, contactBSource, newPos, true));
+                        }
                     }
                 }
-                // Ein explizites Catch ist hier nicht zwingend nötig, da RunWithProgressDialogAsync 
-                // Exceptions bereits abfängt und per TaskDialog anzeigt.
                 finally
                 {
                     isSelectionChanging = false;
                 }
             }
-            else if (tabControl.SelectedTab == addressTabPage && addressBindingSource.Current is Adresse adresseZumLoeschen && _context != null)
+            // === FALL B: LOKALE ADRESSEN ===
+            else if (tabControl.SelectedTab == addressTabPage && addressBSource.Current is Adresse adresseZumLoeschen && _context != null)
             {
-                if (addressBindingSource.IsBindingSuspended || adresseZumLoeschen == null) { return; }
-                if (addressDGV.CurrentRow?.IsNewRow == true) { return; }
-                addressBindingSource.EndEdit();
+                if (addressBSource.IsBindingSuspended || adresseZumLoeschen == null)
+                {
+                    return;
+                }
+
+                if (addressDGV.CurrentRow?.IsNewRow == true)
+                {
+                    return;
+                }
+
+                addressBSource.EndEdit();
                 var deleteFinal = true;
+
                 if (_settings.AskBeforeDelete)
                 {
                     var (askBefore, deleteNow) = Utils.AskBeforeDeleteAddress(Handle, adresseZumLoeschen, _settings.AskBeforeDelete);
                     _settings.AskBeforeDelete = askBefore;
                     deleteFinal = deleteNow;
                 }
-                if (!deleteFinal) { return; }
+
+                if (!deleteFinal)
+                {
+                    return;
+                }
+
+                isSelectionChanging = true; // Guard jetzt auch hier für lokale Adressen!
                 try
                 {
+                    _lastProcessedEntry = null; // Cache leeren!
                     var entry = _context.Entry(adresseZumLoeschen);
                     var isNewRecord = entry.State == EntityState.Added || adresseZumLoeschen.Id == 0;
 
@@ -1360,67 +1498,102 @@ public partial class FrmAdressen : Form
                         if (adresseZumLoeschen.Foto is not null)
                         {
                             var fotoEntry = _context.Entry(adresseZumLoeschen.Foto);
-                            if (fotoEntry.State == EntityState.Added || adresseZumLoeschen.Foto.Id == 0) { fotoEntry.State = EntityState.Detached; }
+                            if (fotoEntry.State == EntityState.Added || adresseZumLoeschen.Foto.Id == 0)
+                            {
+                                fotoEntry.State = EntityState.Detached;
+                            }
                         }
                         entry.State = EntityState.Detached;
                     }
-                    else { _context.Adressen.Remove(adresseZumLoeschen); }
+                    else
+                    {
+                        _context.Adressen.Remove(adresseZumLoeschen);
+                    }
 
-                    if (addressBindingSource.Contains(adresseZumLoeschen)) { addressBindingSource.Remove(adresseZumLoeschen); }
+                    if (addressBSource.Contains(adresseZumLoeschen))
+                    {
+                        addressBSource.Remove(adresseZumLoeschen);
+                    }
+
                     UpdateSaveButton();
                     UpdateAddressStatusBar();
 
-                    if (addressBindingSource.Count > 0) { addressDGV.Rows[addressBindingSource.Position].Selected = true; }
+                    // Synchronisation: Fokus sicher auf das nächste Element setzen
+                    if (addressBSource.Count > 0)
+                    {
+                        var newPos = addressBSource.Position;
+                        _ = addressDGV.InvokeAsync(() => SyncGridToPosition(addressDGV, addressBSource, newPos, true));
+                    }
                 }
-                catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); }
+                catch (Exception ex)
+                {
+                    Utils.ErrTaskDlg(Handle, ex);
+                }
+                finally
+                {
+                    isSelectionChanging = false;
+                }
             }
-            else { Console.Beep(); }
+            else
+            {
+                Console.Beep();
+            }
         });
     }
 
     private void ExecuteAndPreserveSelection<T>(BindingSource bindingSource, DataGridView grid, Action dataUpdateAction) where T : class
     {
-        T? currentItem = null;  // aktuelles Objekt merken
-        if (bindingSource.Current is not null) { currentItem = bindingSource.Current as T; }
+        if (grid == null || bindingSource == null)
+        {
+            return;
+        }
+
+        // 1. Snapshot VOR der Änderung (Referenz sichern)
+        // Das 'currentItem' wird hier deklariert und behält seinen Wert
+        var currentItem = bindingSource.Current as T;
+
         var currencyManager = BindingContext?[bindingSource] as CurrencyManager;
         currencyManager?.SuspendBinding();
+
         try
         {
-            grid?.CurrentCell = null;
+            grid.CurrentCell = null;
             dataUpdateAction();
         }
-        finally { currencyManager?.ResumeBinding(); }
-        if (currentItem != null)  // Selektion wiederherstellen
+        finally
         {
-            var newIndex = bindingSource.IndexOf(currentItem);
+            currencyManager?.ResumeBinding();
+        }
+
+        // 3. Selektion mit Zentrierung wiederherstellen
+        // Hier nutzen wir den modernen Pattern Matching Check
+        if (currentItem is T target)
+        {
+            var newIndex = bindingSource.IndexOf(target);
             if (newIndex >= 0)
             {
-                bindingSource.Position = newIndex;
-
-                if (grid != null && grid.RowCount > newIndex)
-                {
-                    grid.BeginInvoke(new Action(() =>
-                    {
-                        if (newIndex >= grid.RowCount || newIndex < 0) { return; }
-                        var row = grid.Rows[newIndex];
-                        if (!FormStateManager.RowIsVisible(grid, row)) { grid.FirstDisplayedScrollingRowIndex = newIndex; }  // Scrollen (nur wenn nötig)
-                        grid.ClearSelection(); // Alte Selektionen entfernen
-                        row.Selected = true;   // Diese Zeile markieren
-                        //var firstVisibleCol = grid.Columns.Cast<DataGridViewColumn>().FirstOrDefault(c => c.Visible);
-                        //if (firstVisibleCol != null) { grid.CurrentCell = row.Cells[firstVisibleCol.Index]; }
-                    }));
-                }
+                var shouldFocusGrid = !searchTSTextBox.Focused;
+                _ = grid.InvokeAsync(() => SyncGridToPosition(grid, bindingSource, newIndex, shouldFocusGrid));
             }
+        }
+        else if (grid.RowCount > 0)
+        {
+            _ = grid.InvokeAsync(SelectFirstAddressRow);
         }
     }
 
     private async void FrmAdressen_FormClosing(object sender, FormClosingEventArgs e)
     {
-        // 1. Laufende Google-Requests sofort abbrechen
-        _googleCts?.Cancel();
-
-        // 2. Rekursions-Check: Wenn wir am Ende der Methode Close() rufen, springen wir hier raus
+        // 1. Rekursions-Check: Wenn wir am Ende der Methode Close() rufen, springen wir hier raus
+        // und Windows darf das Fenster nun endgültig schließen.
         if (_isClosing) { return; }
+
+        // 2. DAS WICHTIGSTE: Den synchronen Schließvorgang SOFORT stoppen!
+        // Nur so überlebt das Fenster die asynchronen Speicher-Dialoge.
+        e.Cancel = true;
+
+        // 3. Laufende Google-Requests sofort abbrechen
+        _googleCts?.Cancel();
 
         // -------------------------------------------------------------
         // SCHRITT A: Prüfungen durchführen (Abbruch ermöglichen)
@@ -1430,30 +1603,21 @@ public partial class FrmAdressen : Form
         if (_context != null)
         {
             var result = await SaveSQLDatabaseAsync(false, false, true);
-            if (result == DialogResult.Cancel)
-            {
-                e.Cancel = true;
-                return;
-            }
+            // Wenn der User abbricht, machen wir nichts weiter. 
+            // Das Fenster bleibt offen (da e.Cancel bereits auf true steht).
+            if (result == DialogResult.Cancel) { return; }
         }
 
         // Fall 2: Google Kontakte (Zentraler Gatekeeper)
-        // Wir übergeben 'isClosing: true', damit die Methode weiß, 
-        // dass sie keine UI-Resets (wie Focus) mehr machen muss.
+        // isClosing: true teilt dem Gatekeeper mit, dass keine UI-Resets mehr nötig sind
         var readyToCloseGoogle = await ContactChanges_Check(isClosing: true);
-        if (!readyToCloseGoogle)
-        {
-            e.Cancel = true;
-            return;
-        }
+        if (!readyToCloseGoogle) { return; }
 
         // -------------------------------------------------------------
         // SCHRITT B: Aufräumen und Endgültig Schließen
         // -------------------------------------------------------------
 
-        // Ab hier gibt es kein Zurück mehr: Wir brechen das aktuelle (synchrone) Schließen ab,
-        // um den asynchronen Cleanup-Prozess vollständig zu durchlaufen.
-        e.Cancel = true;
+        // Ab hier gibt es kein Zurück mehr. UI einfrieren für den Cleanup.
         AutoValidate = AutoValidate.Disable;
         Enabled = false;
         Cursor = Cursors.WaitCursor;
@@ -1466,20 +1630,26 @@ public partial class FrmAdressen : Form
             _googleCts?.Dispose();
             CloseDatabaseConnection();
 
-            addressBindingSource?.Dispose();
-            contactBindingSource?.Dispose();
+            addressBSource?.Dispose();
+            contactBSource?.Dispose();
 
             // Timer stoppen und entsorgen
             searchTimer?.Dispose();
             debounceTimer?.Dispose();
-            scrollTimer?.Dispose();
+            //scrollTimer?.Dispose();
         }
-        catch (Exception ex) { Debug.WriteLine($"Fehler beim Cleanup: {ex.Message}"); }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Fehler beim Cleanup: {ex.Message}");
+        }
         finally
         {
-            // 3. Finales Flag setzen, Cursor zurücksetzen und Schließen neu triggern
+            // 4. Finales Flag setzen, Cursor zurücksetzen und Schließen neu triggern
             _isClosing = true;
             Cursor = Cursors.Default;
+
+            // Jetzt rufen wir Close() erneut auf. Das Event feuert wieder,
+            // läuft aber oben in 'if (_isClosing) { return; }' rein und schließt die App sauber.
             Close();
         }
     }
@@ -1490,143 +1660,72 @@ public partial class FrmAdressen : Form
 
     private void AddressDGV_RowsRemoved(object sender, DataGridViewRowsRemovedEventArgs e) => toolStripStatusLabel.Text = addressDGV.RowCount.ToString() + " Adressen";
 
+    //private void ErzeugeGrussformeln()
+    //{
+    //    // Bereinigen der bestehenden Vorschläge in der TextBox
+    //    cbGrussformel.AutoCompleteCustomSource.Clear();
+
+    //    // Mapping erstellen
+    //    var pt = new List<(string Key, string Value)> { ("#vorname", tbVorname.Text), ("#nickname", tbNickname.Text), ("#nachname", tbNachname.Text), ("#titel", cbPraefix.Text) };
+
+    //    // Die Logik bleibt identisch, nur das Ziel ist nun die AutoCompleteCustomSource
+    //    cbGrussformel.AutoCompleteCustomSource.AddRange([.. grussformelList
+    //    .Select(s =>
+    //    {
+    //        var result = s;
+    //        foreach (var (key, value) in pt.Where(p => !string.IsNullOrWhiteSpace(p.Value))) { result = result.Replace(key, value); }
+    //        return result;
+    //    })
+    //    .Where(text => !text.Contains('#')) // Nur fertige Strings ohne Platzhalter
+    //    .Distinct()]);
+    //}
+
     private void ErzeugeGrussformeln()
     {
-        // Bereinigen der bestehenden Vorschläge in der TextBox
         cbGrussformel.AutoCompleteCustomSource.Clear();
 
-        // Mapping erstellen
-        var pt = new List<(string Key, string Value)> { ("#vorname", tbVorname.Text), ("#nickname", tbNickname.Text), ("#nachname", tbNachname.Text), ("#titel", cbPraefix.Text) };
+        // 1. Map erstellen (nur gefüllte Werte aufnehmen)
+        var replacements = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        // Die Logik bleibt identisch, nur das Ziel ist nun die AutoCompleteCustomSource
-        cbGrussformel.AutoCompleteCustomSource.AddRange([.. grussformelList
-        .Select(s =>
-        {
-            var result = s;
-            foreach (var (key, value) in pt.Where(p => !string.IsNullOrWhiteSpace(p.Value))) { result = result.Replace(key, value); }
-            return result;
-        })
-        .Where(text => !text.Contains('#')) // Nur fertige Strings ohne Platzhalter
-        .Distinct()]);
+        if (!string.IsNullOrWhiteSpace(tbVorname.Text)) { replacements["#vorname"] = tbVorname.Text; }
+        if (!string.IsNullOrWhiteSpace(tbNickname.Text)) { replacements["#nickname"] = tbNickname.Text; }
+        if (!string.IsNullOrWhiteSpace(tbNachname.Text)) { replacements["#nachname"] = tbNachname.Text; }
+        if (!string.IsNullOrWhiteSpace(cbPraefix.Text)) { replacements["#titel"] = cbPraefix.Text; }
+
+        if (replacements.Count == 0) { return; }
+
+        // 2. Einmaliger Durchlauf pro Grussformel
+        var suggestions = grussformelList
+            .Select(template =>
+            {
+                // Ersetzt alle gefundenen Platzhalter in einem Durchgang
+                return PlaceholderRegex().Replace(template, match =>
+                    replacements.TryGetValue(match.Value, out var replacement)
+                        ? replacement
+                        : match.Value);
+            })
+            .Where(text => !text.Contains('#')) // Nur fertige ohne restliche Platzhalter
+            .Distinct()
+            .ToArray();
+
+        if (suggestions.Length > 0) { cbGrussformel.AutoCompleteCustomSource.AddRange(suggestions); }
     }
 
-    private async void ImportToolStripMenuItem_Click(object sender, EventArgs e)
+    private void ImportToolStripMenuItem_Click(object sender, EventArgs e)
     {
-        var targetColumns = dataFields.ToList(); // Id, Dokument und Foto werden nicht importiert
-        var allowedColumns = new HashSet<string>(targetColumns, StringComparer.OrdinalIgnoreCase);
-        var btnCreateCSV = new TaskDialogButton("Beispiel-CSV erstellen");
-        var btnImportCSV = new TaskDialogButton("Import starten…");
-        var firstPage = new TaskDialogPage()
-        {
-            Caption = Application.ProductName,
-            Heading = "CSV-Import vorbereiten",
-            Text = $"Erwartete Spalten: {string.Join(", ", targetColumns)}\n\n" + "Die Spaltenreihenfolge ist beliebig. Gruppen sollten kommagetrennt angegeben werden.",
-            Icon = TaskDialogIcon.Information,
-            AllowCancel = true,
-            Buttons = { btnCreateCSV, btnImportCSV }
-        };
-        var result = TaskDialog.ShowDialog(this, firstPage);
-        if (result == btnCreateCSV)
-        {
-            CreateExampleCsv(targetColumns);
-            return;
-        }
-        else if (result != btnImportCSV) { return; }
-        openFileDialog.Filter = "CSV-Dateien (*.csv)|*.csv|Alle Dateien (*.*)|*.*";
-        openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        if (openFileDialog.ShowDialog() != DialogResult.OK || string.IsNullOrEmpty(openFileDialog.FileName)) { return; }
-        if (_context == null)
-        {
-            try
-            {
-                _databaseFilePath = Path.ChangeExtension(openFileDialog.FileName, ".adb");
-                await ConnectSQLDatabaseAsync(_databaseFilePath);
-            }
-            catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); return; }
-        }
-        var lines = Utils.ReadAsLines(openFileDialog.FileName).ToList();
-        if (lines.Count < 2) { return; }
-        var headers = lines[0].Split(';');
-        var unknownColumns = headers.Where(h => !string.IsNullOrEmpty(h) && !allowedColumns.Contains(h)).ToList();
-        if (unknownColumns.Count != 0)
-        {
-            Utils.MsgTaskDlg(Handle, "Abbruch", $"Unbekannte Spalten in CSV: {string.Join(", ", unknownColumns)}");
-            return;
-        }
-        if (addressBindingSource.Count > 0)
-        {
-            var (isYes, isNo, isCancelled) = Utils.YesNo_TaskDialog(this, appName, "Daten hinzufügen?", $"Möchten Sie in '{Path.GetFileName(_databaseFilePath)}' importieren?", "Importieren", "Abbrechen");
-            if (!isYes) { return; } // Logik: Nur bei 'Yes' weitermachen. Bei 'No' oder 'Escape' (Cancelled) abbrechen.
-            var headerMap = headers.Select((h, i) => new { Name = h, Index = i }).Where(x => !string.IsNullOrEmpty(x.Name)).ToDictionary(x => x.Name, x => x.Index);
-            var importCount = 0;
-            try
-            {
-                var currencyManager = BindingContext?[addressBindingSource] as CurrencyManager;
-                currencyManager?.SuspendBinding();  // UI-Update pausieren
-                foreach (var line in lines.Skip(1))
-                {
-                    var regex = new Regex(";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
-                    var fields = regex.Split(line);
-                    if (fields.Length < headers.Length) { continue; }
-                    var neueAdresse = new Adresse();
-                    foreach (var kvp in headerMap)
-                    {
-                        var val = fields[kvp.Value]?.Trim().Trim('"').Replace("\"\"", "\""); //  Value ist der Index in der CSV-Zeile; Doppelte Anführungszeichen im Text zu einem machen (CSV Standard)
-                        if (string.IsNullOrEmpty(val)) { continue; }
+        // Wir übergeben das vorhandene Array. "Gruppen" hängen wir an, damit der Nutzer auch kommagetrennte Gruppen mappen kann.
+        var availableFields = dataFields.ToList();
+        availableFields.Add("Gruppen");
 
-                        // Fall A: Gruppen-Relation (M:N)
-                        if (kvp.Key == "Gruppen") // Geändert von kvp.Name zu kvp.Key
-                        {
-                            var gruppenNamen = val.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                            foreach (var gName in gruppenNamen)
-                            {
-                                var gruppe = _context?.Gruppen.Local.FirstOrDefault(g => g.Name.Equals(gName, StringComparison.OrdinalIgnoreCase))
-                                             ?? _context?.Gruppen.FirstOrDefault(g => g.Name.Equals(gName, StringComparison.CurrentCultureIgnoreCase));
+        // Wir übergeben auch den aktuellen Datenbankpfad, falls der Nutzer "In aktuelle DB importieren" wählt
+        var importDialog = new FrmImportCsv(availableFields, _databaseFilePath);
 
-                                if (gruppe == null)
-                                {
-                                    gruppe = new Gruppe { Name = gName };
-                                    _context?.Gruppen.Add(gruppe);
-                                }
-                                neueAdresse.Gruppen.Add(gruppe);
-                            }
-                        }
-                        else if (kvp.Key == "Geburtstag") // Geändert von kvp.Name zu kvp.Key
-                        {
-                            if (DateTime.TryParse(val, out var dt)) { neueAdresse.Geburtstag = DateOnly.FromDateTime(dt); }
-                        }
-                        else  // Standard-Textfelder via Reflection
-                        {
-                            var prop = typeof(Adresse).GetProperty(kvp.Key); // Geändert von kvp.Name zu kvp.Key
-                            if (prop != null && prop.CanWrite) { prop.SetValue(neueAdresse, val); }
-                        }
-                    }
-                    _context?.Adressen.Add(neueAdresse);
-                    importCount++;
-                }
-                currencyManager?.ResumeBinding();
-                addressBindingSource.ResetBindings(false);  // UI-Update erzwingen
-                UpdateSaveButton(); // saveTSButton.Enabled = _context?.ChangeTracker.HasChanges() ?? false;
-                if (addressBindingSource.Count > 0) { addressBindingSource.MoveLast(); }
-                Utils.MsgTaskDlg(Handle, "Import erfolgreich", $"{importCount} Adressen wurden geladen.\nKlicken Sie auf 'Speichern', um die Änderungen in der Datenbank zu sichern.");
-            }
-            catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); }
-        }
-    }
-
-    private void CreateExampleCsv(List<string> columns)
-    {
-        var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        var filePath = Path.Combine(desktopPath, "adress_vorlage.csv");
-        try
+        if (importDialog.ShowDialog(this) == DialogResult.OK)
         {
-            using var writer = new StreamWriter(filePath, false, Encoding.UTF8);
-            writer.WriteLine(string.Join(";", columns));
-            writer.WriteLine("Herr;;Mustermann;Max;;;;Musterfirma;Hausmeister;Musterstraße 1;12345;Musterstadt;Deutschland;;;;12.05.1985;max@muster.de;;030123456;;0170123456;;;Notiztext;Freunde,Wichtig");
-
-            Utils.MsgTaskDlg(Handle, "Vorlage erstellt", $"Die Datei 'adress_vorlage.csv' wurde auf Ihrem Desktop gespeichert.");
+            // Wenn der Import (und ggf. das Anlegen einer neuen DB) erfolgreich war, verbinden wir uns neu bzw. laden die Ansicht neu.
+            var targetDbPath = importDialog.TargetDatabasePath;
+            _ = ConnectSQLDatabaseAsync(targetDbPath);
         }
-        catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); }
     }
 
     private void SearchTSTextBox_KeyDown(object sender, KeyEventArgs e)
@@ -1662,12 +1761,10 @@ public partial class FrmAdressen : Form
 
             if (File.Exists(file))
             {
-                if (addressBindingSource != null) { await SaveSQLDatabaseAsync(true); }
+                if (addressBSource != null) { await SaveSQLDatabaseAsync(true); }
                 //ConnectSQLDatabase(file);  // Erst wenn das Speichern fertig ist, geht es hier weiter:
                 await ConnectSQLDatabaseAsync(file);
-                ignoreSearchChange = true;
-                searchTSTextBox.TextBox.Clear();
-                ignoreSearchChange = false;
+                SetSearchTextIgnoreChange(string.Empty);
             }
             break; // Sobald eine Datei gefunden wurde, brechen wir ab
         }
@@ -1729,7 +1826,11 @@ public partial class FrmAdressen : Form
                 tabControl.SelectedIndex = tabControl.SelectedIndex == 1 ? 0 : 1;
                 return true;
             case Keys.F | Keys.Control:
-                if (dokuListView.Focused)
+                if (tbNotizen.Focused)
+                {
+                    OpenSearchDialog();
+                }
+                else if (dokuListView.Focused)
                 {
                     searchTextBox.Focus();
                     searchTextBox.SelectAll();
@@ -1775,17 +1876,11 @@ public partial class FrmAdressen : Form
                 EnvelopeTSButton_Click(null!, null!);
                 return true;
             case Keys.Z | Keys.Control:
-
-                if (tabControl.SelectedTab == addressTabPage && addressBindingSource != null) { RejectChangesToolStripMenuItem_Click(null!, null!); }
-                else { Console.Beep(); }
+                RejectChangesToolStripMenuItem_Click(null!, null!);
                 return true;
             case Keys.Delete | Keys.Control:
-                if (tabControl.SelectedTab == addressTabPage)
-                {
-                    DeleteTSButton_Click(null!, null!);
-                    return true;
-                }
-                else { return false; }
+                DeleteTSButton_Click(null!, null!);
+                return true;
             case Keys.Enter | Keys.Alt:
                 if (contactDGV.Focused)
                 {
@@ -1892,7 +1987,7 @@ public partial class FrmAdressen : Form
             {
                 if (!WordManager.IsWordInstalled)
                 {
-                    Utils.MsgTaskDlg(Handle, "Word fehlt", "Microsoft Word wurde nicht gefunden. Bitte installieren Sie es.");
+                    Utils.MsgTaskDlg(Handle, "Word fehlt", "Microsoft Word wurde nicht gefunden. Bitte installiere es.");
                     return;
                 }
                 WordProcess();
@@ -1901,7 +1996,7 @@ public partial class FrmAdressen : Form
             {
                 if (!WordManager.IsLibreOfficeInstalled)
                 {
-                    Utils.MsgTaskDlg(Handle, "LibreOffice fehlt", "LibreOffice Writer wurde nicht gefunden. Bitte installieren Sie es.");
+                    Utils.MsgTaskDlg(Handle, "LibreOffice fehlt", "LibreOffice Writer wurde nicht gefunden. Bitte installiere es.");
                     return;
                 }
                 LibreProcess();
@@ -1994,25 +2089,25 @@ public partial class FrmAdressen : Form
         bookmarkTextDictionary["Position"] = position;
 
         bookmarkTextDictionary["Praefix_Zwischenname_Nachname"] =
-            string.Join(" ", new[] { praefix, zwischen, nachname }.Where(s => !string.IsNullOrWhiteSpace(s)));
+                    string.Join(" ", new[] { praefix, zwischen, nachname }.Where(static s => !string.IsNullOrWhiteSpace(s)));
 
         bookmarkTextDictionary["Vorname_Zwischenname_Nachname"] =
-            string.Join(" ", new[] { vorname, zwischen, nachname }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            string.Join(" ", new[] { vorname, zwischen, nachname }.Where(static s => !string.IsNullOrWhiteSpace(s)));
 
         bookmarkTextDictionary["Vorname_Zwischenname_initial_Nachname"] =
-            string.Join(" ", new[] { vorname, zwischenInitial, nachname }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            string.Join(" ", new[] { vorname, zwischenInitial, nachname }.Where(static s => !string.IsNullOrWhiteSpace(s)));
 
         bookmarkTextDictionary["Praefix_Vorname_Zwischenname_Nachname"] =
-            string.Join(" ", new[] { praefix, vorname, zwischen, nachname }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            string.Join(" ", new[] { praefix, vorname, zwischen, nachname }.Where(static s => !string.IsNullOrWhiteSpace(s)));
 
         bookmarkTextDictionary["Anrede_Praefix_Vorname_Zwischenname_Nachname"] =
-            string.Join(" ", new[] { anrede, praefix, vorname, zwischen, nachname }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            string.Join(" ", new[] { anrede, praefix, vorname, zwischen, nachname }.Where(static s => !string.IsNullOrWhiteSpace(s)));
 
         bookmarkTextDictionary["Praefix_Vorname_Zwischenname_initial_Nachname"] =
-            string.Join(" ", new[] { praefix, vorname, zwischenInitial, nachname }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            string.Join(" ", new[] { praefix, vorname, zwischenInitial, nachname }.Where(static s => !string.IsNullOrWhiteSpace(s)));
 
         bookmarkTextDictionary["Anrede_Praefix_Vorname_Zwischenname_initial_Nachname"] =
-            string.Join(" ", new[] { anrede, praefix, vorname, zwischenInitial, nachname }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            string.Join(" ", new[] { anrede, praefix, vorname, zwischenInitial, nachname }.Where(static s => !string.IsNullOrWhiteSpace(s)));
 
         // Adressdaten
         bookmarkTextDictionary["Strasse"] = strasse; // "ss" statt "ß" ist in Keys sicherer
@@ -2055,8 +2150,8 @@ public partial class FrmAdressen : Form
 
     private void SwitchDataBinding(BindingSource targetSource)
     {
-        if (targetSource == null || (targetSource.DataSource == null && targetSource == contactBindingSource)) { return; }
-        var useNullConversion = targetSource == addressBindingSource;  // Unterscheidung: Lokale DB (null erlaubt) vs. Google (leerer String bevorzugt)
+        if (targetSource == null || (targetSource.DataSource == null && targetSource == contactBSource)) { return; }
+        var useNullConversion = targetSource == addressBSource;  // Unterscheidung: Lokale DB (null erlaubt) vs. Google (leerer String bevorzugt)
         foreach (var (control, dataMember) in editControlsDictionary)
         {
             control.DataBindings.Clear();
@@ -2089,7 +2184,6 @@ public partial class FrmAdressen : Form
 
     private void UpdateTextBoxAutoComplete(BindingSource targetSource)
     {
-        // Bereinigen der bestehenden Vorschlagslisten
         cbAnrede.AutoCompleteCustomSource.Clear();
         cbPraefix.AutoCompleteCustomSource.Clear();
         cbPLZ.AutoCompleteCustomSource.Clear();
@@ -2098,31 +2192,51 @@ public partial class FrmAdressen : Form
         cbSchlussformel.AutoCompleteCustomSource.Clear();
         cbGrussformel.AutoCompleteCustomSource.Clear();
 
-        if (targetSource == addressBindingSource && _context != null)
-        {
-            var localData = _context.Adressen.Local;
+        // HashSets ignorieren Duplikate blitzschnell und automatisch
+        var anreden = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var praefixe = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var plzs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var orte = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var laender = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var schlussformeln = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            // AddRange erwartet ein String-Array. Durch den Spread-Operator [.. ] 
-            // wird das Ergebnis der LINQ-Abfrage direkt in das passende Array konvertiert.
-            cbAnrede.AutoCompleteCustomSource.AddRange([.. localData.Select(a => a.Anrede ?? "").Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().Order()]);
-            cbPraefix.AutoCompleteCustomSource.AddRange([.. localData.Select(a => a.Praefix ?? "").Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().Order()]);
-            cbPLZ.AutoCompleteCustomSource.AddRange([.. localData.Select(a => a.PLZ ?? "").Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().Order()]);
-            cbOrt.AutoCompleteCustomSource.AddRange([.. localData.Select(a => a.Ort ?? "").Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().Order()]);
-            cbLand.AutoCompleteCustomSource.AddRange([.. localData.Select(a => a.Land ?? "").Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().Order()]);
-            cbSchlussformel.AutoCompleteCustomSource.AddRange([.. localData.Select(a => a.Schlussformel ?? "").Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().Order()]);
-        }
-        else if (targetSource == contactBindingSource && contactBindingSource.DataSource is BindingList<Contact> contactList)
+        if (targetSource == addressBSource && _context != null)
         {
-            cbAnrede.AutoCompleteCustomSource.AddRange([.. contactList.Select(c => c.Anrede ?? "").Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().Order()]);
-            cbPraefix.AutoCompleteCustomSource.AddRange([.. contactList.Select(c => c.Praefix ?? "").Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().Order()]);
-            cbPLZ.AutoCompleteCustomSource.AddRange([.. contactList.Select(c => c.PLZ ?? "").Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().Order()]);
-            cbOrt.AutoCompleteCustomSource.AddRange([.. contactList.Select(c => c.Ort ?? "").Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().Order()]);
-            cbLand.AutoCompleteCustomSource.AddRange([.. contactList.Select(c => c.Land ?? "").Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().Order()]);
-            cbSchlussformel.AutoCompleteCustomSource.AddRange([.. contactList.Select(c => c.Schlussformel ?? "").Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().Order()]);
-            // cbGrussformel.AutoCompleteCustomSource.AddRange([.. contactList.Select(c => c.Grussformel ?? "").Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().Order()]);
+            // Nur EIN Durchlauf durch die EF Core Daten
+            foreach (var item in _context.Adressen.Local)
+            {
+                if (!string.IsNullOrWhiteSpace(item.Anrede)) { anreden.Add(item.Anrede); }
+                if (!string.IsNullOrWhiteSpace(item.Praefix)) { praefixe.Add(item.Praefix); }
+                if (!string.IsNullOrWhiteSpace(item.PLZ)) { plzs.Add(item.PLZ); }
+                if (!string.IsNullOrWhiteSpace(item.Ort)) { orte.Add(item.Ort); }
+                if (!string.IsNullOrWhiteSpace(item.Land)) { laender.Add(item.Land); }
+                if (!string.IsNullOrWhiteSpace(item.Schlussformel)) { schlussformeln.Add(item.Schlussformel); }
+            }
         }
+        else if (targetSource == contactBSource && contactBSource.DataSource is BindingList<Contact> contactList)
+        {
+            // Nur EIN Durchlauf durch die Google Kontakte
+            foreach (var item in contactList)
+            {
+                if (!string.IsNullOrWhiteSpace(item.Anrede)) { anreden.Add(item.Anrede); }
+                if (!string.IsNullOrWhiteSpace(item.Praefix)) { praefixe.Add(item.Praefix); }
+                if (!string.IsNullOrWhiteSpace(item.PLZ)) { plzs.Add(item.PLZ); }
+                if (!string.IsNullOrWhiteSpace(item.Ort)) { orte.Add(item.Ort); }
+                if (!string.IsNullOrWhiteSpace(item.Land)) { laender.Add(item.Land); }
+                if (!string.IsNullOrWhiteSpace(item.Schlussformel)) { schlussformeln.Add(item.Schlussformel); }
+            }
+        }
+
+        // Am Ende einmalig sortieren und zuweisen
+        cbAnrede.AutoCompleteCustomSource.AddRange([.. anreden.Order()]);
+        cbPraefix.AutoCompleteCustomSource.AddRange([.. praefixe.Order()]);
+        cbPLZ.AutoCompleteCustomSource.AddRange([.. plzs.Order()]);
+        cbOrt.AutoCompleteCustomSource.AddRange([.. orte.Order()]);
+        cbLand.AutoCompleteCustomSource.AddRange([.. laender.Order()]);
+        cbSchlussformel.AutoCompleteCustomSource.AddRange([.. schlussformeln.Order()]);
     }
-    private async void ShowPhotoInPictureBoxy(object item)
+
+    private async void ShowPhotoInPictureBox(object item)
     {
         // 1. Reset
         topAlignZoomPictureBox.Image = tabControl.SelectedTab == contactTabPage ? Resources.ContactBild100 : Resources.AddressBild100;
@@ -2152,8 +2266,8 @@ public partial class FrmAdressen : Form
 
                 // 4. Prüfen, ob der User schon weitergeklickt hat (Race-Condition verhindern)
                 var currentBindingSource = tabControl.SelectedTab == addressTabPage
-                    ? addressBindingSource
-                    : contactBindingSource;
+                    ? addressBSource
+                    : contactBSource;
 
                 if (currentBindingSource.Current != item)
                 {
@@ -2175,13 +2289,10 @@ public partial class FrmAdressen : Form
         }
     }
 
-
-    #region Google Logic (Refactored)
-
     private async Task LoadAndDisplayGoogleContactsAsync()
     {
         // A. UI Status Checks & Datensicherheit
-        if (tabControl.SelectedTab == addressTabPage && addressBindingSource != null)
+        if (tabControl.SelectedTab == addressTabPage && addressBSource != null)
         {
             if (filterRemoveToolStripMenuItem.Visible)
             {
@@ -2191,29 +2302,30 @@ public partial class FrmAdressen : Form
             if (searchTSTextBox.TextBox.TextLength > 0)
             {
                 lastAddressSearch = searchTSTextBox.TextBox.Text;
-                ignoreSearchChange = true;
-                searchTSTextBox.TextBox.Clear();
-                ignoreSearchChange = false;
+                SetSearchTextIgnoreChange(string.Empty);
             }
         }
         else
         {
             // DER NEUE GATEKEEPER: Erst prüfen, ob noch Änderungen offen sind.
-            // Wenn der User "Abbrechen" klickt, laden wir gar nicht erst neu.
             if (!await ContactChanges_Check())
             {
                 return;
             }
 
             lastContactSearch = searchTSTextBox.TextBox.Text;
-            ignoreSearchChange = true;
-            searchTSTextBox.TextBox.Clear();
-            ignoreSearchChange = false;
+            SetSearchTextIgnoreChange(string.Empty);
         }
 
-        // B. Netzwerk-Check
-        if (!Utils.GoogleConnectionCheck(Handle, secretPath)) { return; }
-        else { topAlignZoomPictureBox.Image = Resources.ContactBild100; }
+        // B. Netzwerk-Check (JETZT ASYNCHRON!)
+        if (!await Utils.GoogleConnectionCheckAsync(Handle, secretPath))
+        {
+            return;
+        }
+        else
+        {
+            topAlignZoomPictureBox.Image = Resources.ContactBild100;
+        }
 
         // 1. Alten Prozess abbrechen UND aufräumen
         if (_googleCts != null)
@@ -2224,7 +2336,7 @@ public partial class FrmAdressen : Form
 
         // 2. Neues Token erstellen
         _googleCts = new CancellationTokenSource();
-        var ct = _googleCts.Token; // Token in lokale Var, um Zugriff im Manager sicherzustellen
+        var ct = _googleCts.Token; // Token in lokale Var
 
         _isFiltering = true;
         try
@@ -2246,34 +2358,38 @@ public partial class FrmAdressen : Form
             toolStripProgressBar.Value = 30;
             stopwatch.Stop();
 
-            // D. Auth-Logik (Browser-Erkennung)
+            // D. Auth-Logik
             if (isNewLogin || stopwatch.ElapsedMilliseconds > 2000)
             {
                 contactBirthdayFlag = false;
             }
 
-            //userEmail = result.UserEmail;
-
-            // E. Gruppen verarbeiten
+            // E. Gruppen verarbeiten (KORRIGIERT: Duplikate beim Stern vermeiden)
             contactGroupsDict = result.GroupMap;
             allContactMemberships.Clear();
+            flowLayoutPanel.Controls.Clear();
+
+            // Erst alle regulären Gruppen aus der Map hinzufügen
             foreach (var kvp in contactGroupsDict)
             {
-                var gName = kvp.Value;
-
-                // Kein Exclude Check mehr nötig!
-                gName = gName.Equals("starred", StringComparison.OrdinalIgnoreCase) ? "★" : gName;
-                allContactMemberships.Add(gName);
+                // Starred lassen wir hier bewusst aus, da es unten fix hinzugefügt wird
+                if (!kvp.Value.Equals("starred", StringComparison.OrdinalIgnoreCase))
+                {
+                    allContactMemberships.Add(kvp.Value);
+                }
             }
+            // Und dann exakt einmal den Stern als UI-Label hinzufügen
             allContactMemberships.Add("★");
+
             toolStripProgressBar.Value = 50;
 
             // F. Datenbindung mit LOCK
-            // Wir setzen isSelectionChanging auf true, damit das Grid beim Zuweisen 
-            // der neuen Liste nicht Amok läuft (Validierung, SelectionChanged etc.)
             isSelectionChanging = true;
             try
             {
+                _lastActiveContact = null;
+                _originalContactSnapshot = null;
+
                 var contactList = new BindingList<Contact>([.. result.Contacts]);
 
                 if (contactList.Count == 0)
@@ -2284,53 +2400,52 @@ public partial class FrmAdressen : Form
                 }
 
                 _allGoogleContacts = contactList;
-                toolStripStatusLabel.Text = $"{contactList.Count} Kontakte geladen.";
+                toolStripStatusLabel.Text = $"{contactList.Count} Kontakte";
 
-                contactBindingSource.DataSource = contactList;
-                contactDGV.DataSource = contactBindingSource;
+                contactBSource.DataSource = contactList;
+                contactDGV.DataSource = contactBSource;
 
                 ApplyColumnSettings(contactDGV);
                 toolStripProgressBar.Value = 80;
 
-                SwitchDataBinding(contactBindingSource);
+                SwitchDataBinding(contactBSource);
 
                 tabControl.SelectedIndex = 1;
-                Text = $"Kontakte - Google Kontakte";  // $"Kontakte - {userEmail}"
+                Text = $"Kontakte - Google Kontakte";
             }
             finally { isSelectionChanging = false; }
 
             // G. UI Finalisierung
             var hasRows = contactDGV.Rows.Count > 0;
-            copyTSButton.Enabled = copyToOtherDGVTSMenuItem.Enabled = wordToolStripMenuItem.Enabled =
+            copyTSButton.Enabled = copyToOtherDGVTSMenuItem.Enabled = wordToolStripMenuItem.Enabled = googlebackupToolStripMenuItem.Enabled =
                 envelopeToolStripMenuItem.Enabled = wordTSButton.Enabled = envelopeTSButton.Enabled = hasRows;
-
             duplicateToolStripMenuItem.Enabled = false;
             btnEditContact.Visible = true;
-
             if (hasRows)
             {
+                contactDGV.ClearSelection();  // Grid optisch an den absoluten Anfang setzen
+                contactDGV.FirstDisplayedScrollingRowIndex = 0;
                 contactDGV.Rows[0].Selected = true;
+                contactBSource.Position = 0;  // Zur Sicherheit auch die BindingSource-Position hart auf 0 nageln
+                ContactBindingSource_CurrentChanged(contactBSource, EventArgs.Empty);  // dadurch wird _lastActiveContact aktualisiert, Foto geladen, etc.
+                contactBSource.ResetBindings(false);  // Der WinForms-Hammer: Zwingt alle Editier-Textboxen rechts zum sofortigen Refresh!
             }
-
-            // Doku-Tab wegräumen falls nötig
-            if (tabulation.TabPages.Contains(tabPageDoku))
+            else { ContactBindingSource_CurrentChanged(contactBSource, EventArgs.Empty); }  // Auch bei einer leeren Liste müssen wir aufräumen (Felder leeren)
+            if (tabulation.TabPages.Contains(tabPageDoku))  // Doku-Tab wegräumen falls nötig
             {
                 deactivatedPage = tabPageDoku;
                 tabulation.TabPages.Remove(tabPageDoku);
             }
-
-            // Geburtstagserinnerung
-            if (contactBirthdayFlag && _settings.BirthdayContactShow)
+            if (contactBirthdayFlag && _settings.BirthdayContactShow)  // Geburtstagserinnerung
             {
                 toolStripProgressBar.Visible = false;
-                BirthdayReminder(contactDGV);
+                _ = InvokeAsync(() => BirthdayReminder(contactDGV));  // sorgt dafür, dass dieser Code erst ausgeführt wird, wenn die aktuelle Methode (inkl. finally!) beendet ist
             }
             contactBirthdayFlag = true;
             toolStripProgressBar.Value = 100;
-
-            // Background Warmup
-            Utils.StartSearchCacheWarmup(_allGoogleContacts);
-            UpdateMembershipCBox();
+            Utils.StartSearchCacheWarmup(_allGoogleContacts);  // Background Warmup
+            UpdateTagComboBoxDataSource();
+            UpdatePlaceholderVis();
         }
         catch (UnauthorizedAccessException)
         {
@@ -2354,11 +2469,8 @@ public partial class FrmAdressen : Form
 
     private async Task DeleteGoogleContactAsync(Contact contact, CancellationToken token)
     {
-        // 1. Nur auf null prüfen
-        if (contact == null) { return; }
-        // 2. Wenn keine ResourceName da ist (Kontakt war nie bei Google), ist nichts zu tun
-        if (string.IsNullOrEmpty(contact.ResourceName)) { return; }
-
+        if (contact == null) { return; }   // 1. Nur auf null prüfen
+        if (string.IsNullOrEmpty(contact.ResourceName)) { return; }  // 2. Wenn keine ResourceName da ist (Kontakt war nie bei Google), ist nichts zu tun
         var manager = new GooglePeopleManager(secretPath, tokenDir);
         await manager.DeleteContactAsync(contact.ResourceName, token);
     }
@@ -2375,8 +2487,8 @@ public partial class FrmAdressen : Form
                 contact.PhotoUrl = newUrl;
                 contact.ResetSearchCache();
 
-                var index = contactBindingSource.IndexOf(contact);
-                if (index >= 0) { contactBindingSource.ResetItem(index); }
+                var index = contactBSource.IndexOf(contact);
+                if (index >= 0) { contactBSource.ResetItem(index); }
             }
         }
         catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); }
@@ -2394,7 +2506,7 @@ public partial class FrmAdressen : Form
 
             contact.PhotoUrl = newUrl; // Ist null oder Platzhalter
             contact.ResetSearchCache();
-            ShowPhotoInPictureBoxy(contact);
+            ShowPhotoInPictureBox(contact);
         }
         catch (Exception ex)
         {
@@ -2402,7 +2514,7 @@ public partial class FrmAdressen : Form
             {
                 Utils.MsgTaskDlg(Handle, "Kein Foto", "Es konnte online kein Foto gefunden werden.", TaskDialogIcon.Information);
                 contact.PhotoUrl = null;
-                ShowPhotoInPictureBoxy(contact);
+                ShowPhotoInPictureBox(contact);
             }
             else
             {
@@ -2411,61 +2523,12 @@ public partial class FrmAdressen : Form
         }
     }
 
-    #endregion
     private async void GoogleTSButton_Click(object sender, EventArgs e) => await CheckContactChanges(LoadAndDisplayGoogleContactsAsync);
-
-    private void ContactDGV_SelectionChanged(object sender, EventArgs e)
-    {
-        if (isSelectionChanging || _isFiltering) { return; }
-        scrollTimer.Start();
-        isSelectionChanging = true;
-        try
-        {
-            // Wir arbeiten direkt mit der BindingSource, das ist sicherer als SelectedRows[0]
-            if (contactBindingSource.Current is Contact selectedContact)
-            {
-                // 1. UI-Elemente aktivieren
-                btnEditContact.Visible = true;
-
-                // 2. Snapshot für die Änderungsverfolgung erstellen
-                // Dies ist der "reine" Zustand, bevor der User tippt.
-                _originalContactSnapshot = (Contact)selectedContact.Clone();
-
-                // 3. Den aktuell aktiven Kontakt für andere Methoden (wie Auto-Save) merken
-                _lastActiveContact = selectedContact;
-
-                // 4. UI-Details aktualisieren (Foto, Gruppen, etc.)
-                // Wir nutzen die Methode, die wir für das Interface vereinheitlicht haben.
-                ShowPhotoInPictureBoxy(selectedContact);
-                UpdateMembershipTags();
-
-                // 5. Save-Buttons initial deaktivieren (da noch nichts geändert wurde)
-                saveTSButton.Enabled = false;
-            }
-            else
-            {
-                btnEditContact.Visible = false;
-                _originalContactSnapshot = null;
-                _lastActiveContact = null;
-            }
-        }
-        catch (Exception ex)
-        {
-            Utils.ErrTaskDlg(Handle, ex);
-        }
-        finally
-        {
-            isSelectionChanging = false;
-        }
-    }
 
     private async void ContactDGV_CellClick(object sender, DataGridViewCellEventArgs e)
     {
         // 1. Validitätsprüfung (keine Header, keine ungültigen Klicks)
-        if (e.RowIndex < 0 || e.ColumnIndex < 0)
-        {
-            return;
-        }
+        if (e.RowIndex < 0 || e.ColumnIndex < 0) { return; }
 
         // 2. Prüfung auf Strg-Taste via WinForms ModifierKeys
         if ((ModifierKeys & Keys.Control) == Keys.Control)
@@ -2489,22 +2552,16 @@ public partial class FrmAdressen : Form
                 targetControl.Focus();
 
                 // Komfort-Funktionen für die Eingabe
-                if (targetControl is TextBoxBase tb)
-                {
-                    tb.SelectAll();
-                }
-                else if (targetControl is ComboBox cb)
-                {
-                    cb.DroppedDown = true;
-                }
+                if (targetControl is TextBoxBase tb) { tb.SelectAll(); }
+                else if (targetControl is ComboBox cb) { cb.DroppedDown = true; }
             }
         }
     }
 
-    private async void ContactBindingSource_CurrentChanged(object sender, EventArgs e)
+    private async void ContactBindingSource_CurrentChanged(object? sender, EventArgs e)
     {
-        if (_isFiltering) { return; }
-        if (contactBindingSource.Current is not Contact contact)
+        if (_isFiltering || isSelectionChanging) { return; }
+        if (contactBSource.Current is not Contact contact)
         {
             _originalContactSnapshot = null;
             _lastActiveContact = null;
@@ -2512,24 +2569,21 @@ public partial class FrmAdressen : Form
             delPictboxToolStripButton.Enabled = false;
             AgeLabel_MaskedTB_Clear();
             flowLayoutPanel.Controls.Clear();
+            btnEditContact.Visible = false;
+            saveTSButton.Enabled = false;
+            curContactMemberships.Clear();
+            UpdateTagComboBoxDataSource();
             return;
         }
-
+        ignoreTextChange = true;  //  damit TextChanged-Events der TextBoxen nicht feuern
         try
         {
-            // --- NEU: Snapshot für den AKTUELLEN Kontakt einrasten ---
             _lastActiveContact = contact;
             _originalContactSnapshot = (Contact)contact.Clone();
-
-            ignoreTextChange = true;
-            ShowPhotoInPictureBoxy(contact); // Foto Logik (Vereinheitlicht) 
+            ShowPhotoInPictureBox(contact);
             ErzeugeGrussformeln();
-
-            // --- D: Geburtstag & Alter ---
             if (contact.Geburtstag.HasValue) { AgeLabel_MaskedTB_Set(contact.Geburtstag.Value); }
             else { AgeLabel_MaskedTB_Clear(); }
-
-            // --- E: Gruppen / Tags ---
             curContactMemberships = new SortedSet<string>(contact.GroupNames ?? [], StringComparer.OrdinalIgnoreCase);
             if (curContactMemberships.Count > 0)
             {
@@ -2541,10 +2595,10 @@ public partial class FrmAdressen : Form
                 flowLayoutPanel.Controls.Clear();
                 UpdatePlaceholderVis();
             }
-            UpdateMembershipCBox();
+            UpdateTagComboBoxDataSource();
             LinkLabel_Enabled();
             btnEditContact.Visible = true;
-
+            saveTSButton.Enabled = false; // Neuer Kontakt -> noch nichts geändert
         }
         catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); }
         finally { ignoreTextChange = false; }
@@ -2622,16 +2676,13 @@ public partial class FrmAdressen : Form
         if (e.TabPage == contactTabPage)
         {
             // Prüfen, ob geladen werden muss
-            if (contactBindingSource.DataSource == null || contactBindingSource.Count == 0)
+            if (contactBSource.DataSource == null || contactBSource.Count == 0)
             {
                 // Hinweis: Um "async void" Probleme zu minimieren, lagern wir das Laden oft aus.
                 // Hier ist es okay, aber der Dialog blockiert kurz den Tab-Wechsel visuell.
-                var (isYes, _, _) = Utils.YesNo_TaskDialog(this, "Google Kontakte", "Keine Kontakte vorhanden", "Möchten Sie Ihre Kontakte jetzt laden?");
+                var (isYes, _, _) = Utils.YesNo_TaskDialog(this, "Google Kontakte", "Keine Kontakte vorhanden", "Möchtest du die Kontakte jetzt laden?");
 
-                if (isYes)
-                {
-                    await LoadAndDisplayGoogleContactsAsync();
-                }
+                if (isYes) { await LoadAndDisplayGoogleContactsAsync(); }
             }
         }
     }
@@ -2658,15 +2709,15 @@ public partial class FrmAdressen : Form
             HandleSearchTransition(ref lastContactSearch, ref lastAddressSearch);
 
             // Binding umschalten
-            SwitchDataBinding(addressBindingSource);
+            SwitchDataBinding(addressBSource);
 
-            if (addressBindingSource.Current != null)
+            if (addressBSource.Current != null)
             {
-                ShowPhotoInPictureBoxy(addressBindingSource.Current);
+                ShowPhotoInPictureBox(addressBSource.Current);
             }
 
             // UI Status
-            if (addressBindingSource?.Count > 0)
+            if (addressBSource?.Count > 0)
             {
                 Text = $"{appName} – {(string.IsNullOrEmpty(_databaseFilePath) ? "unbenannt" : _databaseFilePath)}";
                 btnEditContact.Visible = false;
@@ -2678,7 +2729,7 @@ public partial class FrmAdressen : Form
 
                 // Statuszeile
                 var rowCount = _context?.Adressen.Local.Count ?? 0;
-                var visibleRowCount = addressBindingSource.Count;
+                var visibleRowCount = addressBSource.Count;
                 toolStripStatusLabel.Text = rowCount == visibleRowCount
                     ? $"{visibleRowCount} Adressen"
                     : $"{visibleRowCount}/{rowCount} Adressen";
@@ -2691,7 +2742,7 @@ public partial class FrmAdressen : Form
         else if (tabControl.SelectedTab == contactTabPage)
         {
             // Snapshot Logik initialisieren (Wichtig für den Gatekeeper beim nächsten Wechsel)
-            if (contactBindingSource.Current is Contact current)
+            if (contactBSource.Current is Contact current)
             {
                 _lastActiveContact = current;
                 _originalContactSnapshot = (Contact)current.Clone();
@@ -2708,17 +2759,19 @@ public partial class FrmAdressen : Form
             HandleSearchTransition(ref lastAddressSearch, ref lastContactSearch);
 
             // Binding umschalten
-            if (contactBindingSource.DataSource != null)
+            if (contactBSource.DataSource != null)
             {
-                SwitchDataBinding(contactBindingSource);
-                if (contactBindingSource.Current != null)
-                {
-                    ShowPhotoInPictureBoxy(contactBindingSource.Current);
-                }
-            }
+                SwitchDataBinding(contactBSource);
 
+                //if (contactBindingSource.Current is Contact contact)
+                //{
+                //    ShowPhotoInPictureBox(contact);
+                //    contact.GroupNames = [.. curContactMemberships];
+                //}
+                //else { flowLayoutPanel.Controls.Clear(); }
+            }
             // UI Status
-            if (contactBindingSource.Count > 0)
+            if (contactBSource.Count > 0)
             {
                 //Text = !string.IsNullOrWhiteSpace(userEmail) ? $"Kontakte - {userEmail}" : "Google-Kontakte";
                 Text = "Kontakte - Google Kontakte";
@@ -2731,13 +2784,14 @@ public partial class FrmAdressen : Form
                 SetCommonButtonState(true);
                 copyToOtherDGVTSMenuItem.Enabled = true;
 
-                toolStripStatusLabel.Text = $"{contactBindingSource.Count} Kontakte";
+                toolStripStatusLabel.Text = $"{contactBSource.Count} Kontakte";
             }
         }
 
-        // Common Cleanup
+        UpdateMembershipTags();
         flexiTSStatusLabel.Text = string.Empty;
         searchTSTextBox.TextBox.Focus();
+        UpdateFilterUIState();
     }
 
     private void SetCommonButtonState(bool enabled)
@@ -2752,18 +2806,25 @@ public partial class FrmAdressen : Form
         if (searchTSTextBox.TextBox.TextLength > 0)
         {
             sourceStorage = searchTSTextBox.Text;
-            ignoreSearchChange = true;
-            searchTSTextBox.TextBox.Clear();
-            ignoreSearchChange = false;
+            SetSearchTextIgnoreChange(string.Empty);
         }
 
         if (!string.IsNullOrEmpty(targetStorage))
         {
-            ignoreSearchChange = true;
-            searchTSTextBox.TextBox.Text = targetStorage;
-            ignoreSearchChange = false;
+            SetSearchTextIgnoreChange(targetStorage);
             targetStorage = string.Empty;
         }
+    }
+
+    private void SetSearchTextIgnoreChange(string newText)
+    {
+        ignoreSearchChange = true;
+        try
+        {
+            searchTSTextBox.Text = newText;   // Einheitlich .Text verwenden (greift ohnehin auf die TextBox durch) 
+            tsClearLabel.Visible = !string.IsNullOrWhiteSpace(newText); // Den X-Button im Suchfeld direkt passend mitsynchronisieren
+        }
+        finally { ignoreSearchChange = false; }
     }
 
     private void AuthentMenuItem_Click(object sender, EventArgs e)
@@ -2772,8 +2833,8 @@ public partial class FrmAdressen : Form
         TaskDialogPage page = new()
         {
             Caption = appCont,
-            Heading = "Möchten Sie die Zugangsdaten löschen?",
-            Text = "Wenn Sie den Request-Token löschen, können Sie\nnur nach erneuter Autorisierung Google-Kontakte\nherunterladen. Hierzu öffnet sich beim nächsten\nVersuch automatisch die Goolge-Anmeldeseite.",
+            Heading = "Möchtest du die Zugangsdaten löschen?",
+            Text = "Wenn du den Request-Token löschst, können Google-\nKontakte nur nach erneuter Autorisierung herunter-\ngeladen werden. Hierzu öffnet sich beim nächsten Versuch automatisch die Google-Anmeldeseite.",
             Buttons = { TaskDialogButton.Yes, TaskDialogButton.No },
             Icon = questionDialogIcon,
             DefaultButton = TaskDialogButton.No
@@ -2783,13 +2844,14 @@ public partial class FrmAdressen : Form
             var tokenFile = Path.Combine(tokenDir, "Google.Apis.Auth.OAuth2.Responses.TokenResponse-user");
             try { if (File.Exists(tokenFile)) { File.Delete(tokenFile); } }
             catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); }
+            finally { GooglePeopleManager.ClearServiceCache(); }
         }
     }
 
     private void ExtraToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
     {
         authentMenuItem.Enabled = Directory.Exists(tokenDir);
-        manageGroupsToolStripMenuItem.Enabled = tabControl.SelectedTab == contactTabPage ? contactDGV.Rows.Count > 0 : addressBindingSource != null;
+        manageGroupsToolStripMenuItem.Enabled = tabControl.SelectedTab == contactTabPage ? contactDGV.Rows.Count > 0 : addressBSource != null;
     }
 
     private void BrowserPeopleMenuItem_Click(object sender, EventArgs e)
@@ -2809,7 +2871,7 @@ public partial class FrmAdressen : Form
         Cursor = Cursors.WaitCursor;
         FillDictionary();
         using var frm = new FrmPrintSetting(_settings, bookmarkTextDictionary);
-        FormStateManager.RestoreWindowBounds(frm, _settings.PrintWindowPosition);
+        Utils.RestoreWindowBounds(frm, _settings.PrintWindowPosition);
         Cursor = Cursors.Default;
         if (frm.ShowDialog() == DialogResult.OK)
         {
@@ -2841,6 +2903,7 @@ public partial class FrmAdressen : Form
             _settings = tempSettings;
 
             // UI & System-Trigger auf Basis der neuen Werte ausführen
+            ApplyEditControlsFont();
             SetColorScheme();
             ApplyFileWatcherSettings();
 
@@ -2856,17 +2919,17 @@ public partial class FrmAdressen : Form
         var docPath = _settings.DocumentFolder;
 
         // Basiskonfiguration
-        fileSystemWatcher.IncludeSubdirectories = true;
-        fileSystemWatcher.Filters.Clear();
-        foreach (var pattern in documentTypes) { fileSystemWatcher.Filters.Add(pattern); }
+        fileSysWatcher.IncludeSubdirectories = true;
+        fileSysWatcher.Filters.Clear();
+        foreach (var pattern in documentTypes) { fileSysWatcher.Filters.Add(pattern); }
 
         // Pfad setzen und nur aktivieren, wenn alles passt
         if (_settings.WatchFolder && !string.IsNullOrEmpty(docPath) && Directory.Exists(docPath))
         {
-            fileSystemWatcher.Path = docPath;
-            fileSystemWatcher.EnableRaisingEvents = true;
+            fileSysWatcher.Path = docPath;
+            fileSysWatcher.EnableRaisingEvents = true;
         }
-        else { fileSystemWatcher.EnableRaisingEvents = false; }
+        else { fileSysWatcher.EnableRaisingEvents = false; }
     }
 
     private void SetColorScheme()
@@ -2916,9 +2979,31 @@ public partial class FrmAdressen : Form
         }
     }
 
+    private void ApplyEditControlsFont()
+    {
+        var fontName = _settings.AppFontName;
+        var fontSize = _settings.AppFontSize;
+        if (string.IsNullOrWhiteSpace(fontName)) { fontName = "Segoe UI"; }
+        if (fontSize < 9f || fontSize > 12f) { fontSize = 10f; }
+        try
+        {
+            var newFont = new Font(fontName, fontSize, FontStyle.Regular, GraphicsUnit.Point);
+            addressDGV.DefaultCellStyle.Font = newFont;
+            contactDGV.DefaultCellStyle.Font = newFont;
+            foreach (var control in tableLayoutPanel.Controls.OfType<Control>())
+            {
+                if (control is PaddedTextBox || control is PaddedMaskedTextBox) { control.Font = newFont; }
+            }
+            tbNotizen.Font = newFont;
+            maskedTextBox.Font = newFont;
+        }
+        catch (Exception ex) { Debug.WriteLine($"Fehler beim Setzen der Schriftart: {ex.Message}"); }
+    }
+
+
     private void BtnEditContact_Click(object sender, EventArgs e)
     {
-        if (tabControl.SelectedTab == contactTabPage && contactBindingSource.Current is Contact contact)
+        if (tabControl.SelectedTab == contactTabPage && contactBSource.Current is Contact contact)
         {
             var resourceId = contact.ResourceName.Split('/').LastOrDefault(); // "people/c123456789"
             if (!string.IsNullOrEmpty(resourceId))
@@ -2935,12 +3020,22 @@ public partial class FrmAdressen : Form
         else { Console.Beep(); }
     }
 
-    //private void TsClearLabel_Click(object sender, EventArgs e) => Clear_SearchTextBox();
     private async void TsClearLabel_Click(object sender, EventArgs e) => await CheckContactChanges(Clear_SearchTextBox);
 
-    private void TsClearLabel_VisibleChanged(object sender, EventArgs e) => searchTSTextBox.Width = 202 + splitContainer.SplitterDistance - 536 - (tsClearLabel.Visible ? tsClearLabel.Width : 0);
+    private void TsClearLabel_VisibleChanged(object sender, EventArgs e) => UpdateSearchBoxWidth();  // searchTSTextBox.Width = 202 + splitContainer.SplitterDistance - 536 - (tsClearLabel.Visible ? tsClearLabel.Width : 0);
 
-    private void TsClearLabel_Paint(object sender, PaintEventArgs e) => BeginInvoke(new Action(() => Graphics.FromHwnd(toolStrip.Handle).DrawRectangle(Pens.Black, tsClearLabel.Bounds.Location.X - 2, tsClearLabel.Bounds.Location.Y + 2, tsClearLabel.Width + 1, tsClearLabel.Height - 4)));
+    private void ToolStrip_Paint(object? sender, PaintEventArgs e)
+    {
+        if (tsClearLabel is { Visible: true })   // C# 14 Property Pattern: Prüft auf null UND Sichtbarkeit in einem Rutsch
+        {
+            var rect = new Rectangle(
+                tsClearLabel.Bounds.Location.X - 2,
+                tsClearLabel.Bounds.Location.Y + 2,
+                tsClearLabel.Width + 1,
+                tsClearLabel.Height - 4);
+            e.Graphics.DrawRectangle(Pens.Black, rect);
+        }
+    }
 
     private void AddressDGV_KeyDown(object sender, KeyEventArgs e)
     {
@@ -2961,15 +3056,6 @@ public partial class FrmAdressen : Form
             e.SuppressKeyPress = true; // Verhindert, dass das Grid versucht, zu einer Zeile zu springen, die mit dem Buchstaben beginnt
             return;
         }
-        if (e.KeyCode == Keys.Up || e.KeyCode == Keys.Down || e.KeyCode == Keys.PageUp || e.KeyCode == Keys.PageDown)
-        {
-            if (scrollTimer.Enabled)
-            {
-                e.Handled = true;
-                e.SuppressKeyPress = true;
-                return;
-            }
-        }
     }
 
     private void ContactDGV_KeyDown(object sender, KeyEventArgs e)
@@ -2985,14 +3071,6 @@ public partial class FrmAdressen : Form
             searchTSTextBox.Focus();
             searchTSTextBox.Text += e.Shift ? ((char)keyValue).ToString() : ((char)(keyValue + 32)).ToString();
             searchTSTextBox.SelectionStart = searchTSTextBox.Text.Length;  // Cursor ans Ende stellen
-        }
-        if (e.KeyCode == Keys.Up || e.KeyCode == Keys.Down || e.KeyCode == Keys.PageUp || e.KeyCode == Keys.PageDown)
-        {
-            if (scrollTimer.Enabled)
-            {
-                e.Handled = true;
-                e.SuppressKeyPress = true;
-            }
         }
     }
 
@@ -3222,15 +3300,9 @@ public partial class FrmAdressen : Form
         var isGoogle = tabControl.SelectedTab == contactTabPage;
         if (!isLocal && !isGoogle) { return; }
         if (isLocal) { senderControl.DataBindings["Text"]?.WriteValue(); } // Zwinge das Binding, den Wert SOFORT in das Entity zu schreiben
-        if (isGoogle && contactBindingSource.Current is not Contact) { return; }
-        if (ReferenceEquals(sender, tbNotizen))
-        {
-            var textSize = TextRenderer.MeasureText(tbNotizen.Text, tbNotizen.Font, new Size(tbNotizen.Width - SystemInformation.VerticalScrollBarWidth, int.MaxValue), TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl);
-            NativeMethods.ShowScrollBar(tbNotizen.Handle, 1, textSize.Height > tbNotizen.Height);
-        }
+        if (isGoogle && contactBSource.Current is not Contact) { return; }
         UpdateSaveButton();
     }
-
 
     private void MaskedTextBox_TextChanged(object sender, EventArgs e)
     {
@@ -3315,7 +3387,7 @@ public partial class FrmAdressen : Form
             saveFileDialog.Filter = "Adressen-Datenbank (*.adb)|*.adb|Alle Dateien (*.*)|*.*";
             if (saveFileDialog.ShowDialog() == DialogResult.OK)
             {
-                if (addressBindingSource != null) { await SaveSQLDatabaseAsync(true); }
+                if (addressBSource != null) { await SaveSQLDatabaseAsync(true); }
                 _databaseFilePath = saveFileDialog.FileName;
             }
             else { return; }
@@ -3330,79 +3402,86 @@ public partial class FrmAdressen : Form
         }
     }
 
-    private void ExportToolStripMenuItem_Click(object sender, EventArgs e)
+    private async void ExportToolStripMenuItem_Click(object sender, EventArgs e)
     {
+        if (addressBSource.Count == 0)
+        {
+            Utils.MsgTaskDlg(Handle, "Export nicht möglich", "Es gibt keine Datensätze zum Exportieren.");
+            return;
+        }
         saveFileDialog.FileName = "Adressen_Export.csv";
         saveFileDialog.DefaultExt = "csv";
         saveFileDialog.Filter = "CSV-Datei (*.csv)|*.csv|Alle Dateien (*.*)|*.*";
+
         if (saveFileDialog.ShowDialog() != DialogResult.OK) { return; }
-        if (addressBindingSource.Count > 0)
+        var fileName = saveFileDialog.FileName;
+        // 1. Spalten vorbereiten (und sicherstellen, dass "Gruppen" auch wirklich dabei ist!)
+        var exportColumns = dataFields.Where(f => f != "Id").ToList();
+        if (!exportColumns.Contains("Gruppen")) { exportColumns.Add("Gruppen"); }
+
+        // 2. Daten threadsicher in eine Liste kopieren (noch im UI-Thread)
+        // Wir filtern direkt auf den Typ 'Adresse', um Fehler zu vermeiden
+        var addressesToExport = addressBSource.List.OfType<Adresse>().ToList();
+
+        // 3. UI für den Export vorbereiten
+        toolStripProgressBar.Visible = true;
+        toolStripProgressBar.Maximum = addressesToExport.Count;
+        toolStripProgressBar.Value = 0;
+        toolStripStatusLabel.Text = "Export läuft...";
+        IProgress<int> progress = new Progress<int>(v => { toolStripProgressBar.Value = v; });
+        try
         {
-            try
+            // 4. Export asynchron im Hintergrund ausführen
+            await Task.Run(async () =>
             {
-                StringBuilder sb = new();
-                var exportColumns = dataFields.Where(f => f != "Id").ToList(); // Header-Spaltennamen
-                sb.AppendLine(string.Join(";", exportColumns));
-                foreach (var item in addressBindingSource)
+                // Wir nutzen WriteLineAsync für noch bessere I/O-Performance
+                using var writer = new StreamWriter(fileName, append: false, System.Text.Encoding.UTF8);
+                await writer.WriteLineAsync(string.Join(";", exportColumns));
+                var processedCount = 0;
+                foreach (var adresse in addressesToExport)
                 {
-                    if (item is Adresse adresse)
+                    var fields = exportColumns.Select(columnName =>
                     {
-                        var fields = exportColumns.Select(columnName =>
-                        {
-                            object? value;
-                            if (columnName == "Gruppen") { value = string.Join(", ", adresse.Gruppen.Select(g => g.Name)); }
-                            else if (columnName == "Geburtstag") { value = adresse.Geburtstag?.ToShortDateString(); }
-                            else { value = typeof(Adresse).GetProperty(columnName)?.GetValue(adresse); }
-                            var fieldString = value?.ToString() ?? string.Empty;
-                            return $"\"{fieldString.Replace("\"", "\"\"")}\"";
-                        });
-                        sb.AppendLine(string.Join(";", fields));
-                    }
+                        var value = default(object);
+                        if (columnName == "Gruppen") { value = string.Join(", ", adresse.Gruppen.Select(g => g.Name)); }
+                        else if (columnName == "Geburtstag") { value = adresse.Geburtstag?.ToString("dd.MM.yyyy"); } // Festes, deutsches Format
+                        else { value = adresse.GetPropertyValue(columnName); }
+
+                        var fieldString = value?.ToString() ?? string.Empty;
+                        return $"\"{fieldString.Replace("\"", "\"\"")}\"";
+                    });
+                    await writer.WriteLineAsync(string.Join(";", fields));
+                    processedCount++;
+                    if (processedCount % 50 == 0) { progress.Report(processedCount); }  // Fortschritt nur alle 50 Datensätze ans UI melden, um Flackern zu vermeiden
                 }
-                File.WriteAllText(saveFileDialog.FileName, sb.ToString(), Encoding.UTF8);
-                Utils.MsgTaskDlg(Handle, "Export abgeschlossen", $"{addressBindingSource.Count} Datensätze wurden erfolgreich exportiert.");
-            }
-            catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); }
+                // Sicherstellen, dass der Ladebalken am Ende voll ist
+                progress.Report(addressesToExport.Count);
+            });
+
+            toolStripStatusLabel.Text = "Export abgeschlossen.";
+            Utils.MsgTaskDlg(Handle, "Export abgeschlossen", $"{addressesToExport.Count} Datensätze wurden erfolgreich exportiert.", TaskDialogIcon.ShieldSuccessGreenBar);
         }
+        catch (Exception ex)
+        {
+            toolStripStatusLabel.Text = "Fehler beim Export.";
+            Utils.ErrTaskDlg(Handle, ex);
+        }
+        finally { toolStripProgressBar.Visible = false; }
     }
 
     private void ColumnSelectToolStripMenuItem_Click(object sender, EventArgs e)
     {
-        // 1. Initialisierung
-        // Wir übergeben die statischen Standardwerte an das Formular (für den "Standard"-Button darin).
-        using var frm = new FrmColumns(AppSettings.DefaultHideColumns);
+        // 1. Wir übergeben den aktuellen Status und die Defaults direkt an das Formular
+        using var frm = new FrmColumns(_settings.HideColumnArr, AppSettings.DefaultHideColumns);
 
-        var columnList = frm.GetColumnList();
-        var itemCount = columnList.Items.Count;
-
-        // 2. Aktuellen Status aus _settings in die Checkboxen laden
-        // Wir prüfen sicherheitshalber die Länge, um IndexOutOfRange zu vermeiden
-        var limit = Math.Min(itemCount, _settings.HideColumnArr.Length);
-        for (var i = 0; i < limit; i++)
-        {
-            // Checked bedeutet "Sichtbar", also das Gegenteil von "Hide"
-            columnList.Items[i].Checked = !_settings.HideColumnArr[i];
-        }
-
-        // 3. Auswertung bei OK
+        // 2. Auswertung bei OK
         if (frm.ShowDialog() == DialogResult.OK)
         {
-            var newHideArr = new bool[itemCount];
+            // 3. Formular liefert das fertige Array
+            _settings.HideColumnArr = frm.GetNewVisibilityArray();
 
-            // GUI-Status in bool-Array wandeln
-            for (var i = 0; i < itemCount; i++)
-            {
-                newHideArr[i] = !columnList.Items[i].Checked; // !Checked = Hidden
-            }
-
-            // Settings aktualisieren
-            _settings.HideColumnArr = newHideArr;
-
-            // Auf beide Grids anwenden (Helper nutzen!)
             ApplyColumnSettings(addressDGV);
             ApplyColumnSettings(contactDGV);
-
-            // Speichern
             SettingsManager.Save(_settings, _settingsPath);
         }
     }
@@ -3424,10 +3503,11 @@ public partial class FrmAdressen : Form
 
     private void SplitterAutomaticToolStripMenuItem_Click(object sender, EventArgs e) => splitContainer.SplitterDistance = toolStripSeparator.Bounds.Left;
 
+    //private void SplitContainer_SplitterMoved(object sender, SplitterEventArgs e) => flexiTSStatusLabel.Width = 244 + splitContainer.SplitterDistance - 536;
     private void SplitContainer_SplitterMoved(object sender, SplitterEventArgs e)
     {
-        //foreach (var box in tableLayoutPanel.Controls.OfType<ComboBox>()) { box.Select(box.Text.Length, 0); }  //Workaround remove highlight from ComboBox, after assigning SelectedValue
-        flexiTSStatusLabel.Width = 244 + splitContainer.SplitterDistance - 536;
+        UpdateStatusLabelWidth();
+        UpdateSearchBoxWidth();
     }
 
     private void WordToolStripMenuItem_Click(object sender, EventArgs e) => WordTSButton_Click(sender, e);
@@ -3444,12 +3524,19 @@ public partial class FrmAdressen : Form
         // 2. Form mit Settings-Objekt initialisieren
         // Hinweis: FrmCopyScheme muss angepasst werden (siehe unten)
         using var frm = new FrmCopyScheme(tempSettings, bookmarkTextDictionary);
-
+        if (_settings.CopyWindowPosition != null) { frm.StartPosition = FormStartPosition.Manual; }
+        Utils.RestoreWindowBounds(frm, _settings.CopyWindowPosition);
         if (frm.ShowDialog() == DialogResult.OK)
         {
-            // 3. Bei OK: Die geänderten Settings übernehmen und speichern
-            // Die Konvertierung der Listen in Arrays ist bereits im Dialog passiert.
-            _settings = tempSettings;
+            _settings = tempSettings;  // Die Konvertierung der Listen in Arrays ist bereits im Dialog passiert
+            var bounds = frm.WindowState == FormWindowState.Normal ? frm.DesktopBounds : frm.RestoreBounds;
+            _settings.CopyWindowPosition = new WindowPlacement
+            {
+                X = bounds.X,
+                Y = bounds.Y,
+                Width = bounds.Width,
+                Height = bounds.Height
+            };
             SettingsManager.Save(_settings, _settingsPath);
         }
     }
@@ -3461,8 +3548,8 @@ public partial class FrmAdressen : Form
         var isContactTab = tabControl.SelectedTab == contactTabPage;
 
         // Wir nutzen die BindingSource.Current statt SelectedRows, da dies robuster ist
-        if ((isAddressTab && addressBindingSource.Current == null) ||
-            (isContactTab && contactBindingSource.Current == null))
+        if ((isAddressTab && addressBSource.Current == null) ||
+            (isContactTab && contactBSource.Current == null))
         {
             e.Cancel = true;
             return;
@@ -3472,7 +3559,7 @@ public partial class FrmAdressen : Form
         if (isAddressTab)
         {
             // Sicherstellen, dass die gewählte Zeile im Sichtfeld ist (UX-Verbesserung)
-            if (addressDGV.CurrentRow != null && !FormStateManager.RowIsVisible(addressDGV, addressDGV.CurrentRow))
+            if (addressDGV.CurrentRow != null && !Utils.RowIsVisible(addressDGV, addressDGV.CurrentRow))
             {
                 addressDGV.FirstDisplayedScrollingRowIndex = addressDGV.CurrentRow.Index;
             }
@@ -3486,7 +3573,7 @@ public partial class FrmAdressen : Form
         }
         else if (isContactTab)
         {
-            if (contactDGV.CurrentRow != null && !FormStateManager.RowIsVisible(contactDGV, contactDGV.CurrentRow))
+            if (contactDGV.CurrentRow != null && !Utils.RowIsVisible(contactDGV, contactDGV.CurrentRow))
             {
                 contactDGV.FirstDisplayedScrollingRowIndex = contactDGV.CurrentRow.Index;
             }
@@ -3602,8 +3689,8 @@ public partial class FrmAdressen : Form
 
     private async void RejectChangesToolStripMenuItem_Click(object sender, EventArgs e)
     {
-        // 1. Google Kontakte Logik (Snapshot) - bleibt wie sie ist
-        if (addressBindingSource.Current is Contact currentContact)
+        // 1. Google Kontakte Logik (Snapshot)
+        if (tabControl.SelectedTab == contactTabPage && contactBSource.Current is Contact currentContact)
         {
             if (_originalContactSnapshot is null) { return; }
             foreach (var propName in editControlsDictionary.Values.Distinct())
@@ -3620,110 +3707,80 @@ public partial class FrmAdressen : Form
             if (_originalContactSnapshot.GroupNames is not null) { currentContact.GroupNames.AddRange(_originalContactSnapshot.GroupNames); }
             currentContact.ResetSearchCache();
 
-            addressBindingSource.ResetBindings(false);
+            contactBSource.ResetBindings(false);
+
+            UpdateSaveButton();
+            UpdateContactStatusBar();
         }
-        // 2. Lokale EF Core Adressen (Verbessert)
-        else if (_context is not null)
+        // 2. Lokale EF Core Adressen
+        else if (tabControl.SelectedTab == addressTabPage && _context is not null)
         {
             var analysis = DbChangeAnalyzer.AnalyzeChanges(_context);
             if (!analysis.HasChanges) { return; }
 
-            // --- NEU: Sicherheitsabfrage mit TaskDialog ---
-            // Wir nutzen analysis.DialogText für die Liste der Namen, definieren aber eine eigene Heading für das Verwerfen.
-            var confirmHeading = "Möchten Sie diese Änderungen wirklich unwiderruflich verwerfen?";
+            var confirmHeading = "Möchtest du die Änderungen verwerfen?";
 
             var (isYes, _, _) = Utils.YesNo_TaskDialog(
-                this,                                // Owner
-                "Änderungen rückgängig machen",      // Caption
-                confirmHeading,                      // Heading
-                analysis.DialogText,                 // Text (Liste der Namen aus dem Analyzer)
-                "Änderungen verwerfen",              // Custom "Ja"-Button
-                "Abbrechen",                         // Custom "Nein"-Button
-                false                                // Default Button auf "Nein" (false) für Sicherheit
+                this,
+                "Änderungen rückgängig machen",
+                confirmHeading,
+                analysis.DialogText,
+                "Änderungen verwerfen",
+                "Abbrechen"   //, false
             );
 
             if (!isYes) { return; }
-            // ---------------------------------------------
 
-
-            // 1. Merker setzen
             var topRowIndex = addressDGV.FirstDisplayedScrollingRowIndex;
-            // Wir merken uns die ID, da das Objekt-Handle nach dem Revert/Reload manchmal instabil ist
-            var currentId = (addressBindingSource.Current as Adresse)?.Id;
-
-            // 2. Änderungen in EF rückgängig machen
-            await DbChangeAnalyzer.RevertChangesAsync(analysis.RealChanges);
-
-            // EXTRA: Den State-Tracker beruhigen
-            // Wir erzwingen, dass EF Core die Einträge als "Unchanged" ansieht, 
-            // damit beim Beenden kein falscher Alarm kommt.
-            foreach (var entry in _context.ChangeTracker.Entries().Where(x => x.State != EntityState.Unchanged))
+            var currentId = (addressBSource.Current as Adresse)?.Id;
+            try
             {
-                entry.State = EntityState.Unchanged;
+                _isFiltering = true;
+                Cursor = Cursors.WaitCursor;
+                addressDGV.UseWaitCursor = true;
+                addressDGV.DataSource = null;  // NUR das Grid abkoppeln. Die Textboxen bleiben an der addressBindingSource hängen
+                await DbChangeAnalyzer.RevertChangesAsync(analysis.RealChanges, addressBSource);  // Änderungen in EF rückgängig machen
+                Utils.SortAddresses(addressBSource);  // Sortierung (jetzt via DataSource-Tausch, extrem schnell)
+                foreach (var entry in _context.ChangeTracker.Entries().Where(x => x.State != EntityState.Unchanged)) { entry.State = EntityState.Unchanged; }
+            }
+            catch (Exception ex)
+            {
+                Utils.ErrTaskDlg(Handle, ex);
+                return; // Abbruch bei Fehler
+            }
+            finally
+            {
+                addressDGV.DataSource = addressBSource;
+                _isFiltering = false;
+
+                addressDGV.UseWaitCursor = false;
+                Cursor = Cursors.Default;
+
+                addressBSource.ResetBindings(false);
+                UpdateSaveButton();
             }
 
-            // 3. UI-Refresh & Re-Sort
-            SuspendLayout();
-            addressBindingSource.RaiseListChangedEvents = false;
-            addressDGV.DataSource = null;
+            // 3. Selektion und Scroll-Position sanft wiederherstellen
+            var positionRestored = false;
 
-            //var sortedLocalList = _context.Adressen.Local
-            //    .OrderBy(a => a.Nachname)
-            //    .ThenBy(a => a.Vorname)
-            //    .ToList();
+            if (currentId.HasValue)
+            {
+                var itemToSelect = addressBSource.List.OfType<Adresse>().FirstOrDefault(a => a.Id == currentId.Value);
+                if (itemToSelect is not null)
+                {
+                    var newIndex = addressBSource.IndexOf(itemToSelect);
+                    if (newIndex >= 0)
+                    {
+                        positionRestored = true;
+                        // Wir nutzen InvokeAsync, um dem Grid Zeit zum Neuzeichnen zu geben
+                        _ = addressDGV.InvokeAsync(() => SyncGridToPosition(addressDGV, addressBSource, newIndex, true));
+                    }
+                }
+            }
 
-            //addressBindingSource.DataSource = new BindingList<Adresse>(sortedLocalList); // FALSCH: Das erstellt eine Kopie der Liste und trennt die Verbindung zu EF Core Local
-
-            // RICHTIG:
-            addressBindingSource.DataSource = _context.Adressen.Local.ToBindingList();
-            // Falls Sie sortieren müssen, sortieren Sie Local vorher nicht neu (das geht nicht), 
-            // sondern nutzen Sie die Sortierfunktion des DataGridViews oder eine BindingSource-Sortierung, 
-            // aber EF Core Local ist per Definition unsortiert (Einfügereihenfolge).
-
-            addressDGV.DataSource = addressBindingSource;
-            addressBindingSource.RaiseListChangedEvents = true;
-            addressBindingSource.ResetBindings(true);
-            ResumeLayout();
-
-            // 4. Selektion und Scroll-Position wiederherstellen
-            //if (currentId.HasValue)
-            //{
-            //    var item = sortedLocalList.FirstOrDefault(a => a.Id == currentId.Value);
-            //    if (item != null)
-            //    {
-            //        var newIndex = addressBindingSource.IndexOf(item);
-            //        if (newIndex >= 0 && newIndex < addressDGV.RowCount)
-            //        {
-            //            addressBindingSource.Position = newIndex;
-
-            //            // SICHERHEITS-CHECK für die CurrentCell
-            //            // Wir suchen die erste sichtbare Spalte, um den "unsichtbare Zelle" Fehler zu vermeiden
-            //            var firstVisibleCol = addressDGV.Columns
-            //                .Cast<DataGridViewColumn>()
-            //                .FirstOrDefault(c => c.Visible);
-
-            //            if (firstVisibleCol != null)
-            //            {
-            //                try
-            //                {
-            //                    addressDGV.CurrentCell = addressDGV.Rows[newIndex].Cells[firstVisibleCol.Index];
-            //                    addressDGV.Rows[newIndex].Selected = true;
-            //                }
-            //                catch (InvalidOperationException)
-            //                {
-            //                    // Falls das Grid noch im "Reset" Modus ist, ignorieren wir das Setzen der Zelle
-            //                }
-            //            }
-            //        }
-            //    }
-            //}
-            //if (topRowIndex >= 0 && topRowIndex < addressDGV.RowCount)
-            //{
-            //    try { addressDGV.FirstDisplayedScrollingRowIndex = topRowIndex; } catch { }
-            //}
+            // Falls der Datensatz weg ist (z.B. neu erstellt und dann verworfen), springen wir nach oben
+            if (!positionRestored) { _ = addressDGV.InvokeAsync(SelectFirstAddressRow); }
         }
-        UpdateSaveButton();
-        UpdateAddressStatusBar();
     }
 
     private void EditToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
@@ -3754,7 +3811,7 @@ public partial class FrmAdressen : Form
             return;
         }
         saveFileDialog.Filter = "SQLite Database File (*.adb)|*.adb|All files (*.*)|*.*"; // using var sfd = new SaveFileDialog();
-        saveFileDialog.Title = "Wählen Sie einen Speicherort";
+        saveFileDialog.Title = "Wähle einen Speicherort";
         saveFileDialog.FileName = "GoogleKontakte.adb";
         saveFileDialog.InitialDirectory = Directory.Exists(_settings.DatabaseFolder) ? _settings.DatabaseFolder : Path.GetDirectoryName(_databaseFilePath);
         if (saveFileDialog.ShowDialog() == DialogResult.OK)
@@ -3767,9 +3824,9 @@ public partial class FrmAdressen : Form
                 {
                     Caption = appLong,
                     Heading = "Backup erfolgreich",
-                    Text = $"Die Google-Kontakte wurden erfolgreich in\n{backupPath} gespeichert.\n\nMöchten Sie die Datei jetzt öffnen?",
+                    Text = $"Die Google-Kontakte wurden erfolgreich in\n{backupPath} gespeichert.\n\nMöchtest du die Datei jetzt öffnen?",
                     Buttons = { TaskDialogButton.Yes, TaskDialogButton.No },
-                    Footnote = "Bitte beachten Sie, dass das Backup insofern unvollständig ist, dass\nnur die in diesem Programm verwendeten Felder gesichert wurden.",
+                    Footnote = "Bitte beachte, dass das Backup insofern unvollständig ist, dass nur\ndie in diesem Programm verwendeten Felder gesichert wurden.",
                     AllowCancel = true,
                     Icon = TaskDialogIcon.ShieldSuccessGreenBar,
                     SizeToContent = true
@@ -3804,13 +3861,9 @@ public partial class FrmAdressen : Form
                 if (TaskDialog.ShowDialog(Handle, progressPage) == TaskDialogButton.Yes)
                 {
                     {
-                        if (addressBindingSource != null) { await SaveSQLDatabaseAsync(true); }
-                        //ConnectSQLDatabase(backupPath);
+                        if (addressBSource != null) { await SaveSQLDatabaseAsync(true); }
                         await ConnectSQLDatabaseAsync(backupPath);
-                        ignoreSearchChange = true;
-                        searchTSTextBox.TextBox.Clear();
-                        ignoreSearchChange = false;
-                        //if (birthdayAddressShow) { BirthdayReminder(); }
+                        SetSearchTextIgnoreChange(string.Empty);
                     }
                 }
             }
@@ -3895,6 +3948,7 @@ public partial class FrmAdressen : Form
                     {
                         bs.Position = bs.IndexOf(item);
                         if (dgv.CurrentRow != null) { dgv.FirstDisplayedScrollingRowIndex = dgv.CurrentRow.Index; }
+                        //if (!isLocal && contactBindingSource.Current is Contact selectedContact) { ShowPhotoInPictureBox(selectedContact); }
                     }
                 }
             }
@@ -3978,7 +4032,7 @@ public partial class FrmAdressen : Form
             // WICHTIG: Hier muss "async" vor die Parameter (s, e)
             item.Click += async (s, e) =>
             {
-                if (addressBindingSource != null)
+                if (addressBSource != null)
                 {
                     // Jetzt funktioniert await, weil das Lambda async ist
                     await SaveSQLDatabaseAsync(true);
@@ -3987,9 +4041,7 @@ public partial class FrmAdressen : Form
                 // ConnectSQLDatabase wird erst ausgeführt, wenn SaveSQLDatabaseAsync fertig ist
                 //ConnectSQLDatabase(file);
                 await ConnectSQLDatabaseAsync(file);
-                ignoreSearchChange = true;
-                searchTSTextBox.TextBox.Clear();
-                ignoreSearchChange = false;
+                SetSearchTextIgnoreChange(string.Empty);
             };
 
             recentToolStripMenuItem.DropDownItems.Add(item);
@@ -4067,7 +4119,7 @@ public partial class FrmAdressen : Form
 
     private void SyncDocumentsToEntity()
     {
-        if (addressBindingSource?.Current is not Adresse selectedAddress) { return; }
+        if (addressBSource?.Current is not Adresse selectedAddress) { return; }
 
         // 1. Liste der aktuellen Dateipfade aus der GUI holen
         var currentUiPaths = new HashSet<string>(dokuListView.Items.Cast<ListViewItem>().Select(i => i.Text), StringComparer.OrdinalIgnoreCase);
@@ -4115,9 +4167,6 @@ public partial class FrmAdressen : Form
         if (string.IsNullOrEmpty(searchTextBox.Text)) { allDokuLVItems = [.. dokuListView.Items.Cast<ListViewItem>()]; }
         searchTextBox.BackColor = Color.White;
         searchTextBox.BorderStyle = searchPictureBox.BorderStyle = BorderStyle.FixedSingle;
-        //NativeMethods.SendMessage(searchTextBox.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_RIGHTMARGIN, 8 << 16);
-        //NativeMethods.SendMessage(searchTextBox.Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_LEFTMARGIN, 8);
-        searchTSTextBox.TextBox.SetInnerMargins(8, 8);
 
     }
 
@@ -4247,12 +4296,13 @@ public partial class FrmAdressen : Form
         TaskDialogButton linkButton = new TaskDialogCommandLinkButton("Mit Adresse verknüpfen", $"{nameEtc}{inOrt}");
         TaskDialogButton nextButton = new TaskDialogCommandLinkButton("Eine andere Adresse wählen…", "… und neuen Dialog bestätigen");
         TaskDialogButton copyButton = new TaskDialogCommandLinkButton("In Zwischenablage kopieren", "Briefe lassen sich auch manuell hinzügen.");
+        using TaskDialogIcon questionDialogIcon = new(Resources.question32);
         var page = new TaskDialogPage
         {
             Caption = appName,
             Heading = "Änderung im Briefordner erkannt",
             Text = $"Datei: {text}",
-            Icon = TaskDialogIcon.ShieldWarningYellowBar,
+            Icon = questionDialogIcon,  // TaskDialogIcon.ShieldWarningYellowBar,
             Buttons = { linkButton, nextButton, copyButton, TaskDialogButton.Cancel },
             AllowCancel = true,
             SizeToContent = true
@@ -4272,14 +4322,14 @@ public partial class FrmAdressen : Form
         {
             BringToFront();
             ActiveControl = searchTextBox;
-            using TaskDialogIcon questionDialogIcon = new(Resources.question32);
+            //using TaskDialogIcon questionDialogIcon = new(Resources.question32);
             var next = new TaskDialogPage
             {
                 Caption = appName,
-                Heading = "Möchten Sie die Datei verknüpfen?",
+                Heading = "Möchtest du die Datei verknüpfen?",
                 Text = $"{text}",
                 Icon = questionDialogIcon,
-                Footnote = $"Wählen Sie die passende Adresse, bevor Sie auf 'Ja' klicken.",
+                Footnote = $"Wähle die passende Adresse, bevor du auf 'Ja' klickst.",
                 Buttons = { TaskDialogButton.Yes, TaskDialogButton.No },
                 AllowCancel = true,
                 SizeToContent = true
@@ -4332,74 +4382,43 @@ public partial class FrmAdressen : Form
         if (_isFiltering || IsDisposed) { return; }
         if (InvokeRequired)
         {
-            BeginInvoke(UpdateSaveButton);
+            _ = InvokeAsync(UpdateSaveButton);
             return;
         }
-
-        // Statische Helfer-Methode für die Titel-Logik
         static void UpdateTabTitle(TabPage tab, string baseTitle, bool hasChanges)
         {
             var targetText = hasChanges ? $"{baseTitle}*" : baseTitle;
             if (tab.Text != targetText) { tab.Text = targetText; }
         }
-
-        // 1. Wir berechnen die Zustände für beide Datenquellen
         var hasSqlChanges = HasRealEFChanges();
         var hasGoogleChanges = HasRealContactChanges(_lastActiveContact, _originalContactSnapshot);
-
-        // 2. Wir aktualisieren IMMER beide Tab-Titel (UX-Bonus!)
-        // Nutze hier exakt die Texte, die du auch im Designer vergeben hast
         UpdateTabTitle(addressTabPage, " Lokale Adressen", hasSqlChanges);
         UpdateTabTitle(contactTabPage, " Google Kontakte", hasGoogleChanges);
-
-        // 3. Den Save-Button in der Toolbar schalten wir je nach aktivem Tab
-        if (tabControl.SelectedTab == addressTabPage)
+        var (enabled, toolTip) = tabControl.SelectedTab switch  // "Switch Expression" für bessere Lesbarkeit
         {
-            saveTSButton.Enabled = hasSqlChanges;
-            saveTSButton.ToolTipText = hasSqlChanges ? "Lokale Adressen speichern (Strg+S)" : "Keine Änderungen";
-        }
-        else if (tabControl.SelectedTab == contactTabPage)
-        {
-            saveTSButton.Enabled = hasGoogleChanges;
-            saveTSButton.ToolTipText = hasGoogleChanges ? "Google-Kontakt hochladen (Strg+S)" : "Keine Änderungen";
-        }
+            var t when t == addressTabPage => (hasSqlChanges, hasSqlChanges ? "Lokale Adressen speichern (Strg+S)" : "Keine Änderungen"),
+            var t when t == contactTabPage => (hasGoogleChanges, hasGoogleChanges ? "Google-Kontakt hochladen (Strg+S)" : "Keine Änderungen"),
+            _ => (false, "Keine Auswahl")
+        };
+        if (saveTSButton.Enabled != enabled) { saveTSButton.Enabled = enabled; }
+        saveTSButton.ToolTipText = toolTip;
     }
 
     private bool HasRealEFChanges()
     {
         if (_context == null) { return false; }
-
-        // WICHTIG: DetectChanges erkennt Added/Deleted bei Beziehungen automatisch
-        _context.ChangeTracker.DetectChanges();
-
+        _context.ChangeTracker.DetectChanges();  // DetectChanges erkennt Added/Deleted bei Beziehungen automatisch
         foreach (var entry in _context.ChangeTracker.Entries())
         {
-            // Fall 1: Hinzugefügte oder Gelöschte Objekte
-            // Das deckt ab:
-            // - Neue Adressen
-            // - Gelöschte Adressen
-            // - Neue Gruppen-Verknüpfungen (Schatten-Entitäten) -> Das ist Ihr Fall beim Hinzufügen!
-            // - Gelöschte Gruppen-Verknüpfungen -> Das ist Ihr Fall beim Löschen!
-            if (entry.State == EntityState.Added || entry.State == EntityState.Deleted)
-            {
-                return true;
-            }
-
-            // Fall 2: Modifizierte Objekte (z.B. Tippfehler-Korrektur)
+            if (entry.State == EntityState.Added || entry.State == EntityState.Deleted) { return true; }
             if (entry.State == EntityState.Modified)
             {
-                // Wenn es eine Schatten-Entität ist (keine C#-Klasse), ist Modified eher selten, aber möglich.
-                // Wir behandeln es wie eine echte Änderung.
-                if (entry.Metadata.ClrType == null) { return true; }
-
-                // Bei echten Klassen prüfen wir die Properties auf relevante Änderungen
-                foreach (var prop in entry.Properties)
+                if (entry.Metadata.ClrType == null) { return true; }  // selten, Phantom-Änderung ohne CLR-Typ, sicherheitshalber als echte Änderung behandeln
+                foreach (var prop in entry.Properties)  // Bei echten Klassen prüfen wir die Properties auf relevante Änderungen
                 {
                     if (!prop.IsModified) { continue; }
-
                     var original = prop.OriginalValue;
                     var current = prop.CurrentValue;
-
                     if (prop.Metadata.ClrType == typeof(string))
                     {
                         var sOriginal = (original as string ?? string.Empty).Trim();
@@ -4407,52 +4426,68 @@ public partial class FrmAdressen : Form
                         if (string.Equals(sOriginal, sCurrent, StringComparison.Ordinal)) { continue; }
                     }
                     else if (Equals(original, current)) { continue; }
-
                     return true; // Echte Property-Änderung gefunden
                 }
             }
         }
-
         return false;
     }
 
     private async Task<bool> ContactChanges_Check(bool isClosing = false)
     {
-        if (_lastActiveContact == null || _originalContactSnapshot == null) { return true; }  // kein Kontakt aktiv oder kein Snapshot -> alles okay
+        // 1. RE-ENTRANCY SCHUTZ: Wenn wir schon prüfen (Dialog ist offen), blockieren wir alles weitere.
+        if (_isCheckingContactChanges) { return false; }
 
+        if (_lastActiveContact == null || _originalContactSnapshot == null) { return true; }
 
-        contactDGV.CausesValidation = false;
-        addressDGV.CausesValidation = false;
+        _isCheckingContactChanges = true; // Tür abschließen
         try
         {
-            if (!ValidateChildren(ValidationConstraints.Enabled)) { return false; }  // Validierung der Textboxen/Comboboxen fehlgeschlagen
-            contactBindingSource.EndEdit();  // Daten vom UI in die BindingSource schreiben
+            contactDGV.CausesValidation = false;
+            addressDGV.CausesValidation = false;
+
+            // Validierung im UI-Thread absichern
+            var isValid = true;
+            try
+            {
+                isValid = ValidateChildren(ValidationConstraints.Enabled);
+                contactBSource.EndEdit();
+            }
+            finally
+            {
+                contactDGV.CausesValidation = true;
+                addressDGV.CausesValidation = true;
+            }
+
+            if (!isValid) { return false; }
+
+            var currentContact = _lastActiveContact;
+            var isNewContact = string.IsNullOrEmpty(currentContact.ResourceName);
+
+            if (!HasRealContactChanges(currentContact, _originalContactSnapshot))
+            {
+                if (isNewContact) { RemoveContactFromList(currentContact); }
+                return true;
+            }
+
+            var result = await AskSaveContactChangesAsync(isClosing);
+
+            if (result == DialogResult.Cancel) { return false; }
+            if (result == DialogResult.No)
+            {
+                if (isNewContact) { RemoveContactFromList(currentContact); }
+                else
+                {
+                    currentContact.CopyFrom(_originalContactSnapshot);
+                    if (!isClosing) { contactBSource.ResetCurrentItem(); }
+                }
+            }
+            return true;
         }
         finally
         {
-            contactDGV.CausesValidation = true;
-            addressDGV.CausesValidation = true;
+            _isCheckingContactChanges = false; // Tür wieder aufschließen
         }
-
-        var currentContact = _lastActiveContact;  // Lokale Referenz für den Compiler (wegen Nullable-Check)
-        var isNewContact = string.IsNullOrEmpty(currentContact.ResourceName);
-        if (!HasRealContactChanges(currentContact, _originalContactSnapshot))
-        {
-            if (isNewContact) { RemoveContactFromList(currentContact); }  // Der User hat "Neu" geklickt, aber NICHTS getippt und wechselt jetzt die Zeile.
-            return true; // Er darf wechseln
-        }
-        var result = await AskSaveContactChangesAsync(isClosing);  // Bei DialogResult.Yes wurde bereits in AskSaveContactChangesAsync gespeichert.
-        if (result == DialogResult.Cancel) { return false; }  // Bleiben (Abbruch)
-        if (result == DialogResult.No)
-        {
-            if (isNewContact) { RemoveContactFromList(currentContact); }  // Er ist neu UND der User will ihn nicht speichern -> Weg damit.
-            else
-            {
-                currentContact.CopyFrom(_originalContactSnapshot);
-                if (!isClosing) { contactBindingSource.ResetCurrentItem(); }  // Er existierte schon -> Änderungen rückgängig machen
-            }
-        }
-        return true;
     }
 
     private async Task CheckContactChanges(Func<Task> action)  // Func<Task> action -> Erwartet eine Methode, die Task zurückgibt
@@ -4468,32 +4503,45 @@ public partial class FrmAdressen : Form
     private async Task<DialogResult> AskSaveContactChangesAsync(bool isClosing)
     {
         if (_originalContactSnapshot == null || _lastActiveContact == null) { return DialogResult.None; }
+
         //ValidateChildren();  // Sicherstellen, dass die UI aktuell ist
         //contactBindingSource.EndEdit();
+
         var changedFields = _lastActiveContact.GetChangedFields(_originalContactSnapshot);
+
         //var photoChanged = changedFields.Remove("photos");  // wird separat behandelt, aber für die API-Logik müssen wir wissen, ob es sich geändert hat, siehe unten
+
         if (changedFields.Count == 0) { return DialogResult.None; }
+
         var nameParts = new[] { _lastActiveContact.Vorname, _lastActiveContact.Nachname }.Where(s => !string.IsNullOrWhiteSpace(s));
         var fullName = string.Join(" ", nameParts);
-        var headingText = string.IsNullOrWhiteSpace(fullName)
-            ? "Möchten Sie die Änderungen speichern?"
-            : $"Möchten Sie die Änderungen an {fullName} speichern?";
+        var headingText = "Möchtet du die Änderung" + (changedFields.Count > 1 ? "en" : "") + " speichern?";
+
         var fieldList = string.Join("\n", changedFields.Select(f => "• " + char.ToUpper(f[0]) + f[1..]));
         //if (photoChanged) { fieldList += "\n• Foto"; }
-        var shortSummary = $"{changedFields.Count} Bereich(e) wurden geändert.\n{fieldList}";
+
+        var shortSummary = changedFields.Count == 1 ? $"Ein Bereich wurde geändert:\n{fieldList}" : $"{changedFields.Count} Bereiche wurden geändert:\n{fieldList}";
+
         var detailedDiff = Utils.GenerateDetailedDiff(_lastActiveContact, _originalContactSnapshot, dataFields);
+
         var btnSave = new TaskDialogButton("&Hochladen") { AllowCloseDialog = false }; // Wichtig: Schließt nicht sofort
         var btnDiscard = new TaskDialogButton("&Verwerfen");
         var btnCancel = TaskDialogButton.Cancel;
+        using TaskDialogIcon questionDialogIcon = new(Resources.question32);
         var pageMain = new TaskDialogPage()
         {
             Caption = "Google Kontakte",
             Heading = headingText,
-            Text = shortSummary + Environment.NewLine + detailedDiff,
-            Icon = TaskDialogIcon.ShieldBlueBar,
+            Text = shortSummary, // detailedDiff hier entfernt
+            Icon = questionDialogIcon,  // TaskDialogIcon.ShieldBlueBar,
             AllowCancel = true,
             Buttons = { btnSave, btnDiscard, btnCancel },
-            DefaultButton = btnSave
+            DefaultButton = btnSave,
+            Expander = new TaskDialogExpander()
+            {
+                Text = detailedDiff,
+                Position = TaskDialogExpanderPosition.AfterText // Platziert den Expander direkt unter dem Haupttext
+            }
         };
 
         _googleCts?.Dispose();
@@ -4509,9 +4557,12 @@ public partial class FrmAdressen : Form
             ProgressBar = new TaskDialogProgressBar() { State = TaskDialogProgressBarState.Marquee },
             Buttons = { TaskDialogButton.Close }
         };
+
         pageProgress.Buttons[0].Enabled = false; // "Schließen" erst nach Abschluss erlauben
         var saveSuccess = false;  // Status-Flag für den Rückgabewert
+
         btnSave.Click += (s, e) => { pageMain.Navigate(pageProgress); };
+
         pageProgress.Created += async (s, e) =>
         {
             try
@@ -4525,13 +4576,9 @@ public partial class FrmAdressen : Form
                 // UI Feedback im Dialog
                 pageProgress.ProgressBar.Value = 100;
                 pageProgress.ProgressBar.State = TaskDialogProgressBarState.Normal;
-                pageProgress.Heading = "Erfolgreich gespeichert.";
-                pageProgress.Text = "Die Daten wurden synchronisiert.";
 
-                // Kurze Pause für UX, dann schließen
-                await Task.Delay(500);
-                pageProgress.Buttons[0].Enabled = true;
-                pageProgress.Buttons[0].PerformClick();
+                // Sauberer Schließbefehl für den TaskDialog
+                pageProgress.BoundDialog?.Close();
             }
             catch (Exception ex)
             {
@@ -4550,50 +4597,105 @@ public partial class FrmAdressen : Form
         // Rückgabe ermitteln
         if (saveSuccess)
         {
-            // Wenn wir erfolgreich waren, müssen wir ggf. Buttons deaktivieren (außer wir schließen eh)
             if (!isClosing)
             {
                 saveTSButton.Enabled = false;
-                // Grid Fotozelle aktualisieren, falls Foto neu (per BindingSource Reset oder direkt)
-                contactBindingSource.ResetBindings(false);
+                //var position = contactBindingSource.IndexOf(_lastActiveContact);
+                //if (position >= 0)
+                //{
+                //  _ =  InvokeAsync(() => { contactBindingSource.ResetItem(position); });  // Aktualisiert nur diese eine Zeile im Grid, statt alle Zeilen zu löschen
+                //}
             }
             return DialogResult.Yes;
         }
         if (clickedButton == btnDiscard) { return DialogResult.No; }
+
         return DialogResult.Cancel;
     }
 
     private async Task ExecuteGoogleSaveAsync(Contact contactToSave, List<string> changedFields, Image? currentImage, CancellationToken token)
     {
-        token.ThrowIfCancellationRequested();  // 1. Initialisierung
+        token.ThrowIfCancellationRequested();
         var manager = new GooglePeopleManager(secretPath, tokenDir);
-        if (string.IsNullOrEmpty(contactToSave.ResourceName))  // 2. Weiche: Erstellen oder Aktualisieren
+
+        if (string.IsNullOrEmpty(contactToSave.ResourceName))
         {
-            var createdContact = await manager.CreateContactAsync(contactToSave, currentImage, token);  // übernimmt Kontakt + Bild in einem Rutsch 
+            var createdContact = await manager.CreateContactAsync(contactToSave, currentImage, token);
             contactToSave.ResourceName = createdContact.ResourceName;
             contactToSave.ETag = createdContact.ETag;
             contactToSave.PhotoUrl = createdContact.PhotoUrl;
         }
-        else  // === FALL B: UPDATE ===
+        else // === FALL B: UPDATE ===
         {
             if (changedFields.Count > 0 || changedFields.Contains("memberships"))
             {
-                var updatedPerson = await manager.UpdateContactAsync(contactToSave, changedFields, contactGroupsDict, _originalContactSnapshot, checkEmptyGroups: true, token: token);
-                contactToSave.ETag = updatedPerson.ETag;
-                contactToSave.ResourceName = updatedPerson.ResourceName;
+                var retry = false;
+                do
+                {
+                    retry = false;
+                    try
+                    {
+                        var updatedPerson = await manager.UpdateContactAsync(contactToSave, changedFields, contactGroupsDict, _originalContactSnapshot, checkEmptyGroups: true, token: token);
+                        contactToSave.ETag = updatedPerson.ETag;
+                        contactToSave.ResourceName = updatedPerson.ResourceName;
+                    }
+                    catch (Google.GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.BadRequest || ex.HttpStatusCode == System.Net.HttpStatusCode.Conflict)
+                    {
+                        // Prüfen, ob der Fehler durch einen ETag-Mismatch (Konflikt) ausgelöst wurde
+                        if (ex.Message.Contains("etag", StringComparison.OrdinalIgnoreCase) || ex.Message.Contains("precondition", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var overwrite = false;
+
+                            // 1. UI blockieren und User fragen (Invoke ist Pflicht, da wir im Task-Thread sind!)
+                            Invoke(() =>
+                            {
+                                var (isYes, _, _) = Utils.YesNo_TaskDialog(this, "Konflikt beim Speichern",
+                                    "Dieser Kontakt wurde in der Zwischenzeit online (z. B. auf einem Smartphone) geändert.",
+                                    "Möchtest du das Speichern erzwingen und die Online-Version mit deinen lokalen Eingaben überschreiben?");
+                                overwrite = isYes;
+                            });
+
+                            if (overwrite)
+                            {
+                                // 2. Den GANZ FRISCHEN Kontakt von Google holen, nicht nur den ETag!
+                                // Sonst würden wir mit unserem alten RawGooglePerson-Payload die Online-Änderungen überschreiben.
+                                var freshPerson = await manager.GetRawPersonAsync(contactToSave.ResourceName, token);
+
+                                contactToSave.RawGooglePerson = freshPerson; // Den Hintergrund-Payload aktualisieren
+                                contactToSave.ETag = freshPerson.ETag;       // Den neuen ETag anheften
+
+                                retry = true; // Schleife von vorne -> UpdateContactAsync mischt jetzt unsere lokalen Änderungen in die neuen Online-Daten!
+                            }
+                            else
+                            {
+                                // 3. User hat abgebrochen: Nichts weiter tun, Methode verlassen.
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            // Ein anderer Bad Request Fehler (z.B. ungültige E-Mail-Adresse), diesen werfen wir ganz normal weiter
+                            throw;
+                        }
+                    }
+                } while (retry);
             }
-            token.ThrowIfCancellationRequested();  // Token prüfen, bevor das teure Bild-Update startet
+            token.ThrowIfCancellationRequested();
         }
-        _originalContactSnapshot = (Contact)contactToSave.Clone();  // Lokalen Status konsolidieren
-        contactToSave.ResetSearchCache();  // gehört streng genommen eigentlich in den Aufrufer (Click-Event), aber wenn es hier steht, ist sichergestellt, dass es nur bei Erfolg passiert.
+
+        _originalContactSnapshot = (Contact)contactToSave.Clone();
+        contactToSave.ResetSearchCache();
     }
+
 
     private void RemoveContactFromList(Contact contact)
     {
-        isSelectionChanging = true;  // Verhindert Events während des Löschens
+        isSelectionChanging = true;
         try
         {
-            _allGoogleContacts.Remove(contact); // contactBindingSource.Remove(contact);  // Falls Sie die BindingList direkt nutzen, reicht das Remove oben.
+            // WICHTIG: Immer über die BindingSource löschen, um das DataGridView synchron zu halten!
+            contactBSource.Remove(contact);
+
             _lastActiveContact = null;
             _originalContactSnapshot = null;
         }
@@ -4650,47 +4752,35 @@ public partial class FrmAdressen : Form
         return false;
     }
 
-    private void Clear_SearchTextBox()
+    private async void Clear_SearchTextBox()
     {
-        // 1. Das aktuell ausgewählte Objekt merken (Sicherer als der Index!)
-        object? selectedItem = null;
-        BindingSource? activeBs = null;
-        DataGridView? activeDgv = null;
+        filterRemoveToolStripMenuItem.Visible = false;
 
-        if (tabControl.SelectedTab == addressTabPage)
-        {
-            activeBs = addressBindingSource;
-            activeDgv = addressDGV;
-            selectedItem = addressBindingSource.Current;
-        }
-        else if (tabControl.SelectedTab == contactTabPage)
-        {
-            activeBs = contactBindingSource;
-            activeDgv = contactDGV;
-            selectedItem = contactBindingSource.Current;
-        }
+        var isAddressTab = tabControl.SelectedTab == addressTabPage;
+        var activeBs = isAddressTab ? addressBSource : contactBSource;
+        var activeDgv = isAddressTab ? addressDGV : contactDGV;
+        var selectedItem = activeBs?.Current;
 
-        // 2. Suche leeren (Löst Filter-Reset aus)
-        ignoreSearchChange = true; // Verhindert unnötige Zwischen-Events
-        searchTSTextBox.Text = string.Empty;
+        SetSearchTextIgnoreChange(string.Empty);
+        searchTimer.Stop();
 
-        // Wichtig: Den Filter auch wirklich anwenden/aufheben
-        ApplyGlobalSearch(string.Empty);
-        ignoreSearchChange = false;
+        // WICHTIG: jumpToFirstRow auf false, da wir das Item manuell ansteuern
+        ApplyGlobalSearch(string.Empty, jumpToFirstRow: false);
 
-        // 3. Den Fokus auf das gemerkte Objekt zurücksetzen
         if (activeBs != null && activeDgv != null && selectedItem != null)
         {
-            // Wir suchen das Objekt in der nun ungefilterten Liste
             var newIndex = activeBs.IndexOf(selectedItem);
             if (newIndex >= 0)
             {
-                activeBs.Position = newIndex;
-
-                // Scroll-Position korrigieren, damit die Zeile sichtbar ist
-                if (activeDgv.Rows.Count > newIndex) { activeDgv.FirstDisplayedScrollingRowIndex = newIndex; }
+                _ = activeDgv.InvokeAsync(() =>
+                {
+                    // Wir erzwingen hier kein Zentrieren (-1), sondern bleiben 
+                    // beim Standard-Scrollverhalten für den manuellen Reset.
+                    SyncGridToPosition(activeDgv, activeBs, newIndex, setFocus: false);
+                });
             }
         }
+        await Task.Yield();  // kurzer Atemzug, damit die UI die Änderungen rendern kann, bevor wir den Fokus setzen
         searchTSTextBox.Focus();
     }
 
@@ -4708,9 +4798,18 @@ public partial class FrmAdressen : Form
     {
         if (tabControl.SelectedTab == addressTabPage && _context != null)
         {
-            ExecuteFilter(_context.Adressen.Local, addressBindingSource, addressDGV, a => a.Dokumente.Count != 0, "… mit Briefverweis", "Adressen");
+            ExecuteFilter(_context.Adressen.Local, addressBSource, addressDGV, a => a.Dokumente.Count != 0, "… mit Briefverweis", "Adressen");
         }
     }
+
+    private void AdressenOhneBriefToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        if (tabControl.SelectedTab == addressTabPage && _context != null)
+        {
+            ExecuteFilter(_context.Adressen.Local, addressBSource, addressDGV, a => a.Dokumente.Count == 0, "… ohne Briefverweis", "Adressen");
+        }
+    }
+
 
     private void PhotoPlusFilterToolStripMenuItem_Click(object sender, EventArgs e)
     {
@@ -4719,11 +4818,11 @@ public partial class FrmAdressen : Form
             // 1. Wir fragen die DB: Welche IDs haben ein Foto? ("SELECT Id FROM Adressen WHERE FotoId IS NOT NULL")
             var idsWithPhoto = _context.Adressen.Where(a => a.Foto != null).Select(a => a.Id).ToHashSet(); // HashSet für extrem schnelle Suche
             // 2. Wir filtern die lokale Liste anhand dieser IDs
-            ExecuteFilter(_context.Adressen.Local, addressBindingSource, addressDGV, a => idsWithPhoto.Contains(a.Id), "… mit Bild", "Adressen");
+            ExecuteFilter(_context.Adressen.Local, addressBSource, addressDGV, a => idsWithPhoto.Contains(a.Id), "… mit Bild", "Adressen");
         }
         else if (tabControl.SelectedTab == contactTabPage && _allGoogleContacts != null)
         {
-            ExecuteFilter(_allGoogleContacts, contactBindingSource, contactDGV, c => !string.IsNullOrWhiteSpace(c.PhotoUrl), "… mit Bild", "Google Kontakte");
+            ExecuteFilter(_allGoogleContacts, contactBSource, contactDGV, c => !string.IsNullOrWhiteSpace(c.PhotoUrl), "… mit Bild", "Google Kontakte");
         }
     }
 
@@ -4734,11 +4833,11 @@ public partial class FrmAdressen : Form
             // 1. Gleiches Spiel: IDs holen
             var idsWithPhoto = _context.Adressen.Where(a => a.Foto != null).Select(a => a.Id).ToHashSet();
             // 2. Filter umdrehen: Zeige alle, deren ID NICHT in der Liste ist
-            ExecuteFilter(_context.Adressen.Local, addressBindingSource, addressDGV, a => !idsWithPhoto.Contains(a.Id), "… ohne Bild", "Adressen");
+            ExecuteFilter(_context.Adressen.Local, addressBSource, addressDGV, a => !idsWithPhoto.Contains(a.Id), "… ohne Bild", "Adressen");
         }
         else if (tabControl.SelectedTab == contactTabPage && _allGoogleContacts != null)
         {
-            ExecuteFilter(_allGoogleContacts, contactBindingSource, contactDGV, c => string.IsNullOrWhiteSpace(c.PhotoUrl), "… ohne Bild", "Google Kontakte");
+            ExecuteFilter(_allGoogleContacts, contactBSource, contactDGV, c => string.IsNullOrWhiteSpace(c.PhotoUrl), "… ohne Bild", "Google Kontakte");
         }
     }
 
@@ -4746,11 +4845,11 @@ public partial class FrmAdressen : Form
     {
         if (tabControl.SelectedTab == addressTabPage && _context != null)
         {
-            ExecuteFilter(_context.Adressen.Local, addressBindingSource, addressDGV, a => !string.IsNullOrWhiteSpace(a.Mail1) || !string.IsNullOrWhiteSpace(a.Mail2), "… mit E-Mail", "Adressen");
+            ExecuteFilter(_context.Adressen.Local, addressBSource, addressDGV, a => !string.IsNullOrWhiteSpace(a.Mail1) || !string.IsNullOrWhiteSpace(a.Mail2), "… mit E-Mail", "Adressen");
         }
         else if (tabControl.SelectedTab == contactTabPage && _allGoogleContacts != null)
         {
-            ExecuteFilter(_allGoogleContacts, contactBindingSource, contactDGV, c => !string.IsNullOrWhiteSpace(c.Mail1) || !string.IsNullOrWhiteSpace(c.Mail2), "… mit E-Mail", "Google Kontakte");
+            ExecuteFilter(_allGoogleContacts, contactBSource, contactDGV, c => !string.IsNullOrWhiteSpace(c.Mail1) || !string.IsNullOrWhiteSpace(c.Mail2), "… mit E-Mail", "Google Kontakte");
         }
     }
 
@@ -4758,12 +4857,12 @@ public partial class FrmAdressen : Form
     {
         if (tabControl.SelectedTab == addressTabPage && _context != null)
         {
-            ExecuteFilter(_context.Adressen.Local, addressBindingSource, addressDGV,
+            ExecuteFilter(_context.Adressen.Local, addressBSource, addressDGV,
                 a => string.IsNullOrWhiteSpace(a.Mail1) && string.IsNullOrWhiteSpace(a.Mail2), "… ohne E-Mail", "Adressen");
         }
         else if (tabControl.SelectedTab == contactTabPage && _allGoogleContacts != null)
         {
-            ExecuteFilter(_allGoogleContacts, contactBindingSource, contactDGV,
+            ExecuteFilter(_allGoogleContacts, contactBSource, contactDGV,
                 c => string.IsNullOrWhiteSpace(c.Mail1) && string.IsNullOrWhiteSpace(c.Mail2), "… ohne E-Mail", "Google Kontakte");
         }
     }
@@ -4772,12 +4871,12 @@ public partial class FrmAdressen : Form
     {
         if (tabControl.SelectedTab == addressTabPage && _context != null)
         {
-            ExecuteFilter(_context.Adressen.Local, addressBindingSource, addressDGV,
+            ExecuteFilter(_context.Adressen.Local, addressBSource, addressDGV,
                 a => !string.IsNullOrWhiteSpace(a.Telefon1) || !string.IsNullOrWhiteSpace(a.Telefon2), "… mit Telefonnummer", "Adressen");
         }
         else if (tabControl.SelectedTab == contactTabPage && _allGoogleContacts != null)
         {
-            ExecuteFilter(_allGoogleContacts, contactBindingSource, contactDGV,
+            ExecuteFilter(_allGoogleContacts, contactBSource, contactDGV,
                 c => !string.IsNullOrWhiteSpace(c.Telefon1) || !string.IsNullOrWhiteSpace(c.Telefon2), "… mit Telefonnummer", "Google Kontakte");
         }
     }
@@ -4786,12 +4885,12 @@ public partial class FrmAdressen : Form
     {
         if (tabControl.SelectedTab == addressTabPage && _context != null)
         {
-            ExecuteFilter(_context.Adressen.Local, addressBindingSource, addressDGV,
+            ExecuteFilter(_context.Adressen.Local, addressBSource, addressDGV,
                 a => string.IsNullOrWhiteSpace(a.Telefon1) && string.IsNullOrWhiteSpace(a.Telefon2), "… ohne Telefonnummer", "Adressen");
         }
         else if (tabControl.SelectedTab == contactTabPage && _allGoogleContacts != null)
         {
-            ExecuteFilter(_allGoogleContacts, contactBindingSource, contactDGV,
+            ExecuteFilter(_allGoogleContacts, contactBSource, contactDGV,
                 c => string.IsNullOrWhiteSpace(c.Telefon1) && string.IsNullOrWhiteSpace(c.Telefon2), "… ohne Telefonnummer", "Google Kontakte");
         }
     }
@@ -4800,12 +4899,12 @@ public partial class FrmAdressen : Form
     {
         if (tabControl.SelectedTab == addressTabPage && _context != null)
         {
-            ExecuteFilter(_context.Adressen.Local, addressBindingSource, addressDGV,
+            ExecuteFilter(_context.Adressen.Local, addressBSource, addressDGV,
                 a => !string.IsNullOrWhiteSpace(a.Mobil), "… mit Mobilnummer", "Adressen");
         }
         else if (tabControl.SelectedTab == contactTabPage && _allGoogleContacts != null)
         {
-            ExecuteFilter(_allGoogleContacts, contactBindingSource, contactDGV,
+            ExecuteFilter(_allGoogleContacts, contactBSource, contactDGV,
                 c => !string.IsNullOrWhiteSpace(c.Mobil), "… mit Mobilnummer", "Google Kontakte");
         }
     }
@@ -4814,11 +4913,11 @@ public partial class FrmAdressen : Form
     {
         if (tabControl.SelectedTab == addressTabPage && _context != null)
         {
-            ExecuteFilter(_context.Adressen.Local, addressBindingSource, addressDGV, a => string.IsNullOrWhiteSpace(a.Mobil), "… ohne Mobilnummer", "Adressen");
+            ExecuteFilter(_context.Adressen.Local, addressBSource, addressDGV, a => string.IsNullOrWhiteSpace(a.Mobil), "… ohne Mobilnummer", "Adressen");
         }
         else if (tabControl.SelectedTab == contactTabPage && _allGoogleContacts != null)
         {
-            ExecuteFilter(_allGoogleContacts, contactBindingSource, contactDGV, c => string.IsNullOrWhiteSpace(c.Mobil), "… ohne Mobilnummer", "Google Kontakte");
+            ExecuteFilter(_allGoogleContacts, contactBSource, contactDGV, c => string.IsNullOrWhiteSpace(c.Mobil), "… ohne Mobilnummer", "Google Kontakte");
         }
     }
 
@@ -4827,13 +4926,13 @@ public partial class FrmAdressen : Form
         if (tabControl.SelectedTab == addressTabPage && _context != null)
         {
             // Wir prüfen direkt das Nullable DateOnly Feld "Geburtstag"
-            ExecuteFilter(_context.Adressen.Local, addressBindingSource, addressDGV,
+            ExecuteFilter(_context.Adressen.Local, addressBSource, addressDGV,
                 a => a.Geburtstag.HasValue, "… mit Geburtsdatum", "Adressen");
         }
         else if (tabControl.SelectedTab == contactTabPage && _allGoogleContacts != null)
         {
             // Auch für Google Kontakte (vorausgesetzt, das Feld heißt dort ähnlich)
-            ExecuteFilter(_allGoogleContacts, contactBindingSource, contactDGV,
+            ExecuteFilter(_allGoogleContacts, contactBSource, contactDGV,
                 c => c.Geburtstag.HasValue, "… mit Geburtsdatum", "Google Kontakte");
         }
     }
@@ -4843,13 +4942,13 @@ public partial class FrmAdressen : Form
         if (tabControl.SelectedTab == addressTabPage && _context != null)
         {
             // Wir filtern auf alle Adressen, deren Geburtstag NICHT gesetzt ist (null)
-            ExecuteFilter(_context.Adressen.Local, addressBindingSource, addressDGV,
+            ExecuteFilter(_context.Adressen.Local, addressBSource, addressDGV,
                 a => !a.Geburtstag.HasValue, "… ohne Geburtsdatum", "Adressen");
         }
         else if (tabControl.SelectedTab == contactTabPage && _allGoogleContacts != null)
         {
             // Dieselbe Logik für die Google Kontakte
-            ExecuteFilter(_allGoogleContacts, contactBindingSource, contactDGV,
+            ExecuteFilter(_allGoogleContacts, contactBSource, contactDGV,
                 c => !c.Geburtstag.HasValue, "… ohne Geburtsdatum", "Google Kontakte");
         }
     }
@@ -4869,60 +4968,347 @@ public partial class FrmAdressen : Form
     private void ExecuteFilter<T>(IEnumerable<T> sourceList, BindingSource bs, DataGridView dgv, Func<T, bool> predicate, string statusText, string entityName)
     {
         if (sourceList == null || bs == null) { return; }
+
+        SetSearchTextIgnoreChange(string.Empty);
+        searchTimer.Stop();
+        _isFiltering = true; // Guard setzen, bevor das Grid verrücktspielt
         var currencyManager = BindingContext?[bs] as CurrencyManager;
         try
         {
-            currencyManager?.SuspendBinding();
-            dgv.CurrentCell = null; // Verhindert Index-Fehler beim Wechsel der DataSource
-
-            // Hier passiert die Magie: Filtern der Liste
-            var filteredList = sourceList.Where(predicate).ToList();
+            dgv.SuspendLayout(); // Visuelles Ruckeln verhindern
+            currencyManager?.SuspendBinding(); // UI-Event-Sturm verhindern!
+            dgv.CurrentCell = null;
+            var filteredList = sourceList.Where(predicate).ToList(); // Magie: Filtern
             bs.DataSource = filteredList;
-
-            // UI Updates
-            filterRemoveToolStripMenuItem.Visible = true;
             flexiTSStatusLabel.Text = statusText;
-
-            // Statusbar aktualisieren
             var totalCount = sourceList.Count();
             var visibleCount = filteredList.Count;
+            toolStripStatusLabel.Text = visibleCount == totalCount
+                ? $"{totalCount} {entityName}"
+                : $"{visibleCount}/{totalCount} {entityName}";
 
-            toolStripStatusLabel.Text = visibleCount == totalCount ? $"{totalCount} {entityName}" : $"{visibleCount}/{totalCount} {entityName}";
-            // Erste Zeile markieren, falls vorhanden
-            if (visibleCount > 0 && dgv.Rows.Count > 0) { dgv.Rows[0].Selected = true; }
+            if (visibleCount > 0 && dgv.Rows.Count > 0) { dgv.CurrentCell = dgv.Rows[0].Cells[0]; }  // damit die Editierfielder korrekt befüllt werden
         }
         catch (Exception ex) { Debug.WriteLine(ex.Message); }
-        finally { currencyManager?.ResumeBinding(); }
+        finally
+        {
+            currencyManager?.ResumeBinding(); // Bindung wieder aufnehmen
+            dgv.ResumeLayout();
+            _isFiltering = false;
+            if (typeof(T) == typeof(Adresse)) { AddressBindingSource_CurrentChanged(null, EventArgs.Empty); }  // Snapshot/UI-Updates nach dem Filtern triggern
+            else if (typeof(T) == typeof(Contact)) { ContactBindingSource_CurrentChanged(null, EventArgs.Empty); }
+            UpdateFilterUIState();
+        }
     }
-
-    private void TopAlignZoomPictureBox_DoubleClick(object sender, EventArgs e) => AddPictboxToolStripButton_Click(topAlignZoomPictureBox, EventArgs.Empty);
 
     private void FilterRemoveToolStripMenuItem_Click(object sender, EventArgs e)
     {
-        ignoreSearchChange = true;
-        searchTSTextBox.TextBox.Clear();
-        tsClearLabel.Visible = false;
-        ignoreSearchChange = false;
+        // Suche stumm leeren
+        SetSearchTextIgnoreChange(string.Empty);
+        searchTimer.Stop();
 
-        if (tabControl.SelectedTab == addressTabPage)
+        _isFiltering = true;
+        try
         {
-            if (_context == null) { return; }
-            ExecuteAndPreserveSelection<Adresse>(addressBindingSource, addressDGV, () => { addressBindingSource.DataSource = _context.Adressen.Local.ToBindingList(); });
-            UpdateAddressStatusBar();
+            if (tabControl.SelectedTab == addressTabPage)
+            {
+                if (_context == null)
+                {
+                    return;
+                }
+
+                ExecuteAndPreserveSelection<Adresse>(addressBSource, addressDGV, () =>
+                {
+                    addressBSource.DataSource = _context.Adressen.Local.ToBindingList();
+                });
+                UpdateAddressStatusBar();
+            }
+            else if (tabControl.SelectedTab == contactTabPage)
+            {
+                if (_allGoogleContacts != null)
+                {
+                    ExecuteAndPreserveSelection<Contact>(contactBSource, contactDGV, () =>
+                    {
+                        contactBSource.DataSource = _allGoogleContacts;
+                    });
+                }
+                UpdateContactStatusBar();
+            }
         }
-        else if (tabControl.SelectedTab == contactTabPage)
+        finally
         {
-            if (_allGoogleContacts != null && contactBindingSource != null) { contactBindingSource.DataSource = _allGoogleContacts; }
-            UpdateContactStatusBar();
+            _isFiltering = false;
         }
-        filterRemoveToolStripMenuItem.Visible = false;
+
         flexiTSStatusLabel.Text = string.Empty;
+        searchTSTextBox.Focus();
+        UpdateFilterUIState();
+    }
+
+    private void UpdateFilterUIState()
+    {
+        var isSubset = false;
+
+        // 1. Prüfen, ob eine Teilmenge im aktuell aktiven Tab angezeigt wird
+        if (tabControl.SelectedTab == addressTabPage && _context != null)
+        {
+            var total = _context.Adressen.Local.Count;
+            var current = addressBSource.Count;
+            isSubset = current < total;
+        }
+        else if (tabControl.SelectedTab == contactTabPage && _allGoogleContacts != null)
+        {
+            var total = _allGoogleContacts.Count;
+            var current = contactBSource.Count;
+            isSubset = current < total;
+        }
+
+        // 2. Prüfen, ob Text im Suchfeld steht
+        var hasSearchText = !string.IsNullOrWhiteSpace(searchTSTextBox.Text);
+
+        // 3. Sichtbarkeit setzen (Wenn Teilmenge ODER Suchtext vorhanden)
+        filterRemoveToolStripMenuItem.Visible = isSubset || hasSearchText;
+
+        // Das kleine 'X' im Suchfeld wird nur über den Text gesteuert
+        tsClearLabel.Visible = hasSearchText;
+    }
+
+    private void ContextPhotoMenu_Opening(object sender, CancelEventArgs e)
+    {
+        copyToolStripMenuItem.Enabled = topAlignZoomPictureBox.Image != null && delPictboxToolStripButton.Enabled;
+        var hasClipboardImage = Clipboard.ContainsImage();
+        var isAddressValid = tabControl.SelectedTab == addressTabPage && addressBSource.Current != null;
+        var isContactValid = tabControl.SelectedTab == contactTabPage && contactBSource.Current != null;
+        if (isAddressValid || isContactValid) { pasteToolStripMenuItem.Enabled = hasClipboardImage; }
+        else { pasteToolStripMenuItem.Enabled = false; }
+    }
+
+    private async Task ProcessAndUploadGoogleContactPhotoAsync(Image rawImage, ImageFormat rawFormat, Contact targetContact)
+    {
+        Image? workingImage = null;
+        Image? finalImageToUpload = null;
+        Image? finalImageForDisplay = null;
+
+        try
+        {
+            // 1. Skalierung: Bei Google Kontakte max 250px Breite
+            if (rawImage.Width > 250) { workingImage = Utils.SkaliereBildDaten(rawImage, 250); }
+            else { workingImage = (Image)rawImage.Clone(); }
+
+            var isNewContact = string.IsNullOrEmpty(targetContact.ResourceName);
+            var buttonText = isNewContact ? "Übernehmen" : "Hochladen";
+            var initialButtonYes = new TaskDialogButton(buttonText) { AllowCloseDialog = isNewContact };
+            var initialButtonNo = TaskDialogButton.Cancel;
+
+            var caveText = string.Empty;
+            var radioButtons = new List<TaskDialogRadioButton>();
+            TaskDialogRadioButton? centerRadio = null, topRadio = null, downRadio = null, skipRadio = null;
+
+            // 2. Beschnitt-Logik konfigurieren (wenn Bild höher als breit)
+            if (workingImage.Height > workingImage.Width && workingImage.Width > topAlignZoomPictureBox.Width)
+            {
+                topRadio = new TaskDialogRadioButton("&Oben priorisieren, nur unten abschneiden");
+                centerRadio = new TaskDialogRadioButton("&Mitte priorisieren, oben/unten abschneiden") { Checked = true };
+                downRadio = new TaskDialogRadioButton("&Unten priorisieren, nur oben abschneiden");
+                skipRadio = new TaskDialogRadioButton("&Nicht beschneiden (nicht empfohlen)");
+                radioButtons.AddRange([topRadio, centerRadio, downRadio, skipRadio]);
+
+                caveText =
+                    "\n\nDas Bild ist höher als breit. Es wird beim Download\n" +
+                    "gemäß den Google-Vorgaben in einer auf 100 Pixel\n" +
+                    "Höhe skalierten Version ausgegeben. Dies führt da-\n" +
+                    "zu, dass das Foto den horizontal verfügbaren Platz\n" +
+                    "nicht vollständig ausfüllen wird.\n\n" +
+                    "Du kannst das hochzuladende Bild mit einer der\n" +
+                    "folgenden Optionen zum Quadrat beschneiden:";
+            }
+
+            var replaceWarning = string.Empty;
+            if (!string.IsNullOrEmpty(targetContact.PhotoUrl)) { replaceWarning += $"Das vorhandene Foto wird überschrieben!\n\n"; }
+
+            var infoText = isNewContact
+                ? $"Information: Abmessung {workingImage.Width}×{workingImage.Height} Pixel.\nDas Bild wird erst beim Speichern des Kontakts hochgeladen.{caveText}"
+                : $"{replaceWarning}Information: Abmessung {workingImage.Width}×{workingImage.Height} Pixel.{caveText}";
+
+            using TaskDialogIcon questionDialogIcon = new(Resources.question32);
+            var initialPage = new TaskDialogPage()
+            {
+                Caption = "Google Kontakte",
+                Heading = isNewContact ? "Foto übernehmen?" : "Möchtest du das Bild speichern?",
+                Text = infoText,
+                Icon = questionDialogIcon,
+                AllowCancel = true,
+                SizeToContent = true,
+                Buttons = { initialButtonNo, initialButtonYes }
+            };
+
+            foreach (var rb in radioButtons) { initialPage.RadioButtons.Add(rb); }
+
+            var inProgressCloseButton = TaskDialogButton.Close;
+            inProgressCloseButton.Enabled = false;
+            var progressPage = new TaskDialogPage()
+            {
+                Caption = "Google Kontakte", // oder AppName
+                Heading = "Bitte warten…",
+                Text = "Das Foto wird hochgeladen.",
+                Icon = TaskDialogIcon.Information,
+                ProgressBar = new TaskDialogProgressBar() { State = TaskDialogProgressBarState.Marquee },
+                Buttons = { inProgressCloseButton }
+            };
+
+            // 3. User klickt auf Ja/Hochladen
+            initialButtonYes.Click += (sender, ev) =>
+            {
+                Image? intermediateImageToDispose = null;
+                if (topRadio?.Checked == true)
+                {
+                    intermediateImageToDispose = workingImage;
+                    workingImage = Utils.BeschneideZuQuadrat(workingImage, null);
+                    finalImageToUpload = workingImage;
+                    finalImageForDisplay = (Image)workingImage.Clone();
+                }
+                else if (centerRadio?.Checked == true)
+                {
+                    intermediateImageToDispose = workingImage;
+                    workingImage = Utils.BeschneideZuQuadrat(workingImage, false);
+                    finalImageToUpload = workingImage;
+                    finalImageForDisplay = (Image)workingImage.Clone();
+                }
+                else if (downRadio?.Checked == true)
+                {
+                    intermediateImageToDispose = workingImage;
+                    workingImage = Utils.BeschneideZuQuadrat(workingImage, true);
+                    finalImageToUpload = workingImage;
+                    finalImageForDisplay = (Image)workingImage.Clone();
+                }
+                else if (skipRadio?.Checked == true)
+                {
+                    finalImageToUpload = workingImage;
+                    finalImageForDisplay = Utils.ReduziereWieGoogle(workingImage, 100);
+                }
+                else
+                {
+                    // Quadratisch oder breiter als hoch
+                    finalImageToUpload = workingImage;
+                    finalImageForDisplay = (Image)workingImage.Clone();
+                }
+
+                topAlignZoomPictureBox.Image = finalImageForDisplay;
+                intermediateImageToDispose?.Dispose();
+
+                if (isNewContact) { delPictboxToolStripButton.Enabled = true; }
+                else { initialPage.Navigate(progressPage); }
+            };
+
+            // 4. Der eigentliche Upload (nur für existierende Kontakte)
+            if (!isNewContact)
+            {
+                progressPage.Created += async (s, ev) =>
+                {
+                    try { await UpdateContactPhotoAsync(targetContact, finalImageToUpload!, rawFormat, () => progressPage.Buttons.First().PerformClick()); }
+                    finally { workingImage?.Dispose(); }
+                };
+            }
+
+            // Zeige den Dialog (blockiert synchron, bis User entscheidet)
+            TaskDialog.ShowDialog(Handle, initialPage);
+        }
+        catch (Exception ex)
+        {
+            Utils.MsgTaskDlg(Handle, $"Fehler bei der Bildverarbeitung: {ex.GetType()}", ex.Message, TaskDialogIcon.Error);
+            finalImageForDisplay?.Dispose();
+        }
+        finally { workingImage?.Dispose(); }
+    }
+
+    private void CopyToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        if (topAlignZoomPictureBox.Image != null && delPictboxToolStripButton.Enabled)  // kopiere nur echtes Bild (Indikator: Löschen-Button ist aktiv)
+        {
+            try { Clipboard.SetImage(topAlignZoomPictureBox.Image); }
+            catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); }
+        }
+        else { Console.Beep(); }
+    }
+
+    private async void PasteToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        // 1. Sicherheitschecks
+        if ((tabControl.SelectedTab == addressTabPage && addressBSource.Current == null) ||
+            (tabControl.SelectedTab == contactTabPage && contactDGV.SelectedRows.Count == 0))
+        {
+            return;
+        }
+
+        // 2. Prüfen, ob die Zwischenablage Bilddaten enthält
+        if (!Clipboard.ContainsImage())
+        {
+            Console.Beep();
+            return;
+        }
+
+        // 3. Bild in den Speicher laden
+        var clipboardImage = Clipboard.GetImage();
+        if (clipboardImage == null) { return; }
+
+        // ---------------------------------------------------------
+        // FALL 1: Lokale Datenbank (EF Core)
+        // ---------------------------------------------------------
+        if (tabControl.SelectedTab == addressTabPage && addressBSource.Current is Adresse adresse)
+        {
+            try
+            {
+                topAlignZoomPictureBox.Image?.Dispose();
+                topAlignZoomPictureBox.Image = null;
+
+                Image finalImage;
+                // Lokale Adressen: Wir skalieren auf 100 Pixel Breite
+                if (clipboardImage.Width > 100)
+                {
+                    finalImage = Utils.SkaliereBildDaten(clipboardImage, 100);
+                    clipboardImage.Dispose(); // GDI+ Objekt sauber freigeben!
+                }
+                else { finalImage = clipboardImage; }  // Bild direkt übernehmen
+
+                topAlignZoomPictureBox.Image = finalImage;
+                delPictboxToolStripButton.Enabled = true;
+
+                // Bilddaten für DB vorbereiten (aus Clipboard immer als Jpeg sichern)
+                byte[] datenZumSpeichern;
+                using (var outputMs = new MemoryStream())
+                {
+                    finalImage.Save(outputMs, ImageFormat.Jpeg);
+                    datenZumSpeichern = outputMs.ToArray();
+                }
+
+                adresse.Foto ??= new Foto();
+                adresse.Foto.Fotodaten = datenZumSpeichern;
+
+                addressBSource.ResetCurrentItem();
+                UpdateSaveButton();
+            }
+            catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); }
+        }
+        // ---------------------------------------------------------
+        // FALL 2: Google Kontakte (aus Zwischenablage)
+        // ---------------------------------------------------------
+        else if (tabControl.SelectedTab == contactTabPage && contactBSource.Current is Contact currentContact)
+        {
+            try
+            {
+                // clipboardImage wurde weiter oben schon geholt ( var clipboardImage = Clipboard.GetImage(); )
+                // Standardformat für Clipboard-Bilder ist Jpeg
+                await ProcessAndUploadGoogleContactPhotoAsync(clipboardImage, ImageFormat.Jpeg, currentContact);
+            }
+            catch (Exception ex) { Utils.MsgTaskDlg(Handle, "Fehler beim Einfügen", $"Bild konnte nicht verarbeitet werden: {ex.Message}", TaskDialogIcon.Error); }
+            finally { clipboardImage?.Dispose(); }
+        }
     }
 
     private async void AddPictboxToolStripButton_Click(object sender, EventArgs e)
     {
         // Sicherheitschecks
-        if ((tabControl.SelectedTab == addressTabPage && addressBindingSource.Current == null) ||
+        if ((tabControl.SelectedTab == addressTabPage && addressBSource.Current == null) ||
             (tabControl.SelectedTab == contactTabPage && contactDGV.SelectedRows.Count == 0))
         {
             return;
@@ -4934,17 +5320,14 @@ public partial class FrmAdressen : Form
         openFileDialog.FileName = string.Empty;
         openFileDialog.CheckFileExists = true;
 
-        if (openFileDialog.ShowDialog(this) != DialogResult.OK)
-        {
-            return;
-        }
+        if (openFileDialog.ShowDialog(this) != DialogResult.OK) { return; }
 
         // ---------------------------------------------------------
         // FALL 1: Lokale Datenbank (EF Core)
         // ---------------------------------------------------------
         if (tabControl.SelectedTab == addressTabPage)
         {
-            if (addressBindingSource.Current is Adresse adresse)
+            if (addressBSource.Current is Adresse adresse)
             {
                 var bildDaten = await File.ReadAllBytesAsync(openFileDialog.FileName);
                 if (bildDaten.Length == 0)
@@ -4974,10 +5357,7 @@ public partial class FrmAdressen : Form
                         scaledImage = Utils.SkaliereBildDaten(loadedImage, 100);
                         finalImage = scaledImage;
                     }
-                    else
-                    {
-                        finalImage = loadedImage;
-                    }
+                    else { finalImage = loadedImage; }
 
                     // Anzeige aktualisieren
                     topAlignZoomPictureBox.Image = finalImage; // PictureBox übernimmt Referenz (nicht disposen!)
@@ -4995,7 +5375,7 @@ public partial class FrmAdressen : Form
                     adresse.Foto ??= new Foto(); // Neue Foto-Entity anlegen, falls noch keine existiert
                     adresse.Foto.Fotodaten = datenZumSpeichern;
 
-                    addressBindingSource.ResetCurrentItem();
+                    addressBSource.ResetCurrentItem();
                     UpdateSaveButton();
 
                     // Aufräumen der lokalen Referenzen (nicht das Bild in der PB!)
@@ -5011,188 +5391,38 @@ public partial class FrmAdressen : Form
             }
         }
         // ---------------------------------------------------------
-        // FALL 2: Google Kontakte
+        // FALL 2: Google Kontakte (im FileDialog)
         // ---------------------------------------------------------
-        else if (tabControl.SelectedTab == contactTabPage && contactDGV.SelectedRows.Count > 0)
+        else if (tabControl.SelectedTab == contactTabPage && contactBSource.Current is Contact currentContact)
         {
-            Image? workingImage = null;           // Das Bild, mit dem wir arbeiten (skaliert oder Klon)
-            Image? finalImageToUpload = null;     // Das Bild, das final hochgeladen wird
-            Image? finalImageForDisplay = null;   // Das Bild für die PictureBox (ggf. "wie Google")
-            var origImgFormat = ImageFormat.Jpeg; // Standard für UpdateContactPhotoAsync
-
             try
             {
-                using (var fs = new FileStream(openFileDialog.FileName, FileMode.Open, FileAccess.Read))
-                using (var originalImage = Image.FromStream(fs)) // originalImage nur in diesem Block gültig
+                using var fs = new FileStream(openFileDialog.FileName, FileMode.Open, FileAccess.Read);
+                using var originalImage = Image.FromStream(fs);
+
+                var origImgFormat = originalImage.RawFormat;
+                Utils.WendeExifOrientierungAn(originalImage);
+
+                if (fs.Length > 1024 * 1024)
                 {
-                    origImgFormat = originalImage.RawFormat;
-                    Utils.WendeExifOrientierungAn(originalImage);
-                    if (fs.Length > 1024 * 1024)
-                    {
-                        Utils.MsgTaskDlg(Handle, "Automatische Größenreduzierung", $"Die Dateigröße ist größer als 1 MB ({Utils.FormatBytes(fs.Length)}).\nEs erfolgt eine Skalierung auf 250 Pixel Breite.", TaskDialogIcon.ShieldWarningYellowBar);
-                        workingImage = Utils.SkaliereBildDaten(originalImage, 250);
-                    }
-                    else { workingImage = (Image)originalImage.Clone(); }
+                    Utils.MsgTaskDlg(Handle, "Automatische Größenreduzierung",
+                        $"Die Dateigröße ist größer als 1 MB ({Utils.FormatBytes(fs.Length)}).\nEs erfolgt eine Skalierung.",
+                        TaskDialogIcon.ShieldWarningYellowBar);
                 }
 
-                if (contactBindingSource.Current is not Contact currentContact)
-                {
-                    return;
-                }
-
-                // PRÜFUNG: Ist es ein neuer Kontakt?
-                var isNewContact = string.IsNullOrEmpty(currentContact.ResourceName);
-
-                // Button-Text anpassen: "Hochladen" für existierende, "Übernehmen" für neue
-                var buttonText = isNewContact ? "Übernehmen" : "Hochladen";
-                var initialButtonYes = new TaskDialogButton(buttonText) { AllowCloseDialog = isNewContact }; // Bei 'Neu' darf der Dialog schließen, bei 'Update' geht es zur ProgressPage
-                var initialButtonNo = TaskDialogButton.Cancel;
-
-                var caveText = string.Empty;
-                var radioButtons = new List<TaskDialogRadioButton>();
-                TaskDialogRadioButton? centerRadio = null;
-                TaskDialogRadioButton? topRadio = null;
-                TaskDialogRadioButton? downRadio = null;
-                TaskDialogRadioButton? skipRadio = null;
-
-                if (workingImage.Height > workingImage.Width && workingImage.Width > topAlignZoomPictureBox.Width)
-                {
-                    topRadio = new TaskDialogRadioButton("&Oben priorisieren, nur unten abschneiden");
-                    centerRadio = new TaskDialogRadioButton("&Mitte priorisieren, oben/unten abschneiden") { Checked = true };
-                    downRadio = new TaskDialogRadioButton("&Unten priorisieren, nur oben abschneiden");
-                    skipRadio = new TaskDialogRadioButton("&Nicht beschneiden (nicht empfohlen)");
-                    radioButtons.AddRange([topRadio, centerRadio, downRadio, skipRadio]);
-                    caveText =
-                        "\n\nDas Bild ist höher als breit. Es wird beim Download\n" +
-                        "gemäß den Google-Vorgaben in einer auf 100 Pixel" + Environment.NewLine +
-                        "Höhe skalierten Version ausgegeben. Dies führt da-\n" +
-                        "zu, dass das Foto den horizontal verfügbaren Platz\n" +
-                        "nicht vollständig ausfüllen wird.\n\n" +
-                        "Sie können das hochzuladende Bild mit einer der\n" +
-                        "folgenden Optionen zum Quadrat beschneiden:";
-                }
-
-                var replaceWarning = string.Empty;
-                if (!string.IsNullOrEmpty(currentContact.PhotoUrl))
-                {
-                    replaceWarning += $"Das vorhandene Foto wird überschrieben!\n\n";
-                }
-
-                // Text für "Neuer Kontakt" leicht anpassen, da noch kein Upload erfolgt
-                var infoText = isNewContact
-                    ? $"Information: Abmessung {workingImage.Width}×{workingImage.Height} Pixel.\nDas Bild wird erst beim Speichern des Kontakts hochgeladen.{caveText}"
-                    : $"{replaceWarning}Information: Abmessung {workingImage.Width}×{workingImage.Height} Pixel.{caveText}";
-
-                var initialPage = new TaskDialogPage()
-                {
-                    Caption = "Google Kontakte",
-                    Heading = isNewContact ? "Foto übernehmen?" : "Möchten Sie die Änderung speichern?",
-                    Text = infoText,
-                    Icon = new(Resources.question32),
-                    AllowCancel = true,
-                    SizeToContent = true,
-                    Buttons = { initialButtonNo, initialButtonYes }
-                };
-
-                foreach (var rb in radioButtons)
-                {
-                    initialPage.RadioButtons.Add(rb);
-                }
-
-                // Progress Page nur nötig, wenn wir direkt hochladen (kein neuer Kontakt)
-                var inProgressCloseButton = TaskDialogButton.Close;
-                inProgressCloseButton.Enabled = false;
-                var progressPage = new TaskDialogPage()
-                {
-                    Caption = appCont,
-                    Heading = "Bitte warten…",
-                    Text = "Das Foto wird hochgeladen.",
-                    Icon = TaskDialogIcon.Information,
-                    ProgressBar = new TaskDialogProgressBar() { State = TaskDialogProgressBarState.Marquee },
-                    Buttons = { inProgressCloseButton }
-                };
-
-                initialButtonYes.Click += (sender, e) =>
-                {
-                    Image? intermediateImageToDispose = null;
-                    if (topRadio?.Checked == true)
-                    {
-                        intermediateImageToDispose = workingImage;
-                        workingImage = Utils.BeschneideZuQuadrat(workingImage, null);
-                        finalImageToUpload = workingImage;
-                        finalImageForDisplay = (Image)workingImage.Clone();
-                    }
-                    else if (centerRadio?.Checked == true)
-                    {
-                        intermediateImageToDispose = workingImage;
-                        workingImage = Utils.BeschneideZuQuadrat(workingImage, false);
-                        finalImageToUpload = workingImage;
-                        finalImageForDisplay = (Image)workingImage.Clone();
-                    }
-                    else if (downRadio?.Checked == true)
-                    {
-                        intermediateImageToDispose = workingImage;
-                        workingImage = Utils.BeschneideZuQuadrat(workingImage, true);
-                        finalImageToUpload = workingImage;
-                        finalImageForDisplay = (Image)workingImage.Clone();
-                    }
-                    else if (skipRadio?.Checked == true)
-                    {
-                        finalImageToUpload = workingImage;
-                        finalImageForDisplay = Utils.ReduziereWieGoogle(workingImage, 100);
-                    }
-                    else  // Fall: Keine RadioButtons (Bild war nicht hochkant)
-                    {
-                        finalImageToUpload = workingImage;
-                        finalImageForDisplay = (Image)workingImage.Clone();
-                    }
-
-                    // Bild in UI setzen
-                    topAlignZoomPictureBox.Image = finalImageForDisplay;
-                    intermediateImageToDispose?.Dispose();
-
-                    // UNTERSCHEIDUNG LOGIK
-                    if (isNewContact) { delPictboxToolStripButton.Enabled = true; }  // Das Bild ist jetzt in der PictureBox und wird später von ExecuteGoogleSaveAsync abgeholt.
-                    else { initialPage.Navigate(progressPage); }  // Existierender Kontakt: Weiterleitung zum Upload
-                };
-                if (!isNewContact)  // Event nur abonnieren, wenn wir wirklich hochladen wollen
-                {
-                    progressPage.Created += async (s, e) =>
-                    {
-                        try
-                        {
-                            await UpdateContactPhotoAsync(currentContact, finalImageToUpload!, origImgFormat, () => progressPage.Buttons.First().PerformClick());
-                        }
-                        finally
-                        {
-                            workingImage?.Dispose();
-                        }
-                    };
-                }
-
-                TaskDialog.ShowDialog(Handle, initialPage);
-
-                // Nach dem Dialog (synchroner Call für ShowDialog):
-                if (isNewContact && initialButtonYes.Enabled == true) // Wenn wir "Ja" geklickt haben (Button ist enabled)
-                {
-                    // Ggf. cleanup hier, falls nötig. workingImage wird im 'finally' unten disposed.
-                }
+                // Den gesamten Rest überlassen wir unserer neuen zentralen Methode!
+                await ProcessAndUploadGoogleContactPhotoAsync(originalImage, origImgFormat, currentContact);
             }
-            catch (Exception ex)
-            {
-                Utils.MsgTaskDlg(Handle, $"Fehler beim Laden: {ex.GetType()}", $"Bild konnte nicht geladen werden: {ex.Message}", TaskDialogIcon.Error);
-                finalImageForDisplay?.Dispose();
-            }
-            finally { workingImage?.Dispose(); }  // Bei neuem Kontakt wurde workingImage noch nicht im ProgressPage-Event disposed
+            catch (Exception ex) { Utils.MsgTaskDlg(Handle, "Fehler beim Laden", $"Bild konnte nicht geladen werden: {ex.Message}", TaskDialogIcon.Error); }
         }
     }
 
     private async void DelPictboxToolStripButton_Click(object sender, EventArgs e)
     {
         // --- FALL A: SQL ADRESSEN ---
-        if (tabControl.SelectedTab == addressTabPage && addressBindingSource.Current is Adresse adresse)
+        if (tabControl.SelectedTab == addressTabPage && addressBSource.Current is Adresse adresse)
         {
-            var (isYes, _, _) = Utils.YesNo_TaskDialog(this, "Adressen", "Möchten Sie das Bild entfernen?",
+            var (isYes, _, _) = Utils.YesNo_TaskDialog(this, "Adressen", "Möchtest du das Bild entfernen?",
                                 "Das Foto wird zum Löschen vorgemerkt.", "&Entfernen", "&Behalten", false);
             if (isYes)
             {
@@ -5207,7 +5437,7 @@ public partial class FrmAdressen : Form
                         topAlignZoomPictureBox.Image = Resources.AddressBild100;
                         delPictboxToolStripButton.Enabled = false;
 
-                        addressBindingSource.ResetCurrentItem();
+                        addressBSource.ResetCurrentItem();
                         UpdateSaveButton();
                     }
                 }
@@ -5215,7 +5445,7 @@ public partial class FrmAdressen : Form
             }
         }
         // --- FALL B: GOOGLE KONTAKTE ---
-        else if (tabControl.SelectedTab == contactTabPage && contactBindingSource.Current is Contact googleKontakt)
+        else if (tabControl.SelectedTab == contactTabPage && contactBSource.Current is Contact googleKontakt)
         {
             // PRÜFUNG: Ist es ein neuer Kontakt (noch nicht gespeichert)?
             if (string.IsNullOrEmpty(googleKontakt.ResourceName))
@@ -5232,7 +5462,7 @@ public partial class FrmAdressen : Form
             }
 
             // Bestehender Kontakt: API Call nötig
-            var (isYes, _, _) = Utils.YesNo_TaskDialog(this, "Google Kontakte", "Möchten Sie das Bild wirklich löschen?",
+            var (isYes, _, _) = Utils.YesNo_TaskDialog(this, "Google Kontakte", "Möchtest du das Bild wirklich löschen?",
                     "Das Foto wird bei Google unwiderruflich entfernt.", "&Löschen", "&Belassen", false);
             if (isYes)
             {
@@ -5247,7 +5477,7 @@ public partial class FrmAdressen : Form
                     delPictboxToolStripButton.Enabled = false;
 
                     // Da das Foto weg ist, muss die Spalte im Grid ("alle mit Bild") aktualisiert werden
-                    contactBindingSource.ResetCurrentItem();
+                    contactBSource.ResetCurrentItem();
                 }
                 catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); }
             }
@@ -5258,7 +5488,7 @@ public partial class FrmAdressen : Form
     {
         Contact? createdContact = null;
         var newGoogleContact = new Contact();
-        try  // Datenmapping (findet noch auf dem UI Thread statt, da sehr schnell)
+        try
         {
             var typeLocal = typeof(Adresse);
             var typeGoogle = typeof(Contact);
@@ -5269,12 +5499,19 @@ public partial class FrmAdressen : Form
                 var propGoogle = typeGoogle.GetProperty(fieldName);
                 if (propGoogle != null && propGoogle.CanWrite) { propGoogle.SetValue(newGoogleContact, value); }
             }
+
+            // WICHTIG: Gruppen manuell mappen, da sie nicht in dataFields stehen!
+            if (localAddress.Gruppen != null)
+            {
+                newGoogleContact.GroupNames = [.. localAddress.Gruppen.Select(g => g.Name)];
+            }
         }
-        catch (Exception ex)  // Fehler beim Mapping fangen wir hier direkt ab
+        catch (Exception ex)
         {
             Utils.ErrTaskDlg(Handle, ex);
             return false;
         }
+
         var success = await Utils.RunWithProgressDialogAsync(this, "Google Upload", "Kontakt wird erstellt…", async token =>
         {
             Image? imageToUpload = null;
@@ -5284,33 +5521,34 @@ public partial class FrmAdressen : Form
                 {
                     try
                     {
-                        var ms = new MemoryStream(localAddress.Foto.Fotodaten);  // MemoryStream darf nicht disposed werden, solange das Bitmap lebt.
+                        var ms = new MemoryStream(localAddress.Foto.Fotodaten);
                         imageToUpload = new Bitmap(ms);
                     }
-                    catch { }  // Bild defekt - Upload läuft ohne Bild weiter
+                    catch { }
                 }
                 var manager = new GooglePeopleManager(secretPath, tokenDir);
                 createdContact = await manager.CreateContactAsync(newGoogleContact, imageToUpload, token);
             }
             finally { imageToUpload?.Dispose(); }
         });
-        if (success && createdContact != null)  // UI Update (nur bei Erfolg und vorhandenem Ergebnis)
+
+        if (success && createdContact != null)
         {
             try
             {
-                _allGoogleContacts?.Add(createdContact);  // zur Hauptliste hinzufügen
+                _allGoogleContacts?.Add(createdContact);
                 if (_allGoogleContacts != null)
                 {
-                    Utils.SortContacts(_allGoogleContacts);  // Sortierung anwenden
-                    contactBindingSource.DataSource = _allGoogleContacts;  // BindingSource aktualisieren 
-                    contactBindingSource.ResetBindings(false);
+                    Utils.SortContacts(_allGoogleContacts);
+                    contactBSource.DataSource = _allGoogleContacts;
+                    contactBSource.ResetBindings(false);
                     var newIndex = _allGoogleContacts.IndexOf(createdContact);
-                    if (newIndex >= 0) { contactBindingSource.Position = newIndex; }
+                    if (newIndex >= 0) { contactBSource.Position = newIndex; }
                 }
                 else
                 {
-                    contactBindingSource.Add(createdContact);  // Fallback
-                    contactBindingSource.Position = contactBindingSource.Count - 1;
+                    contactBSource.Add(createdContact);
+                    contactBSource.Position = contactBSource.Count - 1;
                 }
                 _lastActiveContact = createdContact;
                 _originalContactSnapshot = (Contact)createdContact.Clone();
@@ -5339,11 +5577,9 @@ public partial class FrmAdressen : Form
 
             foreach (var fieldName in dataFields)
             {
-                // Property-Infos beider Klassen holen
                 var sourceProp = sourceType.GetProperty(fieldName);
                 var targetProp = targetType.GetProperty(fieldName);
 
-                // Prüfung: Existiert das Feld in beiden Klassen und ist es beschreibbar?
                 if (sourceProp != null && targetProp != null && targetProp.CanWrite)
                 {
                     var value = sourceProp.GetValue(googleKontakt);
@@ -5352,7 +5588,29 @@ public partial class FrmAdressen : Form
             }
 
             // -----------------------------------------------------------
-            // 2. Foto separat laden (Speziallogik, nicht im Array)
+            // 2. Gruppen mappen (mit EF Core Logik aus dem Import)
+            // -----------------------------------------------------------
+            if (googleKontakt.GroupNames != null)
+            {
+                foreach (var gName in googleKontakt.GroupNames)
+                {
+                    // Leere Namen und den Favoriten-Stern ignorieren wir für die lokale DB
+                    if (string.IsNullOrWhiteSpace(gName) || gName == "★") { continue; }
+
+                    var gruppe = _context?.Gruppen.Local.FirstOrDefault(g => g.Name.Equals(gName, StringComparison.OrdinalIgnoreCase))
+                                 ?? _context?.Gruppen.FirstOrDefault(g => g.Name.Equals(gName, StringComparison.CurrentCultureIgnoreCase));
+
+                    if (gruppe == null)
+                    {
+                        gruppe = new Gruppe { Name = gName };
+                        _context?.Gruppen.Add(gruppe);
+                    }
+                    newLocalAddress.Gruppen.Add(gruppe);
+                }
+            }
+
+            // -----------------------------------------------------------
+            // 3. Foto separat laden (Speziallogik, nicht im Array)
             // -----------------------------------------------------------
             if (!string.IsNullOrEmpty(googleKontakt.PhotoUrl))
             {
@@ -5365,11 +5623,11 @@ public partial class FrmAdressen : Form
             }
 
             // -----------------------------------------------------------
-            // 3. UI Update & Sortierung
+            // 4. UI Update & Sortierung
             // -----------------------------------------------------------
-            var insertIndex = Utils.GetAddressInsertIndex(addressBindingSource, newLocalAddress);
-            addressBindingSource.Insert(insertIndex, newLocalAddress);
-            addressBindingSource.Position = insertIndex;
+            var insertIndex = Utils.GetAddressInsertIndex(addressBSource, newLocalAddress);
+            addressBSource.Insert(insertIndex, newLocalAddress);
+            addressBSource.Position = insertIndex;
 
             return true;
         }
@@ -5403,11 +5661,11 @@ public partial class FrmAdressen : Form
                 {
                     curContactMemberships.Remove(membershipToRemove);
                     UpdateMembershipTags();
-                    UpdateMembershipJson();
+                    UpdateCurrentContactMemberships();
                 }
                 else
                 {
-                    if (addressBindingSource.Current is Adresse adresse)
+                    if (addressBSource.Current is Adresse adresse)
                     {
                         var gruppeToDelete = adresse.Gruppen.FirstOrDefault(g => g.Name.Equals(membershipToRemove, StringComparison.OrdinalIgnoreCase));
                         if (gruppeToDelete != null)
@@ -5418,11 +5676,11 @@ public partial class FrmAdressen : Form
 
                             // 2. UI Aktualisieren
                             UpdateMembershipTags();
-                            UpdateMembershipCBox();
+                            UpdateTagComboBoxDataSource();
                             UpdatePlaceholderVis();
 
                             // 3. WICHTIG: UI benachrichtigen (aktiviert Buttons, feuert Events)
-                            addressBindingSource.ResetCurrentItem();
+                            //addressBindingSource.ResetCurrentItem();
 
                             // 4. Save-Button explizit prüfen
                             UpdateSaveButton();
@@ -5448,79 +5706,70 @@ public partial class FrmAdressen : Form
             allContactMemberships.Add(newMembershipName);
 
             UpdateMembershipTags();
-            UpdateMembershipCBox();
-            UpdateMembershipJson(); // Google nutzt weiterhin JSON/Strings
+            UpdateTagComboBoxDataSource();
+            UpdateCurrentContactMemberships(); // Google nutzt weiterhin JSON/Strings
         }
         else if (tabControl.SelectedTab == addressTabPage)
         {
-            if (addressBindingSource.Current is Adresse adresse && _context != null) // _context Prüfung hier integriert
+            if (addressBSource.Current is Adresse adresse && _context != null) // _context Prüfung hier integriert
             {
-                // 1. Sicherstellen, dass die Gruppen geladen sind
-                var entry = _context.Entry(adresse);
+                var entry = _context.Entry(adresse);  // EF Core EntityEntry für die aktuelle Adresse holen
                 if (!entry.Collection(a => a.Gruppen).IsLoaded)
                 {
                     entry.Collection(a => a.Gruppen).Load();
-
-                    // NEU: WICHTIG! 
-                    // Da wir Gruppen nachgeladen haben, müssen wir die UI-Listen synchronisieren.
-                    // Sonst bricht der nächste Check ab, obwohl die Gruppe im FlowPanel noch fehlt.
                     LoadGroupsForCurrentAddress();
                 }
 
-                // 2. Prüfen, ob die Adresse die Gruppe schon hat
-                // (Jetzt ist sichergestellt, dass auch die UI aktuell ist)
                 if (adresse.Gruppen.Any(g => g.Name.Equals(newMembershipName, StringComparison.OrdinalIgnoreCase)))
                 {
                     tagComboBox.SelectAll();
                     tagComboBox.Focus();
                     return; // Hier brechen wir ab - aber jetzt ist die UI bereits aktuell!
                 }
-                // 2. Gruppe in der DB suchen oder neu erstellen
-
                 // A) Zuerst im ChangeTracker (Lokal) schauen
-                // HIER ist StringComparison auch ERLAUBT (In-Memory)
-                var gruppe = _context?.Gruppen.Local
-                    .FirstOrDefault(g => g.Name.Equals(newMembershipName, StringComparison.OrdinalIgnoreCase));
-
+                var gruppe = _context?.Gruppen.Local.FirstOrDefault(g => g.Name.Equals(newMembershipName, StringComparison.OrdinalIgnoreCase));
                 // B) Wenn nicht lokal, dann in der Datenbank suchen
-                // HIER WAR DER FEHLER: EF Core kann StringComparison nicht nach SQL übersetzen.
-
-                // Variante A (Beste Performance): Verlässt sich auf die DB-Einstellung (meist case-insensitive)
                 gruppe ??= _context?.Gruppen.FirstOrDefault(g => g.Name == newMembershipName);
-
                 if (gruppe == null)
                 {
                     gruppe = new Gruppe { Name = newMembershipName };
                     _context?.Gruppen.Add(gruppe);
-                    // Wichtig: Zur BindingList hinzufügen, damit die ComboBox es sofort kennt
-                    allAddressMemberships.Add(newMembershipName);
+                    allAddressMemberships.Add(newMembershipName);  // Zur BindingList hinzufügen, damit die ComboBox es sofort kennt
                 }
-
                 adresse.Gruppen.Add(gruppe);  // Verknüpfung herstellen
                 curAddressMemberships.Add(newMembershipName);
-
                 //_context?.Entry(adresse).State = EntityState.Modified;  // Adresse als modifiziert markieren
                 UpdateMembershipTags();
-                UpdateMembershipCBox();
-                addressBindingSource.ResetCurrentItem();
+                UpdateTagComboBoxDataSource();
+                addressBSource.ResetCurrentItem();
                 UpdateSaveButton();
             }
         }
     }
 
-    private void UpdateMembershipJson()
+    private void UpdateCurrentContactMemberships()
     {
         if (tabControl.SelectedTab == contactTabPage)
         {
-            if (contactBindingSource.Current is Contact contact) { contact.GroupNames = [.. curContactMemberships]; }
+            if (contactBSource.Current is Contact contact) { contact.GroupNames = [.. curContactMemberships]; }
         }
     }
 
-    private void UpdateMembershipCBox()
+    private void UpdateTagComboBoxDataSource()
     {
-        if (tabControl.SelectedTab == contactTabPage) { tagComboBox.DataSource = allContactMemberships.ToList(); }
-        else { tagComboBox.DataSource = allAddressMemberships.ToList(); }
-        tagComboBox.Text = ""; // Text zurücksetzen
+        var isContactTab = tabControl.SelectedTab == contactTabPage;
+        string[] list = isContactTab  // Nur die Gruppen holen, die der aktuelle Datensatz noch NICHT hat
+            ? [.. allContactMemberships.Except(curContactMemberships, StringComparer.OrdinalIgnoreCase)]
+            : [.. allAddressMemberships.Except(curAddressMemberships, StringComparer.OrdinalIgnoreCase)];
+        tagComboBox.DataSource = null;   // Keine DataSource! Wir füllen die Items direkt.
+        tagComboBox.Items.Clear();
+        if (list.Length > 0) { tagComboBox.Items.AddRange(list); }
+        tagComboBox.Text = string.Empty;
+        tagComboBox.AutoCompleteCustomSource ??= new AutoCompleteStringCollection();
+        tagComboBox.AutoCompleteCustomSource.Clear();
+        if (list.Length > 0) { tagComboBox.AutoCompleteCustomSource.AddRange(list); }
+        tagComboBox.AutoCompleteMode = AutoCompleteMode.Append;
+        tagComboBox.AutoCompleteSource = AutoCompleteSource.CustomSource;
     }
 
     private void UpdatePlaceholderVis()
@@ -5529,7 +5778,7 @@ public partial class FrmAdressen : Form
         {
             var lblPlaceholder = new Label
             {
-                Text = "Gruppen",
+                Text = "Label",
                 AutoSize = true,
                 ForeColor = Color.Gray,
                 BackColor = Color.Transparent,
@@ -5538,6 +5787,18 @@ public partial class FrmAdressen : Form
             };
             flowLayoutPanel.Controls.Add(lblPlaceholder);
         }
+    }
+
+    private void TagComboBox_Enter(object sender, EventArgs e)
+    {
+        tagComboBox.BackColor = _isDarkMode ? Color.FromArgb(80, 80, 0) : Color.LightYellow;
+        tagComboBox.ForeColor = _isDarkMode ? Color.White : Color.Black;
+    }
+
+    private void TagComboBox_Leave(object sender, EventArgs e)
+    {
+        tagComboBox.BackColor = _isDarkMode ? Color.FromArgb(45, 45, 45) : Color.White;
+        tagComboBox.ForeColor = _isDarkMode ? Color.White : Color.Black;
     }
 
     private void TagComboBox_TextChanged(object sender, EventArgs e)
@@ -5559,11 +5820,14 @@ public partial class FrmAdressen : Form
 
     private void TagComboBox_KeyDown(object sender, KeyEventArgs e)
     {
+        // Wenn die Standard-Liste offen ist und der User eine echte Taste drückt (Buchstaben/Zahlen),
+        // schließen wir die Liste, BEVOR der Buchstabe getippt wird.
+        if (tagComboBox.DroppedDown && e.KeyCode >= Keys.A && e.KeyCode <= Keys.Z) { tagComboBox.DroppedDown = false; }
         if (e.KeyCode == Keys.Enter)
         {
             if (tagButton.Enabled) { TagButton_Click(tagButton, EventArgs.Empty); }
-            else { tbNotizen.Focus(); }  // SelectNextControl((Control)sender, true, true, true, true); 
-            e.SuppressKeyPress = true;  //e.Handled = true;
+            else { tbNotizen.Focus(); }
+            e.SuppressKeyPress = true;
         }
     }
 
@@ -5576,10 +5840,7 @@ public partial class FrmAdressen : Form
         {
             if (_context == null) { return; }
             // SQL-Gruppen laden
-            dialogGroups = new SortedSet<string>(
-                _context.Gruppen.Local.Select(g => g.Name),
-                StringComparer.OrdinalIgnoreCase
-            );
+            dialogGroups = new SortedSet<string>(_context.Gruppen.Local.Select(g => g.Name), StringComparer.OrdinalIgnoreCase);
         }
         else
         {
@@ -5619,7 +5880,7 @@ public partial class FrmAdressen : Form
         {
             ExecuteFilter(
                 _context.Adressen.Local,
-                addressBindingSource,
+                addressBSource,
                 addressDGV,
                 // Bei Adressen müssen wir erst die Namen aus den Objekten holen
                 a => MatchesFilter(a.Gruppen.Select(g => g.Name)),
@@ -5631,7 +5892,7 @@ public partial class FrmAdressen : Form
         {
             ExecuteFilter(
                 _allGoogleContacts,
-                contactBindingSource,
+                contactBSource,
                 contactDGV,
                 // Bei Kontakten haben wir schon Strings
                 c => MatchesFilter(c.GroupNames),
@@ -5646,44 +5907,70 @@ public partial class FrmAdressen : Form
         if (tabControl.SelectedTab == addressTabPage)
         {
             if (_context == null) { return; }
+
             var groupDict = _context.Gruppen.Local.ToDictionary(g => g.Name, g => g.Adressen.Count);
             using var frm = new FrmGroupsEdit(groupDict);
+
             if (frm.ShowDialog(this) == DialogResult.OK)
             {
                 var changes = frm.groupNameMap.Where(kvp => kvp.Key != kvp.Value || string.IsNullOrEmpty(kvp.Value)).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
                 if (changes.Count == 0) { return; }
+
                 var needsSave = false;
-                foreach (var (oldName, newName) in changes)
+                var activeAddressAffected = false;
+
+                foreach (var kvp in changes)
                 {
+                    var oldName = kvp.Key;
+                    var newName = kvp.Value;
+
                     if (oldName == "★") { continue; }  // Favoriten schützen
+
                     var groupEntity = _context.Gruppen.Local.FirstOrDefault(g => g.Name.Equals(oldName, StringComparison.OrdinalIgnoreCase));
+
                     if (groupEntity == null) { continue; }
                     if (string.IsNullOrWhiteSpace(newName))
                     {
-                        _context.Gruppen.Remove(groupEntity);
-                        allAddressMemberships.Remove(oldName);
+                        _context.Gruppen.Remove(groupEntity); // 1. Aus dem EF ChangeTracker entfernen
+                        allAddressMemberships.Remove(oldName); // 2. Lokale UI-Listen aktualisieren
+                        var curMembershipToRemove = curAddressMemberships.FirstOrDefault(g => g.Equals(oldName, StringComparison.OrdinalIgnoreCase));
+                        if (curMembershipToRemove != null)
+                        {
+                            curAddressMemberships.Remove(curMembershipToRemove);
+                            activeAddressAffected = true;
+                        }
                         needsSave = true;
                     }
                     else
                     {
-                        groupEntity.Name = newName;
-                        allAddressMemberships.Remove(oldName);
+                        groupEntity.Name = newName; // 1. In der Entität umbenennen (EF Core merkt sich das)
+                        allAddressMemberships.Remove(oldName); // 2. Lokale UI-Listen aktualisieren
                         allAddressMemberships.Add(newName);
+                        var curMembershipToRename = curAddressMemberships.FirstOrDefault(g => g.Equals(oldName, StringComparison.OrdinalIgnoreCase));
+                        if (curMembershipToRename != null)
+                        {
+                            curAddressMemberships.Remove(curMembershipToRename);
+                            curAddressMemberships.Add(newName);
+                            activeAddressAffected = true;
+                        }
                         needsSave = true;
                     }
                 }
                 if (needsSave)
                 {
-                    await SaveSQLDatabaseAsync();
-                    addressBindingSource.ResetBindings(false);
-                    if (addressBindingSource.Current != null) { LoadGroupsForCurrentAddress(); }
+                    UpdateSaveButton();  // await SaveSQLDatabaseAsync(); // Änderungen in die Datenbank schreiben
+                    addressBSource.ResetBindings(false); // UI über Änderungen informieren
+                    UpdateTagComboBoxDataSource();
+                    if (activeAddressAffected) { UpdateMembershipTags(); } // Tag-Panel neu zeichnen, falls die aktuelle Adresse betroffen war
                 }
             }
         }
         else if (tabControl.SelectedTab == contactTabPage)
         {
-            var groupDict = new Dictionary<string, int>();
-            if (_allGoogleContacts != null)
+            var groupDict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var gName in allContactMemberships) { groupDict[gName] = 0; } // 1. Zuerst alle bekannten Gruppen mit 0 initialisieren, damit auch leere Gruppen auftauchen
+            if (_allGoogleContacts != null)  // 2. Jetzt die Kontakte durchgehen und die Zähler erhöhen
             {
                 foreach (var contact in _allGoogleContacts)
                 {
@@ -5695,21 +5982,132 @@ public partial class FrmAdressen : Form
                 }
             }
             using var frm = new FrmGroupsEdit(groupDict);
-            if (frm.ShowDialog(this) == DialogResult.OK) { ProcessGoogleGroupChanges(frm.groupNameMap); }
+            if (frm.ShowDialog(this) == DialogResult.OK)
+            {
+                // Hier wird der Dialog direkt wie in deinen anderen Methoden aufgerufen
+                await Utils.RunWithProgressDialogAsync(this, "Google-Gruppen", "Änderungen werden synchronisiert…", async token =>
+                {
+                    await ProcessGoogleGroupChangesAsync(frm.groupNameMap, token);
+                });
+            }
         }
     }
 
-    private static void ProcessGoogleGroupChanges(Dictionary<string, string> groupChanges)
+    private async Task ProcessGoogleGroupChangesAsync(Dictionary<string, string> groupChanges, CancellationToken token)
     {
-        List<string> deleteChanges = [];
-        List<string> renameChanges = [];
         var realChanges = groupChanges.Where(kvp => kvp.Key != kvp.Value || string.IsNullOrEmpty(kvp.Value)).ToDictionary(k => k.Key, k => k.Value);
+
+        if (realChanges.Count == 0)
+        {
+            return;
+        }
+
+        var contactsNeedRefresh = false;
+        var activeContactAffected = false;
+
         foreach (var kvp in realChanges)
         {
-            if (!string.IsNullOrEmpty(kvp.Value)) { renameChanges.Add(kvp.Value); }
-            else { deleteChanges.Add(kvp.Key); }
+            token.ThrowIfCancellationRequested(); // 1. Token prüfen, bevor der nächste API-Call oder die Verarbeitung startet
+
+            var oldName = kvp.Key;
+            var newName = kvp.Value;
+
+            var resourceEntry = contactGroupsDict.FirstOrDefault(x => x.Value.Equals(oldName, StringComparison.OrdinalIgnoreCase));
+            var resourceName = resourceEntry.Key;
+
+            if (string.IsNullOrEmpty(resourceName))
+            {
+                continue;
+            }
+
+            var manager = new GooglePeopleManager(secretPath, tokenDir);
+
+            if (string.IsNullOrEmpty(newName))
+            {
+                // 1. Bei Google löschen (Token durchreichen)
+                await manager.DeleteContactGroupAsync(resourceName, token);
+
+                // 2. Lokale Dictionarys & alle Gruppen aktualisieren
+                contactGroupsDict.Remove(resourceName);
+                allContactMemberships.Remove(oldName);
+
+                // 3. Wenn die Gruppe beim aktuellen Kontakt im UI zu sehen ist: Entfernen
+                var curMembershipToRemove = curContactMemberships.FirstOrDefault(g => g.Equals(oldName, StringComparison.OrdinalIgnoreCase));
+
+                if (curMembershipToRemove != null)
+                {
+                    curContactMemberships.Remove(curMembershipToRemove);
+                    activeContactAffected = true;
+                }
+
+                // 4. Aus allen geladenen Kontakten entfernen (Inklusive RawGooglePerson!)
+                foreach (var contact in _allGoogleContacts)
+                {
+                    var hasChanged = false;
+
+                    // A) String-Liste bereinigen
+                    if (contact.GroupNames.Contains(oldName, StringComparer.OrdinalIgnoreCase))
+                    {
+                        var updatedGroups = contact.GroupNames.ToList();
+                        updatedGroups.RemoveAll(g => g.Equals(oldName, StringComparison.OrdinalIgnoreCase));
+                        contact.GroupNames = [.. updatedGroups];
+                        hasChanged = true;
+                    }
+
+                    // B) RawGooglePerson Memberships bereinigen (WICHTIG!)
+                    if (contact.RawGooglePerson?.Memberships != null)
+                    {
+                        var membershipToRemove = contact.RawGooglePerson.Memberships
+                            .FirstOrDefault(m => m.ContactGroupMembership?.ContactGroupResourceName == resourceName);
+
+                        if (membershipToRemove != null)
+                        {
+                            contact.RawGooglePerson.Memberships.Remove(membershipToRemove);
+                            hasChanged = true;
+                        }
+                    }
+
+                    if (hasChanged) { contactsNeedRefresh = true; }
+                }
+
+                // 5. Snapshot bereinigen (verhindert falschen Speicher-Dialog und API-Fehler)
+                if (_originalContactSnapshot != null)
+                {
+                    // A) String-Liste bereinigen
+                    if (_originalContactSnapshot.GroupNames.Contains(oldName, StringComparer.OrdinalIgnoreCase))
+                    {
+                        var snapGroups = _originalContactSnapshot.GroupNames.ToList();
+                        snapGroups.RemoveAll(g => g.Equals(oldName, StringComparison.OrdinalIgnoreCase));
+                        _originalContactSnapshot.GroupNames = [.. snapGroups];
+                    }
+
+                    // B) RawGooglePerson Memberships bereinigen (WICHTIG!)
+                    if (_originalContactSnapshot.RawGooglePerson?.Memberships != null)
+                    {
+                        var membershipToRemove = _originalContactSnapshot.RawGooglePerson.Memberships
+                            .FirstOrDefault(m => m.ContactGroupMembership?.ContactGroupResourceName == resourceName);
+
+                        if (membershipToRemove != null)
+                        {
+                            _originalContactSnapshot.RawGooglePerson.Memberships.Remove(membershipToRemove);
+                        }
+                    }
+                }
+            }
         }
-        if (deleteChanges.Count == 0 && renameChanges.Count == 0) { return; }
+
+        // UI-Updates durchführen
+        if (contactsNeedRefresh)
+        {
+            contactBSource.ResetBindings(false);
+        }
+
+        UpdateTagComboBoxDataSource();
+
+        if (activeContactAffected)
+        {
+            UpdateMembershipTags();
+        }
     }
 
     private void FlowLayoutPanel_MouseDoubleClick(object sender, MouseEventArgs e) => ManageGroupsToolStripMenuItem_Click(null!, EventArgs.Empty);
@@ -5753,7 +6151,7 @@ public partial class FrmAdressen : Form
         ConfigureDgvAppearance(contactDGV, Color.FromArgb(0, 102, 204));  // Blau (z.B. Windows Default Blue)
         foreach (var c in Utils.GetAllControls(this))
         {
-            if (c is TextBox || c is MaskedTextBox || c is ComboBox)
+            if (c is PaddedTextBox || c is PaddedMaskedTextBox)  //  || c is ComboBox
             {
                 c.BackColor = _isDarkMode ? Color.FromArgb(45, 45, 45) : Color.White;
                 c.ForeColor = _isDarkMode ? Color.White : Color.Black;
@@ -5828,9 +6226,11 @@ public partial class FrmAdressen : Form
         }
     }
 
-    private void AddressDGV_SelectionChanged(object sender, EventArgs e) => scrollTimer.Start();
-
-    private void ScrollTimer_Tick(object sender, EventArgs e) => scrollTimer.Stop();
+    //private void AddressDGV_SelectionChanged(object sender, EventArgs e) => scrollTimer.Start();
+    private void AddressDGV_SelectionChanged(object sender, EventArgs e)
+    {
+        if (addressDGV.FirstDisplayedScrollingRowIndex >= 0) { _savedAddressScrollIndex = addressDGV.FirstDisplayedScrollingRowIndex; }
+    }
 
     private void ContactDGV_DataError(object sender, DataGridViewDataErrorEventArgs e)
     {
@@ -5924,7 +6324,7 @@ public partial class FrmAdressen : Form
                     var currentVersion = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
 
                     // Formatierung für Fußnote
-                    if (latestVersion > currentVersion) { footText = $"Update verfügbar: v{latestVersion} vom {releaseDate}"; }
+                    if (latestVersion > currentVersion) { footText = $"Update verfügbar: v{latestVersion} vom {releaseDate}\nBeachte den Download-Button in der Statuszeile rechts unten!"; }
                     else { footText = $"Status: Aktuell\nInstalliert: {currentVersion.ToString(3)}\nVerfügbar: {latestVersion}\nDatum: {releaseDate}"; }
                 }
                 else { footText = "Der Update-Server konnte nicht erreicht werden."; }
@@ -5984,4 +6384,172 @@ public partial class FrmAdressen : Form
         if (!string.IsNullOrEmpty(url)) { Utils.StartLink(Handle, url); }
     }
 
+    private void TbNotizen_KeyDown(object sender, KeyEventArgs e)
+    {  // Strg+F wird in ProcessCmdKey behandelt
+        if (e.KeyCode == Keys.F3)  // Weitersuchen
+        {
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+            if (tbNotizen.TextLength == 0) { return; }
+            if (!string.IsNullOrEmpty(_lastSearchTerm)) { FindInTextBox(_lastSearchTerm, _lastMatchCase); }
+            else { OpenSearchDialog(); }
+        }
+    }
+
+    private void OpenSearchDialog()
+    {
+        if (tbNotizen.TextLength == 0) { return; }
+        var selectedText = tbNotizen.SelectedText;
+        var initialSearch = string.IsNullOrEmpty(selectedText) ? _lastSearchTerm : selectedText;
+        using var searchDialog = new TextBoxSearch(initialSearch, _lastMatchCase);
+        if (searchDialog.ShowDialog(this) == DialogResult.OK)
+        {
+            _lastSearchTerm = searchDialog.SearchText;
+            _lastMatchCase = searchDialog.MatchCase;
+            Utils.AddToSearchHistory(_lastSearchTerm);  // Historie aktualisieren (auf z.B. 10 Einträge begrenzt, Neueste oben)
+            FindInTextBox(_lastSearchTerm, _lastMatchCase);
+        }
+    }
+
+    private void FindInTextBox(string searchText, bool matchCase)
+    {
+        var comparison = matchCase ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        var startIndex = tbNotizen.SelectionStart + tbNotizen.SelectionLength;  // Suche ab der aktuellen Cursorposition oder nach der letzten Markierung starten
+        if (startIndex >= tbNotizen.TextLength) { startIndex = 0; }
+        var index = tbNotizen.Text.IndexOf(searchText, startIndex, comparison);
+        if (index != -1)
+        {
+            tbNotizen.Select(index, searchText.Length);  // Text gefunden -> Markieren und ins Bild scrollen
+            tbNotizen.ScrollToCaret();
+            tbNotizen.Focus();
+        }
+        else
+        {
+            if (startIndex > 0)  // Falls wir nicht am Anfang gestartet sind, Suche von oben wiederholen
+            {
+                index = tbNotizen.Text.IndexOf(searchText, 0, comparison);
+                if (index != -1)
+                {
+                    tbNotizen.Select(index, searchText.Length);
+                    tbNotizen.ScrollToCaret();
+                    tbNotizen.Focus();
+                    return;
+                }
+            }
+            Utils.MsgTaskDlg(Handle, "Suche in Notizen", "Der Suchtext wurde nicht gefunden.", TaskDialogIcon.Information);
+        }
+    }
+
+    private void AddressDGV_Scroll(object sender, ScrollEventArgs e)
+    {
+        if (e.ScrollOrientation == ScrollOrientation.VerticalScroll) { _savedAddressScrollIndex = addressDGV.FirstDisplayedScrollingRowIndex; } // Position speichern, wenn der User scrollt
+    }
+
+    private void AddressDGV_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
+    {
+        if (_savedAddressScrollIndex >= 0 && _savedAddressScrollIndex < addressDGV.RowCount)
+        {
+            _ = addressDGV.InvokeAsync(() =>  // InvokeAsync stellt sicher, dass das Layout-Rendering abgeschlossen ist, bevor wir den Scrollbalken verschieben.
+            {
+                try
+                {
+                    if (_savedAddressScrollIndex < addressDGV.RowCount) { addressDGV.FirstDisplayedScrollingRowIndex = _savedAddressScrollIndex; }
+                }
+                catch { } // Stille Korrektur, falls die Ansicht z.B. gefiltert wurde
+            });
+        }
+    }
+
+    private void ContactDGV_Scroll(object sender, ScrollEventArgs e)
+    {
+        if (e.ScrollOrientation == ScrollOrientation.VerticalScroll) { _savedContactScrollIndex = contactDGV.FirstDisplayedScrollingRowIndex; }
+    }
+
+    private void ContactDGV_SelectionChanged(object sender, EventArgs e)
+    {
+        if (contactDGV.FirstDisplayedScrollingRowIndex >= 0)
+        {
+            _savedContactScrollIndex = contactDGV.FirstDisplayedScrollingRowIndex;
+        }
+    }
+
+    private void ContactDGV_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
+    {
+        if (_savedContactScrollIndex >= 0 && _savedContactScrollIndex < contactDGV.RowCount)
+        {
+            _ = contactDGV.InvokeAsync(() =>
+            {
+                try
+                {
+                    if (_savedContactScrollIndex < contactDGV.RowCount) { contactDGV.FirstDisplayedScrollingRowIndex = _savedContactScrollIndex; }
+                }
+                catch { }
+            });
+        }
+    }
+
+    private void TopAlignZoomPictureBox_MouseDoubleClick(object sender, EventArgs e) => AddPictboxToolStripButton_Click(topAlignZoomPictureBox, EventArgs.Empty);
+
+    private void FindDuplicatesToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        // Lokale Hilfsfunktion: Findet alle Werte, die mehr als einmal vorkommen
+        static HashSet<string> GetDuplicateKeys(IEnumerable<string?> items)
+        {
+            return items
+                .Where(x => !string.IsNullOrWhiteSpace(x) && x != "|") // "|" ist unser Platzhalter für leere Namen
+                .GroupBy(x => x!.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        if (tabControl.SelectedTab == addressTabPage && _context != null)
+        {
+            var source = _context.Adressen.Local;
+
+            // 1. Alle mehrfach vorkommenden E-Mails und Namen ermitteln
+            var duplicateMails = GetDuplicateKeys(source.Select(a => a.Mail1));
+            var duplicateNames = GetDuplicateKeys(source.Select(a => $"{a.Vorname?.Trim()}|{a.Nachname?.Trim()}"));
+
+            // 2. Wenn alles sauber ist, eine Erfolgsmeldung ausgeben
+            if (duplicateMails.Count == 0 && duplicateNames.Count == 0)
+            {
+                Utils.MsgTaskDlg(Handle, "Alles sauber", "Es wurden keine Duplikate in den lokalen Adressen gefunden.", TaskDialogIcon.ShieldSuccessGreenBar);
+                return;
+            }
+
+            // 3. Grid filtern: Zeige nur die Datensätze, deren Mail oder Name in der Duplikat-Liste steht
+            ExecuteFilter(source, addressBSource, addressDGV, a =>
+            {
+                var mail = a.Mail1?.Trim() ?? string.Empty;
+                var fullName = $"{a.Vorname?.Trim()}|{a.Nachname?.Trim()}";
+
+                return duplicateMails.Contains(mail) || duplicateNames.Contains(fullName);
+
+            }, "… mögliche Duplikate", "Adressen");
+        }
+        else if (tabControl.SelectedTab == contactTabPage && _allGoogleContacts != null)
+        {
+            var source = _allGoogleContacts;
+
+            // Gleiches Spiel für die Google Kontakte
+            var duplicateMails = GetDuplicateKeys(source.Select(c => c.Mail1));
+            var duplicateNames = GetDuplicateKeys(source.Select(c => $"{c.Vorname?.Trim()}|{c.Nachname?.Trim()}"));
+
+            if (duplicateMails.Count == 0 && duplicateNames.Count == 0)
+            {
+                Utils.MsgTaskDlg(Handle, "Alles sauber", "Es wurden keine Duplikate in den Google Kontakten gefunden.", TaskDialogIcon.ShieldSuccessGreenBar);
+                return;
+            }
+
+            ExecuteFilter(source, contactBSource, contactDGV, c =>
+            {
+                var mail = c.Mail1?.Trim() ?? string.Empty;
+                var fullName = $"{c.Vorname?.Trim()}|{c.Nachname?.Trim()}";
+
+                return duplicateMails.Contains(mail) || duplicateNames.Contains(fullName);
+
+            }, "… mögliche Duplikate", "Google Kontakte");
+        }
+    }
 }

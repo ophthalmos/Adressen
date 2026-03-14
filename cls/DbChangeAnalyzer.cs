@@ -6,39 +6,29 @@ namespace Adressen.cls;
 public static class DbChangeAnalyzer
 {
     //public record ChangeAnalysisResult(bool HasChanges, List<EntityEntry> RealChanges, string DialogHeading, string DialogText);
-    public record ChangeAnalysisResult(bool HasChanges, List<EntityEntry> RealChanges, string DialogHeading, string DialogText, string ExpanderText);
 
     //public static ChangeAnalysisResult AnalyzeChanges(DbContext? context)
     //{
     //    if (context == null) { return new ChangeAnalysisResult(false, [], string.Empty, string.Empty); }
 
     //    context.ChangeTracker.DetectChanges();
-
-    //    // Wir holen alle echten Änderungen (ignoriert reine Whitespace-Änderungen)
     //    var allRealChanges = context.ChangeTracker.Entries().Where(IsEntryReallyChanged).ToList();
 
     //    if (allRealChanges.Count == 0) { return new ChangeAnalysisResult(false, [], string.Empty, string.Empty); }
 
-    //    // --- 1. Echte Adress-Änderungen (Namen, Telefon etc.) ---
     //    var changedAddresses = allRealChanges
     //        .Where(e => e.Metadata.ClrType == typeof(Adresse))
     //        .Select(e => (Adresse)e.Entity)
-    //        .ToHashSet(); // HashSet verhindert Duplikate
+    //        .ToHashSet();
 
-    //    // --- 2. Indirekte Adress-Änderungen (Gruppen-Zuordnungen) ---
-    //    // Wir suchen Einträge, die keine Klasse haben (Schatten-Entitäten) und "Gruppe" im Namen tragen
-    //    var shadowEntries = allRealChanges.Where(e => e.Metadata.ClrType == null && e.Metadata.Name.Contains("Gruppe"));
+    //    var shadowEntries = allRealChanges.Where(e => e.Metadata.Name == "AdresseGruppen");
 
     //    foreach (var shadow in shadowEntries)
     //    {
-    //        // Wir suchen den Fremdschlüssel, der zur Adresse zeigt
     //        foreach (var fk in shadow.Metadata.GetForeignKeys())
     //        {
     //            if (fk.PrincipalEntityType.ClrType == typeof(Adresse))
     //            {
-    //                // Wert des Fremdschlüssels (AdressId) aus der Schatten-Entität lesen
-    //                // Da es meist nur eine Property für den FK gibt (AdressId), nehmen wir die erste.
-    //                // Wir prüfen die Anzahl und greifen direkt auf den Index 0 zu
     //                var fkProp = fk.Properties.Count > 0 ? fk.Properties[0] : null;
     //                if (fkProp != null && shadow.CurrentValues[fkProp] is int addressId)
     //                {
@@ -49,7 +39,6 @@ public static class DbChangeAnalyzer
     //        }
     //    }
 
-    //    // --- Text-Generierung ---
     //    var changedAddressNames = changedAddresses
     //        .Select(a =>
     //        {
@@ -60,50 +49,52 @@ public static class DbChangeAnalyzer
     //        })
     //        .OrderBy(n => n)
     //        .ToList();
-    //    var addressChangesCount = changedAddressNames.Count;
 
-    //    // 2. Andere Entitäten filtern
+    //    var addressChangesCount = changedAddressNames.Count;
     //    var otherChanges = allRealChanges.Where(e => e.Metadata.ClrType != typeof(Adresse)).ToList();
     //    var otherChangesCount = otherChanges.Count;
 
-    //    var groupCount = otherChanges.Count(e =>
-    //        e.Metadata.ClrType == typeof(Gruppe) ||
-    //        (e.Metadata.ClrType == null && e.Metadata.Name.Contains("Gruppe"))); // Erkennt "AdresseGruppe" Join-Table ohne Klasse
-
+    //    var groupCount = otherChanges.Count(e => e.Metadata.ClrType == typeof(Gruppe) || e.Metadata.Name == "AdresseGruppen");
     //    var photoCount = otherChanges.Count(e => e.Metadata.ClrType == typeof(Foto));
     //    var docCount = otherChanges.Count(e => e.Metadata.ClrType == typeof(Dokument));
 
-    //    var heading = addressChangesCount > 0
-    //    ? (addressChangesCount == 1 ? "Möchten Sie die Änderung speichern?" : "Möchten Sie die Änderungen speichern?")
-    //    : "Änderungen speichern?";
+    //    var detailsList = new List<string>();
+    //    if (groupCount > 0) { detailsList.Add(groupCount == 1 ? "1 Gruppenzuordnung" : $"{groupCount} Gruppenzuordnungen"); }
+    //    if (photoCount > 0) { detailsList.Add(photoCount == 1 ? "1 Foto" : $"{photoCount} Fotos"); }
+    //    if (docCount > 0) { detailsList.Add(docCount == 1 ? "1 Dokument" : $"{docCount} Dokumente"); }
 
+    //    var heading = string.Empty;
     //    var text = string.Empty;
+
     //    if (addressChangesCount > 0)
     //    {
-    //        heading = addressChangesCount == 1 ? "Möchten Sie die Änderung speichern?" : "Möchten Sie die Änderungen speichern?";
-    //        text = addressChangesCount > 10
-    //        ? string.Join(Environment.NewLine, changedAddressNames.Take(10)) + Environment.NewLine + "…"
-    //        : string.Join(Environment.NewLine, changedAddressNames);
-    //        // Zusatzhinweis
-    //        //if (otherChangesCount > 0) { text += $"{Environment.NewLine}und {otherChangesCount} Änderungen an Zusatzdaten"; }
+    //        heading = addressChangesCount == 1 ? "Möchtest du die Änderung speichern?" : "Möchtest du die Änderungen speichern?";
+    //        var textLines = new List<string> { "Adressen:" };
+    //        if (addressChangesCount > 12)
+    //        {
+    //            textLines.AddRange(changedAddressNames.Take(9));
+    //            textLines.Add("  …");
+    //            textLines.AddRange(changedAddressNames.TakeLast(3));
+    //        }
+    //        else { textLines.AddRange(changedAddressNames); }
+
+    //        if (detailsList.Count > 0)
+    //        {
+    //            textLines.Add(string.Empty);
+    //            textLines.Add("Zusatzdaten:");
+    //            textLines.AddRange(detailsList.Select(d => $"• {d}"));
+    //        }
+    //        text = string.Join(Environment.NewLine, textLines);
     //    }
     //    else
     //    {
-    //        // Wenn nur Gruppen/Fotos geändert wurden, aber keine Adress-Texte
-    //        heading = otherChangesCount == 1 ? "Änderung an Zusatzdaten speichern?" : $"Änderungen an {otherChangesCount} Zusatzdaten speichern?";
-
-    //        var detailsList = new List<string>();
-    //        if (groupCount > 0) { detailsList.Add(groupCount == 1 ? "einer Gruppenzuordnung" : $"{groupCount} Gruppenzuordnungen"); }
-    //        if (photoCount > 0) { detailsList.Add(photoCount == 1 ? "einem Foto" : $"{photoCount} Fotos"); }
-    //        if (docCount > 0) { detailsList.Add(docCount == 1 ? "einem Dokument" : $"{docCount} Dokumenten"); }
-    //        //var remainder = otherChangesCount - (groupCount + photoCount + docCount);  
-    //        //if (remainder > 0) { detailsList.Add(remainder == 1 ? "einem sonstigen Element" : $"{remainder} sonstigen Elementen"); }
-
-    //        if (detailsList.Count > 0) { text = "Es wurden Änderungen an " + string.Join(", ", detailsList) + " vorgenommen."; }
-    //        else { text = "Es wurden Änderungen an Zusatzdaten vorgenommen."; }
+    //        heading = otherChangesCount == 1 ? "Möchtest du die Änderung speichern?" : "Möchtest du die Änderungen speichern?";
+    //        text = string.Join(Environment.NewLine, detailsList.Select(d => $"• {d}"));
     //    }
     //    return new ChangeAnalysisResult(true, allRealChanges, heading, text);
     //}
+
+    public record ChangeAnalysisResult(bool HasChanges, List<EntityEntry> RealChanges, string DialogHeading, string DialogText, string ExpanderText);
 
     public static ChangeAnalysisResult AnalyzeChanges(DbContext? context)
     {
@@ -119,9 +110,8 @@ public static class DbChangeAnalyzer
             .Select(e => (Adresse)e.Entity)
             .ToHashSet();
 
-        // KORREKTUR: "AdresseGruppen" direkt über Name abfragen, da ClrType ein Dictionary ist
+        // 1. Gruppen-Zuordnungen auflösen (Shadow-Entities)
         var shadowEntries = allRealChanges.Where(e => e.Metadata.Name == "AdresseGruppen");
-
         foreach (var shadow in shadowEntries)
         {
             foreach (var fk in shadow.Metadata.GetForeignKeys())
@@ -138,6 +128,28 @@ public static class DbChangeAnalyzer
             }
         }
 
+        // 2. Foto-Änderungen auflösen und der Adresse zuordnen
+        var photoEntries = allRealChanges.Where(e => e.Metadata.ClrType == typeof(Foto));
+        foreach (var photoEntry in photoEntries)
+        {
+            if (photoEntry.Entity is Foto foto)
+            {
+                var addr = context.Set<Adresse>().Local.FirstOrDefault(a => a.Id == foto.AdressId);
+                if (addr != null) { changedAddresses.Add(addr); }
+            }
+        }
+
+        // 3. Dokument-Änderungen auflösen und der Adresse zuordnen
+        var docEntries = allRealChanges.Where(e => e.Metadata.ClrType == typeof(Dokument));
+        foreach (var docEntry in docEntries)
+        {
+            if (docEntry.Entity is Dokument doc)
+            {
+                var addr = context.Set<Adresse>().Local.FirstOrDefault(a => a.Id == doc.AdressId);
+                if (addr != null) { changedAddresses.Add(addr); }
+            }
+        }
+
         var changedAddressNames = changedAddresses
             .Select(a =>
             {
@@ -150,128 +162,106 @@ public static class DbChangeAnalyzer
             .ToList();
 
         var addressChangesCount = changedAddressNames.Count;
-        var otherChanges = allRealChanges.Where(e => e.Metadata.ClrType != typeof(Adresse)).ToList();
-        var otherChangesCount = otherChanges.Count;
 
-        // KORREKTUR: "AdresseGruppen" über den Namen abfragen
-        var groupCount = otherChanges.Count(e =>
-            e.Metadata.ClrType == typeof(Gruppe) ||
-            e.Metadata.Name == "AdresseGruppen");
+        // Echte, systemweite Gruppen-Änderungen ermitteln (z.B. über FrmGroupsEdit)
+        var deletedGroupsCount = allRealChanges.Count(e => e.Metadata.ClrType == typeof(Gruppe) && e.State == EntityState.Deleted);
+        var otherGroupsCount = allRealChanges.Count(e => e.Metadata.ClrType == typeof(Gruppe) && (e.State == EntityState.Added || e.State == EntityState.Modified));
 
-        var photoCount = otherChanges.Count(e => e.Metadata.ClrType == typeof(Foto));
-        var docCount = otherChanges.Count(e => e.Metadata.ClrType == typeof(Dokument));
+        var totalChangesCount = addressChangesCount + deletedGroupsCount + otherGroupsCount;
+        var heading = totalChangesCount == 1 ? "Möchtest du die Änderung speichern?" : "Möchtest du die Änderungen speichern?";
 
-        //// KORREKTUR: Liste vorziehen, damit sie in beiden if-Zweigen verfügbar ist
-        //var detailsList = new List<string>();
-        //if (groupCount > 0) { detailsList.Add(groupCount == 1 ? "einer Gruppenzuordnung" : $"{groupCount} Gruppenzuordnungen"); }
-        //if (photoCount > 0) { detailsList.Add(photoCount == 1 ? "einem Foto" : $"{photoCount} Fotos"); }
-        //if (docCount > 0) { detailsList.Add(docCount == 1 ? "einem Dokument" : $"{docCount} Dokumenten"); }
-
-        //var heading = "Änderungen speichern?";
-        //var text = string.Empty;
-
-        //if (addressChangesCount > 0)
-        //{
-        //    heading = addressChangesCount == 1 ? "Möchten Sie die Änderung speichern?" : "Möchten Sie die Änderungen speichern?";
-        //    text = addressChangesCount > 10
-        //        ? string.Join(Environment.NewLine, changedAddressNames.Take(10)) + Environment.NewLine + "…"
-        //        : string.Join(Environment.NewLine, changedAddressNames);
-
-        //    // KORREKTUR: Den Zusatzhinweis mit in den Adress-Block aufnehmen
-        //    if (detailsList.Count > 0)
-        //    {
-        //        text += $"{Environment.NewLine}{Environment.NewLine}Zusätzlich gab es Änderungen an: {string.Join(", ", detailsList)}.";
-        //    }
-        //}
-        //else
-        //{
-        //    heading = otherChangesCount == 1 ? "Änderung an Zusatzdaten speichern?" : $"Änderungen an {otherChangesCount} Zusatzdaten speichern?";
-
-        //    if (detailsList.Count > 0) { text = "Es wurden Änderungen an " + string.Join(", ", detailsList) + " vorgenommen."; }
-        //    else { text = "Es wurden Änderungen an Zusatzdaten vorgenommen."; }
-        //}
-
-        //return new ChangeAnalysisResult(true, allRealChanges, heading, text);
-
-        // Für den Expander nutzen wir direkte Zahlen statt grammatikalischer Beugung
-        var detailsList = new List<string>();
-        if (groupCount > 0) { detailsList.Add(groupCount == 1 ? "1 Gruppenzuordnung" : $"{groupCount} Gruppenzuordnungen"); }
-        if (photoCount > 0) { detailsList.Add(photoCount == 1 ? "1 Foto" : $"{photoCount} Fotos"); }
-        if (docCount > 0) { detailsList.Add(docCount == 1 ? "1 Dokument" : $"{docCount} Dokumente"); }
-
-        var heading = string.Empty;
         var text = string.Empty;
-        var expanderText = string.Empty;
+        var expanderLines = new List<string>();
 
+        // Haupttext und Expander-Zeilen aufbauen
         if (addressChangesCount > 0)
         {
-            heading = addressChangesCount == 1 ? "Möchten Sie die Änderung speichern?" : "Möchten Sie die Änderungen speichern?";
-            text = addressChangesCount == 1 ? "Es wurde eine Adresse geändert." : $"Es wurden {addressChangesCount} Adressen geändert.";
-
-            //if (detailsList.Count > 0)
-            //{
-            //    text += $"{Environment.NewLine}Zusätzlich gibt es Änderungen an verknüpften Zusatzdaten.";
-            //}
-
-            // Expander füllen: Erst die Adressen, dann (falls vorhanden) die Zusatzdaten
-            var expanderLines = new List<string>(changedAddressNames);
-            if (detailsList.Count > 0)
+            text = addressChangesCount == 1 ? "Eine Adresse wurde verändert." : $"Es wurden Änderungen an {addressChangesCount} Adressen vorgenommen.";
+            if (addressChangesCount > 13)  // greift erst ab 14 Einträgen; addressChangesCount - 12 ergibt mindestens 2, also "… (2 weitere)"
             {
-                expanderLines.Add(string.Empty);
-                expanderLines.Add("Zusatzdaten:");
-                expanderLines.AddRange(detailsList.Select(d => $"• {d}"));
+                expanderLines.AddRange(changedAddressNames.Take(9));
+                expanderLines.Add($"  … ({addressChangesCount - 12} weitere)");  // falls es genau 13 Änderungen gibt, wird hier NICHT "… (1 weitere)" angezeigt
+                expanderLines.AddRange(changedAddressNames.TakeLast(3));
             }
-            expanderText = string.Join(Environment.NewLine, expanderLines);
+            else { expanderLines.AddRange(changedAddressNames); }
         }
-        else
-        {
-            heading = otherChangesCount == 1 ? "Änderung an Zusatzdaten speichern?" : $"Änderungen an {otherChangesCount} Zusatzdaten speichern?";
-            text = "Es wurden ausschließlich Änderungen an verknüpften Elementen (z. B. Gruppen, Fotos) vorgenommen.";
 
-            // Expander füllen: Nur die Zusatzdaten
-            expanderText = string.Join(Environment.NewLine, detailsList.Select(d => $"• {d}"));
+        if (deletedGroupsCount > 0 || otherGroupsCount > 0)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                text = "Es wurden systemweite Änderungen an den Gruppen vorgenommen.";
+            }
+
+            if (expanderLines.Count > 0) { expanderLines.Add(string.Empty); }
+
+            if (deletedGroupsCount > 0)
+            {
+                expanderLines.Add(deletedGroupsCount == 1 ? "Es wurde 1 Gruppe entfernt." : $"Es wurden {deletedGroupsCount} Gruppen entfernt.");
+            }
+            if (otherGroupsCount > 0)
+            {
+                expanderLines.Add(otherGroupsCount == 1 ? "Es wurde 1 Gruppe hinzugefügt/geändert." : $"Es wurden {otherGroupsCount} Gruppen hinzugefügt/geändert.");
+            }
         }
+
+        var expanderText = string.Join(Environment.NewLine, expanderLines);
 
         return new ChangeAnalysisResult(true, allRealChanges, heading, text, expanderText);
     }
 
-    public static async Task RevertChangesAsync(List<EntityEntry> entries)
+
+    public static async Task RevertChangesAsync(List<EntityEntry> entries, BindingSource? addressSource = null)
     {
         foreach (var entry in entries)
         {
             switch (entry.State)
             {
                 case EntityState.Modified:
-                case EntityState.Deleted:
-                    await entry.ReloadAsync().ConfigureAwait(false);  // Reload setzt Modified auf Unchanged zurück und lädt alte Werte
+                    // Setzt die Werte lokal auf den Stand beim Laden zurück - OHNE DB-Abfrage!
+                    entry.CurrentValues.SetValues(entry.OriginalValues);
+                    entry.State = EntityState.Unchanged;
                     break;
+
+                case EntityState.Deleted:
+                    entry.State = EntityState.Unchanged;
+                    if (addressSource is not null && entry.Entity is Adresse adresse)
+                    {
+                        if (!addressSource.Contains(adresse)) { addressSource.Add(adresse); }
+                    }
+                    break;
+
                 case EntityState.Added:
                     entry.State = EntityState.Detached;
                     break;
             }
         }
+        await Task.CompletedTask;
     }
 
     public static bool IsEntryReallyChanged(EntityEntry entry)
     {
         if (entry.State == EntityState.Added || entry.State == EntityState.Deleted) { return true; }
         if (entry.State != EntityState.Modified) { return false; }
-        if (!entry.Properties.Any(p => p.IsModified)) { return true; }
+
         foreach (var prop in entry.Properties)
         {
             if (!prop.IsModified) { continue; }
+
             var current = prop.CurrentValue;
             var original = prop.OriginalValue;
-            if (Equals(original, current)) { continue; }  // direkter Vergleich (für Zahlen, Datum, etc.)
-            if (prop.Metadata.ClrType == typeof(string))  // Spezialbehandlung für Strings (null == empty, trim)
+
+            if (Equals(original, current)) { continue; }
+
+            if (prop.Metadata.ClrType == typeof(string))
             {
                 var sOriginal = (original as string ?? string.Empty).Trim();
                 var sCurrent = (current as string ?? string.Empty).Trim();
 
                 if (sOriginal == sCurrent) { continue; }
             }
-            return true;  // Wenn wir hier ankommen, gab es eine echte Änderung in einem Property
+            return true;
         }
-        return false;  // Wenn alle "Modified" Properties eigentlich nur Whitespace-Unterschiede waren, oder wenn EntityState.Modified gesetzt wurde, aber keine Werte anders sind:
+        return false;
     }
 }

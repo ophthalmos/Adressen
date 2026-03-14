@@ -1,4 +1,6 @@
-﻿namespace Adressen;
+﻿using Adressen.cls;
+
+namespace Adressen;
 
 partial class FrmAdressen
 {
@@ -70,8 +72,10 @@ partial class FrmAdressen
         statusbarToolStripMenuItem = new ToolStripMenuItem();
         filterlToolStripMenuItem = new ToolStripMenuItem();
         groupFilterToolStripMenuItem = new ToolStripMenuItem();
+        manageGroupsToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator9 = new ToolStripSeparator();
         adressenMitBriefToolStripMenuItem = new ToolStripMenuItem();
+        adressenOhneBriefToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator20 = new ToolStripSeparator();
         photoPlusFilterToolStripMenuItem = new ToolStripMenuItem();
         photoMinusFilterToolStripMenuItem = new ToolStripMenuItem();
@@ -87,11 +91,12 @@ partial class FrmAdressen
         toolStripSeparator25 = new ToolStripSeparator();
         datePlusFilterMenuItem = new ToolStripMenuItem();
         dateMinusFilterMenuItem = new ToolStripMenuItem();
+        toolStripSeparator18 = new ToolStripSeparator();
+        findDuplicatesToolStripMenuItem = new ToolStripMenuItem();
         extraToolStripMenuItem = new ToolStripMenuItem();
         birthdaysToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator17 = new ToolStripSeparator();
         optionsToolStripMenuItem = new ToolStripMenuItem();
-        manageGroupsToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator3 = new ToolStripSeparator();
         authentMenuItem = new ToolStripMenuItem();
         browserPeopleMenuItem = new ToolStripMenuItem();
@@ -147,67 +152,71 @@ partial class FrmAdressen
         tabPageDetail = new TabPage();
         editSplitContainer = new SplitContainer();
         tableLayoutPanel = new TableLayoutPanel();
-        tbPostfach = new TextBox();
-        tbPosition = new TextBox();
-        tbNickname = new TextBox();
-        tbZwischenname = new TextBox();
+        tbPostfach = new PaddedTextBox();
+        tbPosition = new PaddedTextBox();
+        tbNickname = new PaddedTextBox();
+        tbZwischenname = new PaddedTextBox();
         anredetitelLabel = new Label();
-        cbAnrede = new TextBox();
-        cbPraefix = new TextBox();
+        cbAnrede = new PaddedTextBox();
+        cbPraefix = new PaddedTextBox();
         vornameLabel = new Label();
-        tbVorname = new TextBox();
+        tbVorname = new PaddedTextBox();
         nachnameLabel = new Label();
-        tbNachname = new TextBox();
-        tbSuffix = new TextBox();
+        tbNachname = new PaddedTextBox();
+        tbSuffix = new PaddedTextBox();
         firmaLabel = new Label();
-        tbFirma = new TextBox();
+        tbFirma = new PaddedTextBox();
         straßenrLabel = new Label();
-        tbStraße = new TextBox();
+        tbStraße = new PaddedTextBox();
         plzortLabel = new Label();
-        cbPLZ = new TextBox();
-        cbOrt = new TextBox();
+        cbPLZ = new PaddedTextBox();
+        cbOrt = new PaddedTextBox();
         landLabel = new Label();
-        cbLand = new TextBox();
+        cbLand = new PaddedTextBox();
         labelBetreff = new Label();
-        tbBetreff = new TextBox();
+        tbBetreff = new PaddedTextBox();
         GrussformelLabel = new Label();
-        cbGrussformel = new TextBox();
+        cbGrussformel = new PaddedTextBox();
         schlussformelLabel = new Label();
-        cbSchlussformel = new TextBox();
+        cbSchlussformel = new PaddedTextBox();
         geburtstagLabel = new Label();
         mail1LinkLabel = new LinkLabel();
         mail2LinkLabel = new LinkLabel();
-        tbMail1 = new TextBox();
-        tbMail2 = new TextBox();
+        tbMail1 = new PaddedTextBox();
+        tbMail2 = new PaddedTextBox();
         tel1LinkLabel = new LinkLabel();
         tel2LinkLabel = new LinkLabel();
-        tbTelefon1 = new TextBox();
-        tbTelefon2 = new TextBox();
+        tbTelefon1 = new PaddedTextBox();
+        tbTelefon2 = new PaddedTextBox();
         mobilLinkLabel = new LinkLabel();
         faxLabel = new Label();
-        tbMobil = new TextBox();
-        tbFax = new TextBox();
+        tbMobil = new PaddedTextBox();
+        tbFax = new PaddedTextBox();
         btnEditContact = new Button();
         internetLinkLabel = new LinkLabel();
-        tbInternet = new TextBox();
+        tbInternet = new PaddedTextBox();
         ageLabel = new Label();
         btnResetDate = new Button();
         panelBirthdayContainer = new Panel();
         panelVerticalBar = new Panel();
         panelBirthdayTextbox = new Panel();
-        maskedTextBox = new MaskedTextBox();
+        maskedTextBox = new PaddedMaskedTextBox();
         btnCalendar = new Button();
         flowLayoutPanel = new FlowLayoutPanel();
         tagPanel = new Panel();
         tagButton = new Button();
         tagComboBox = new ComboBox();
-        tbNotizen = new TextBox();
+        panelTBNotizenFrame = new Panel();
+        tbNotizen = new PaddedTextBox();
         spacerPanel = new Panel();
         panelPictBox = new Panel();
         pictboxToolStrip = new ToolStrip();
         addPictboxToolStripButton = new ToolStripButton();
         delPictboxToolStripButton = new ToolStripButton();
-        topAlignZoomPictureBox = new Adressen.cls.TopAlignZoomPictureBox();
+        topAlignZoomPictureBox = new TopAlignZoomPictureBox();
+        contextPhotoMenu = new ContextMenuStrip(components);
+        copyToolStripMenuItem = new ToolStripMenuItem();
+        pasteToolStripMenuItem = new ToolStripMenuItem();
         tabPageDoku = new TabPage();
         dokuListView = new ListView();
         ColumnHeader1 = new ColumnHeader();
@@ -216,7 +225,7 @@ partial class FrmAdressen
         dokuImages = new ImageList(components);
         dokuTopPanel = new Panel();
         searchPictureBox = new PictureBox();
-        searchTextBox = new TextBox();
+        searchTextBox = new PaddedTextBox();
         imageList = new ImageList(components);
         contextDgvMenu = new ContextMenuStrip(components);
         newTSMenuItem = new ToolStripMenuItem();
@@ -235,12 +244,10 @@ partial class FrmAdressen
         toolTip = new ToolTip(components);
         saveFileDialog = new SaveFileDialog();
         debounceTimer = new System.Windows.Forms.Timer(components);
-        fileSystemWatcher = new FileSystemWatcher();
-        addressBindingSource = new BindingSource(components);
-        bindingSource1 = new BindingSource(components);
-        contactBindingSource = new BindingSource(components);
+        fileSysWatcher = new FileSystemWatcher();
+        addressBSource = new BindingSource(components);
+        contactBSource = new BindingSource(components);
         searchTimer = new System.Windows.Forms.Timer(components);
-        scrollTimer = new System.Windows.Forms.Timer(components);
         menuStrip.SuspendLayout();
         toolStrip.SuspendLayout();
         statusStrip.SuspendLayout();
@@ -263,17 +270,18 @@ partial class FrmAdressen
         panelBirthdayContainer.SuspendLayout();
         panelBirthdayTextbox.SuspendLayout();
         tagPanel.SuspendLayout();
+        panelTBNotizenFrame.SuspendLayout();
         panelPictBox.SuspendLayout();
         pictboxToolStrip.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)topAlignZoomPictureBox).BeginInit();
+        contextPhotoMenu.SuspendLayout();
         tabPageDoku.SuspendLayout();
         dokuTopPanel.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)searchPictureBox).BeginInit();
         contextDgvMenu.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)fileSystemWatcher).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)addressBindingSource).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)bindingSource1).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)contactBindingSource).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)fileSysWatcher).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)addressBSource).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)contactBSource).BeginInit();
         SuspendLayout();
         // 
         // menuStrip
@@ -353,6 +361,7 @@ partial class FrmAdressen
         // 
         // googlebackupToolStripMenuItem
         // 
+        googlebackupToolStripMenuItem.Enabled = false;
         googlebackupToolStripMenuItem.Image = (Image)resources.GetObject("googlebackupToolStripMenuItem.Image");
         googlebackupToolStripMenuItem.Name = "googlebackupToolStripMenuItem";
         googlebackupToolStripMenuItem.Size = new Size(229, 22);
@@ -533,7 +542,7 @@ partial class FrmAdressen
         // 
         // filterlToolStripMenuItem
         // 
-        filterlToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { groupFilterToolStripMenuItem, toolStripSeparator9, adressenMitBriefToolStripMenuItem, toolStripSeparator20, photoPlusFilterToolStripMenuItem, photoMinusFilterToolStripMenuItem, toolStripSeparator22, mailPlusFilterToolStripMenuItem, mailMinusFilterToolStripMenuItem, toolStripSeparator23, telephonePlusFilterToolStripMenuItem, telephoneMinusFilterToolStripMenuItem, toolStripSeparator24, mobilePlusFilterToolStripMenuItem, mobileMinusFilterToolStripMenuItem, toolStripSeparator25, datePlusFilterMenuItem, dateMinusFilterMenuItem });
+        filterlToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { groupFilterToolStripMenuItem, manageGroupsToolStripMenuItem, toolStripSeparator9, adressenMitBriefToolStripMenuItem, adressenOhneBriefToolStripMenuItem, toolStripSeparator20, photoPlusFilterToolStripMenuItem, photoMinusFilterToolStripMenuItem, toolStripSeparator22, mailPlusFilterToolStripMenuItem, mailMinusFilterToolStripMenuItem, toolStripSeparator23, telephonePlusFilterToolStripMenuItem, telephoneMinusFilterToolStripMenuItem, toolStripSeparator24, mobilePlusFilterToolStripMenuItem, mobileMinusFilterToolStripMenuItem, toolStripSeparator25, datePlusFilterMenuItem, dateMinusFilterMenuItem, toolStripSeparator18, findDuplicatesToolStripMenuItem });
         filterlToolStripMenuItem.Name = "filterlToolStripMenuItem";
         filterlToolStripMenuItem.Size = new Size(45, 20);
         filterlToolStripMenuItem.Text = "Filter";
@@ -548,6 +557,16 @@ partial class FrmAdressen
         groupFilterToolStripMenuItem.Text = "Nach Gruppenzugehörigkeit…";
         groupFilterToolStripMenuItem.Click += GroupFilterToolStripMenuItem_Click;
         // 
+        // manageGroupsToolStripMenuItem
+        // 
+        manageGroupsToolStripMenuItem.Enabled = false;
+        manageGroupsToolStripMenuItem.Image = Properties.Resources.GroupOfUsers16x;
+        manageGroupsToolStripMenuItem.Name = "manageGroupsToolStripMenuItem";
+        manageGroupsToolStripMenuItem.ShortcutKeyDisplayString = "Strg+F9";
+        manageGroupsToolStripMenuItem.Size = new Size(251, 22);
+        manageGroupsToolStripMenuItem.Text = "Gruppen bearbeiten…";
+        manageGroupsToolStripMenuItem.Click += ManageGroupsToolStripMenuItem_Click;
+        // 
         // toolStripSeparator9
         // 
         toolStripSeparator9.Name = "toolStripSeparator9";
@@ -558,8 +577,16 @@ partial class FrmAdressen
         adressenMitBriefToolStripMenuItem.Image = (Image)resources.GetObject("adressenMitBriefToolStripMenuItem.Image");
         adressenMitBriefToolStripMenuItem.Name = "adressenMitBriefToolStripMenuItem";
         adressenMitBriefToolStripMenuItem.Size = new Size(251, 22);
-        adressenMitBriefToolStripMenuItem.Text = "Alle Adressen mit Briefen";
+        adressenMitBriefToolStripMenuItem.Text = "Alle mit Briefen";
         adressenMitBriefToolStripMenuItem.Click += AdressenMitBriefToolStripMenuItem_Click;
+        // 
+        // adressenOhneBriefToolStripMenuItem
+        // 
+        adressenOhneBriefToolStripMenuItem.Image = Properties.Resources.inbox_minus16;
+        adressenOhneBriefToolStripMenuItem.Name = "adressenOhneBriefToolStripMenuItem";
+        adressenOhneBriefToolStripMenuItem.Size = new Size(251, 22);
+        adressenOhneBriefToolStripMenuItem.Text = "Alle ohne Briefe";
+        adressenOhneBriefToolStripMenuItem.Click += AdressenOhneBriefToolStripMenuItem_Click;
         // 
         // toolStripSeparator20
         // 
@@ -667,9 +694,22 @@ partial class FrmAdressen
         dateMinusFilterMenuItem.Text = "Alle ohne Geburtsdatum";
         dateMinusFilterMenuItem.Click += DateMinusFilterMenuItem_Click;
         // 
+        // toolStripSeparator18
+        // 
+        toolStripSeparator18.Name = "toolStripSeparator18";
+        toolStripSeparator18.Size = new Size(248, 6);
+        // 
+        // findDuplicatesToolStripMenuItem
+        // 
+        findDuplicatesToolStripMenuItem.Image = Properties.Resources.control_double16;
+        findDuplicatesToolStripMenuItem.Name = "findDuplicatesToolStripMenuItem";
+        findDuplicatesToolStripMenuItem.Size = new Size(251, 22);
+        findDuplicatesToolStripMenuItem.Text = "Alle doppelt vorkommenden";
+        findDuplicatesToolStripMenuItem.Click += FindDuplicatesToolStripMenuItem_Click;
+        // 
         // extraToolStripMenuItem
         // 
-        extraToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { birthdaysToolStripMenuItem, toolStripSeparator17, optionsToolStripMenuItem, manageGroupsToolStripMenuItem, toolStripSeparator3, authentMenuItem, browserPeopleMenuItem });
+        extraToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { birthdaysToolStripMenuItem, toolStripSeparator17, optionsToolStripMenuItem, toolStripSeparator3, authentMenuItem, browserPeopleMenuItem });
         extraToolStripMenuItem.Name = "extraToolStripMenuItem";
         extraToolStripMenuItem.Size = new Size(49, 20);
         extraToolStripMenuItem.Text = "Extras";
@@ -699,16 +739,6 @@ partial class FrmAdressen
         optionsToolStripMenuItem.Size = new Size(263, 22);
         optionsToolStripMenuItem.Text = "&Einstellungen…";
         optionsToolStripMenuItem.Click += OptionsToolStripMenuItem_Click;
-        // 
-        // manageGroupsToolStripMenuItem
-        // 
-        manageGroupsToolStripMenuItem.Enabled = false;
-        manageGroupsToolStripMenuItem.Image = Properties.Resources.GroupOfUsers16x;
-        manageGroupsToolStripMenuItem.Name = "manageGroupsToolStripMenuItem";
-        manageGroupsToolStripMenuItem.ShortcutKeyDisplayString = "Strg+F9";
-        manageGroupsToolStripMenuItem.Size = new Size(263, 22);
-        manageGroupsToolStripMenuItem.Text = "Gruppen bearbeiten…";
-        manageGroupsToolStripMenuItem.Click += ManageGroupsToolStripMenuItem_Click;
         // 
         // toolStripSeparator3
         // 
@@ -852,6 +882,7 @@ partial class FrmAdressen
         toolStrip.Name = "toolStrip";
         toolStrip.Size = new Size(1237, 31);
         toolStrip.TabIndex = 1;
+        toolStrip.Paint += ToolStrip_Paint;
         // 
         // openTSButton
         // 
@@ -913,7 +944,6 @@ partial class FrmAdressen
         tsClearLabel.Size = new Size(23, 28);
         tsClearLabel.Text = "🗙";
         tsClearLabel.Click += TsClearLabel_Click;
-        tsClearLabel.Paint += TsClearLabel_Paint;
         tsClearLabel.VisibleChanged += TsClearLabel_VisibleChanged;
         // 
         // toolStripSeparator
@@ -1046,7 +1076,7 @@ partial class FrmAdressen
         // 
         toolStripStatusLabel.AutoSize = false;
         toolStripStatusLabel.Name = "toolStripStatusLabel";
-        toolStripStatusLabel.Size = new Size(120, 17);
+        toolStripStatusLabel.Size = new Size(230, 17);
         toolStripStatusLabel.Text = "0 Adressen";
         toolStripStatusLabel.TextAlign = ContentAlignment.MiddleLeft;
         // 
@@ -1192,11 +1222,13 @@ partial class FrmAdressen
         addressDGV.CellClick += AddressDGV_CellClick;
         addressDGV.CellMouseDown += DGV_CellMouseDown_SelectRow;
         addressDGV.ColumnHeaderMouseClick += AddressDGV_ColumnHeaderMouseClick;
+        addressDGV.DataBindingComplete += AddressDGV_DataBindingComplete;
         addressDGV.DataError += AddressDGV_DataError;
         addressDGV.RowContextMenuStripNeeded += AddressDGV_RowContextMenuStripNeeded;
         addressDGV.RowPrePaint += AddressDGV_RowPrePaint;
         addressDGV.RowsAdded += AddressDGV_RowsAdded;
         addressDGV.RowsRemoved += AddressDGV_RowsRemoved;
+        addressDGV.Scroll += AddressDGV_Scroll;
         addressDGV.SelectionChanged += AddressDGV_SelectionChanged;
         addressDGV.KeyDown += AddressDGV_KeyDown;
         // 
@@ -1244,9 +1276,11 @@ partial class FrmAdressen
         contactDGV.CellClick += ContactDGV_CellClick;
         contactDGV.CellMouseDown += DGV_CellMouseDown_SelectRow;
         contactDGV.ColumnHeaderMouseClick += ContactDGV_ColumnHeaderMouseClick;
+        contactDGV.DataBindingComplete += ContactDGV_DataBindingComplete;
         contactDGV.DataError += ContactDGV_DataError;
         contactDGV.RowPrePaint += ContactDGV_RowPrePaint;
         contactDGV.RowValidating += ContactDGV_RowValidating;
+        contactDGV.Scroll += ContactDGV_Scroll;
         contactDGV.SelectionChanged += ContactDGV_SelectionChanged;
         contactDGV.KeyDown += ContactDGV_KeyDown;
         contactDGV.MouseDown += ContactDGV_MouseDown;
@@ -1296,7 +1330,7 @@ partial class FrmAdressen
         // editSplitContainer.Panel2
         // 
         editSplitContainer.Panel2.BackColor = SystemColors.ControlLightLight;
-        editSplitContainer.Panel2.Controls.Add(tbNotizen);
+        editSplitContainer.Panel2.Controls.Add(panelTBNotizenFrame);
         editSplitContainer.Panel2.Controls.Add(spacerPanel);
         editSplitContainer.Panel2.Controls.Add(panelPictBox);
         editSplitContainer.Panel2.Padding = new Padding(0, 9, 13, 9);
@@ -1471,6 +1505,7 @@ partial class FrmAdressen
         cbAnrede.Dock = DockStyle.Fill;
         cbAnrede.Location = new Point(104, 9);
         cbAnrede.Name = "cbAnrede";
+        cbAnrede.PlaceholderText = "Anrede";
         cbAnrede.Size = new Size(218, 25);
         cbAnrede.TabIndex = 1;
         cbAnrede.TextChanged += TextBox_TextChanged;
@@ -1487,6 +1522,7 @@ partial class FrmAdressen
         cbPraefix.Dock = DockStyle.Fill;
         cbPraefix.Location = new Point(328, 9);
         cbPraefix.Name = "cbPraefix";
+        cbPraefix.PlaceholderText = "Titel";
         cbPraefix.Size = new Size(219, 25);
         cbPraefix.TabIndex = 2;
         cbPraefix.TextChanged += TextBox_TextChanged;
@@ -1637,6 +1673,7 @@ partial class FrmAdressen
         cbPLZ.Dock = DockStyle.Fill;
         cbPLZ.Location = new Point(104, 169);
         cbPLZ.Name = "cbPLZ";
+        cbPLZ.PlaceholderText = "PLZ";
         cbPLZ.Size = new Size(106, 25);
         cbPLZ.TabIndex = 11;
         cbPLZ.TextChanged += TextBox_TextChanged;
@@ -1653,6 +1690,7 @@ partial class FrmAdressen
         cbOrt.Dock = DockStyle.Fill;
         cbOrt.Location = new Point(216, 169);
         cbOrt.Name = "cbOrt";
+        cbOrt.PlaceholderText = "Ort";
         cbOrt.Size = new Size(331, 25);
         cbOrt.TabIndex = 12;
         cbOrt.TextChanged += TextBox_TextChanged;
@@ -1681,6 +1719,7 @@ partial class FrmAdressen
         cbLand.Dock = DockStyle.Fill;
         cbLand.Location = new Point(216, 201);
         cbLand.Name = "cbLand";
+        cbLand.PlaceholderText = "Land";
         cbLand.Size = new Size(331, 25);
         cbLand.TabIndex = 14;
         cbLand.TextChanged += TextBox_TextChanged;
@@ -1724,7 +1763,7 @@ partial class FrmAdressen
         GrussformelLabel.Padding = new Padding(0, 0, 0, 3);
         GrussformelLabel.Size = new Size(95, 32);
         GrussformelLabel.TabIndex = 14;
-        GrussformelLabel.Text = "Grussformel:";
+        GrussformelLabel.Text = "Grußformel:";
         GrussformelLabel.TextAlign = ContentAlignment.MiddleRight;
         // 
         // cbGrussformel
@@ -1736,6 +1775,7 @@ partial class FrmAdressen
         cbGrussformel.Dock = DockStyle.Fill;
         cbGrussformel.Location = new Point(104, 265);
         cbGrussformel.Name = "cbGrussformel";
+        cbGrussformel.PlaceholderText = "Grußformel";
         cbGrussformel.Size = new Size(443, 25);
         cbGrussformel.TabIndex = 16;
         cbGrussformel.TextChanged += TextBox_TextChanged;
@@ -1763,6 +1803,7 @@ partial class FrmAdressen
         cbSchlussformel.Dock = DockStyle.Fill;
         cbSchlussformel.Location = new Point(104, 297);
         cbSchlussformel.Name = "cbSchlussformel";
+        cbSchlussformel.PlaceholderText = "Schlussformel";
         cbSchlussformel.Size = new Size(443, 25);
         cbSchlussformel.TabIndex = 17;
         cbSchlussformel.TextChanged += TextBox_TextChanged;
@@ -2107,7 +2148,7 @@ partial class FrmAdressen
         // flowLayoutPanel
         // 
         flowLayoutPanel.AutoScroll = true;
-        flowLayoutPanel.BackColor = SystemColors.ControlLightLight;
+        flowLayoutPanel.BackColor = Color.WhiteSmoke;
         flowLayoutPanel.BorderStyle = BorderStyle.FixedSingle;
         tableLayoutPanel.SetColumnSpan(flowLayoutPanel, 5);
         flowLayoutPanel.Dock = DockStyle.Fill;
@@ -2151,8 +2192,6 @@ partial class FrmAdressen
         // 
         // tagComboBox
         // 
-        tagComboBox.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
-        tagComboBox.AutoCompleteSource = AutoCompleteSource.ListItems;
         tagComboBox.Dock = DockStyle.Fill;
         tagComboBox.FormattingEnabled = true;
         tagComboBox.ItemHeight = 17;
@@ -2162,21 +2201,35 @@ partial class FrmAdressen
         tagComboBox.Size = new Size(95, 25);
         tagComboBox.TabIndex = 0;
         tagComboBox.TextChanged += TagComboBox_TextChanged;
+        tagComboBox.Enter += TagComboBox_Enter;
         tagComboBox.KeyDown += TagComboBox_KeyDown;
+        tagComboBox.Leave += TagComboBox_Leave;
+        // 
+        // panelTBNotizenFrame
+        // 
+        panelTBNotizenFrame.BorderStyle = BorderStyle.FixedSingle;
+        panelTBNotizenFrame.Controls.Add(tbNotizen);
+        panelTBNotizenFrame.Dock = DockStyle.Fill;
+        panelTBNotizenFrame.Location = new Point(104, 9);
+        panelTBNotizenFrame.Name = "panelTBNotizenFrame";
+        panelTBNotizenFrame.Size = new Size(443, 134);
+        panelTBNotizenFrame.TabIndex = 31;
         // 
         // tbNotizen
         // 
-        tbNotizen.BorderStyle = BorderStyle.FixedSingle;
+        tbNotizen.BorderStyle = BorderStyle.None;
         tbNotizen.Dock = DockStyle.Fill;
-        tbNotizen.Location = new Point(104, 9);
+        tbNotizen.Location = new Point(0, 0);
         tbNotizen.Multiline = true;
         tbNotizen.Name = "tbNotizen";
         tbNotizen.PlaceholderText = "Notizen";
-        tbNotizen.Size = new Size(443, 134);
+        tbNotizen.ScrollBars = ScrollBars.Vertical;
+        tbNotizen.Size = new Size(441, 132);
         tbNotizen.TabIndex = 30;
-        tbNotizen.SizeChanged += TbNotizen_SizeChanged;
+        tbNotizen.Text = "                                                                                                         ";
         tbNotizen.TextChanged += TextBox_TextChanged;
         tbNotizen.Enter += TbNotizen_Enter;
+        tbNotizen.KeyDown += TbNotizen_KeyDown;
         tbNotizen.Leave += TextBox_Leave;
         // 
         // spacerPanel
@@ -2204,7 +2257,7 @@ partial class FrmAdressen
         pictboxToolStrip.GripMargin = new Padding(0);
         pictboxToolStrip.GripStyle = ToolStripGripStyle.Hidden;
         pictboxToolStrip.Items.AddRange(new ToolStripItem[] { addPictboxToolStripButton, delPictboxToolStripButton });
-        pictboxToolStrip.Location = new Point(0, 0);
+        pictboxToolStrip.Location = new Point(0, 100);
         pictboxToolStrip.Name = "pictboxToolStrip";
         pictboxToolStrip.Size = new Size(100, 25);
         pictboxToolStrip.Stretch = true;
@@ -2238,13 +2291,38 @@ partial class FrmAdressen
         // 
         // topAlignZoomPictureBox
         // 
+        topAlignZoomPictureBox.ContextMenuStrip = contextPhotoMenu;
         topAlignZoomPictureBox.Dock = DockStyle.Top;
         topAlignZoomPictureBox.Image = null;
         topAlignZoomPictureBox.Location = new Point(0, 0);
         topAlignZoomPictureBox.Name = "topAlignZoomPictureBox";
-        topAlignZoomPictureBox.Size = new Size(100, 0);
+        topAlignZoomPictureBox.Size = new Size(100, 100);
         topAlignZoomPictureBox.TabIndex = 26;
         topAlignZoomPictureBox.TabStop = false;
+        topAlignZoomPictureBox.MouseDoubleClick += TopAlignZoomPictureBox_MouseDoubleClick;
+        // 
+        // contextPhotoMenu
+        // 
+        contextPhotoMenu.Items.AddRange(new ToolStripItem[] { copyToolStripMenuItem, pasteToolStripMenuItem });
+        contextPhotoMenu.Name = "contextPhotoMenu";
+        contextPhotoMenu.Size = new Size(277, 48);
+        contextPhotoMenu.Opening += ContextPhotoMenu_Opening;
+        // 
+        // copyToolStripMenuItem
+        // 
+        copyToolStripMenuItem.Image = Properties.Resources.copy_contact16;
+        copyToolStripMenuItem.Name = "copyToolStripMenuItem";
+        copyToolStripMenuItem.Size = new Size(276, 22);
+        copyToolStripMenuItem.Text = "Bild in die Zwischenablage &kopieren";
+        copyToolStripMenuItem.Click += CopyToolStripMenuItem_Click;
+        // 
+        // pasteToolStripMenuItem
+        // 
+        pasteToolStripMenuItem.Image = Properties.Resources.clipboard_image16;
+        pasteToolStripMenuItem.Name = "pasteToolStripMenuItem";
+        pasteToolStripMenuItem.Size = new Size(276, 22);
+        pasteToolStripMenuItem.Text = "Bild aus der  Zwischenablage &einfügen";
+        pasteToolStripMenuItem.Click += PasteToolStripMenuItem_Click;
         // 
         // tabPageDoku
         // 
@@ -2337,7 +2415,7 @@ partial class FrmAdressen
         searchTextBox.Cursor = Cursors.IBeam;
         searchTextBox.Location = new Point(0, 9);
         searchTextBox.Name = "searchTextBox";
-        searchTextBox.PlaceholderText = " Suche";
+        searchTextBox.PlaceholderText = "Suche";
         searchTextBox.Size = new Size(538, 18);
         searchTextBox.TabIndex = 2;
         searchTextBox.TextChanged += SearchTextBox_TextChanged;
@@ -2465,35 +2543,30 @@ partial class FrmAdressen
         debounceTimer.Interval = 500;
         debounceTimer.Tick += DebounceTimer_Tick;
         // 
-        // fileSystemWatcher
+        // fileSysWatcher
         // 
-        fileSystemWatcher.EnableRaisingEvents = true;
-        fileSystemWatcher.IncludeSubdirectories = true;
-        fileSystemWatcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.CreationTime;
-        fileSystemWatcher.SynchronizingObject = this;
-        fileSystemWatcher.Changed += FileSystemWatcher_OnChanged;
-        fileSystemWatcher.Created += FileSystemWatcher_OnChanged;
-        fileSystemWatcher.Renamed += FileSystemWatcher_OnRenamed;
+        fileSysWatcher.EnableRaisingEvents = true;
+        fileSysWatcher.IncludeSubdirectories = true;
+        fileSysWatcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.CreationTime;
+        fileSysWatcher.SynchronizingObject = this;
+        fileSysWatcher.Changed += FileSystemWatcher_OnChanged;
+        fileSysWatcher.Created += FileSystemWatcher_OnChanged;
+        fileSysWatcher.Renamed += FileSystemWatcher_OnRenamed;
         // 
-        // addressBindingSource
+        // addressBSource
         // 
-        addressBindingSource.CurrentChanged += AddressBindingSource_CurrentChanged;
-        addressBindingSource.ListChanged += AddressBindingSource_ListChanged;
+        addressBSource.CurrentChanged += AddressBindingSource_CurrentChanged;
+        addressBSource.ListChanged += AddressBindingSource_ListChanged;
         // 
-        // contactBindingSource
+        // contactBSource
         // 
-        contactBindingSource.CurrentChanged += ContactBindingSource_CurrentChanged;
-        contactBindingSource.ListChanged += ContactBindingSource_ListChanged;
+        contactBSource.CurrentChanged += ContactBindingSource_CurrentChanged;
+        contactBSource.ListChanged += ContactBindingSource_ListChanged;
         // 
         // searchTimer
         // 
-        searchTimer.Interval = 300;
+        searchTimer.Interval = 200;
         searchTimer.Tick += SearchTimer_Tick;
-        // 
-        // scrollTimer
-        // 
-        scrollTimer.Interval = 50;
-        scrollTimer.Tick += ScrollTimer_Tick;
         // 
         // FrmAdressen
         // 
@@ -2534,7 +2607,6 @@ partial class FrmAdressen
         tabPageDetail.ResumeLayout(false);
         editSplitContainer.Panel1.ResumeLayout(false);
         editSplitContainer.Panel2.ResumeLayout(false);
-        editSplitContainer.Panel2.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)editSplitContainer).EndInit();
         editSplitContainer.ResumeLayout(false);
         tableLayoutPanel.ResumeLayout(false);
@@ -2543,19 +2615,21 @@ partial class FrmAdressen
         panelBirthdayTextbox.ResumeLayout(false);
         panelBirthdayTextbox.PerformLayout();
         tagPanel.ResumeLayout(false);
+        panelTBNotizenFrame.ResumeLayout(false);
+        panelTBNotizenFrame.PerformLayout();
         panelPictBox.ResumeLayout(false);
         pictboxToolStrip.ResumeLayout(false);
         pictboxToolStrip.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)topAlignZoomPictureBox).EndInit();
+        contextPhotoMenu.ResumeLayout(false);
         tabPageDoku.ResumeLayout(false);
         dokuTopPanel.ResumeLayout(false);
         dokuTopPanel.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)searchPictureBox).EndInit();
         contextDgvMenu.ResumeLayout(false);
-        ((System.ComponentModel.ISupportInitialize)fileSystemWatcher).EndInit();
-        ((System.ComponentModel.ISupportInitialize)addressBindingSource).EndInit();
-        ((System.ComponentModel.ISupportInitialize)bindingSource1).EndInit();
-        ((System.ComponentModel.ISupportInitialize)contactBindingSource).EndInit();
+        ((System.ComponentModel.ISupportInitialize)fileSysWatcher).EndInit();
+        ((System.ComponentModel.ISupportInitialize)addressBSource).EndInit();
+        ((System.ComponentModel.ISupportInitialize)contactBSource).EndInit();
         ResumeLayout(false);
         PerformLayout();
     }
@@ -2597,47 +2671,26 @@ partial class FrmAdressen
     private Label GrussformelLabel;
     private Label landLabel;
     private Label plzortLabel;
-    private TextBox tbStraße;
     private Label straßenrLabel;
-    private TextBox tbFirma;
     private Label firmaLabel;
-    private TextBox tbNachname;
     private Label nachnameLabel;
-    private TextBox tbVorname;
     private Label vornameLabel;
-    private TextBox cbAnrede;
-    private TextBox cbPraefix;
     private Label geburtstagLabel;
     private Label schlussformelLabel;
-    private TextBox tbFax;
-    private TextBox tbMobil;
-    private TextBox tbTelefon2;
-    private TextBox tbTelefon1;
-    private TextBox tbMail2;
-    private TextBox tbMail1;
-    private TextBox cbSchlussformel;
-    private TextBox cbGrussformel;
-    private TextBox cbLand;
     private Label faxLabel;
     private LinkLabel mail1LinkLabel;
     private LinkLabel tel1LinkLabel;
     private LinkLabel mail2LinkLabel;
-    private TextBox tbSuffix;
     private LinkLabel tel2LinkLabel;
-    private TextBox cbOrt;
     private ToolStripMenuItem aboutToolStripMenuItem;
     private ToolStripButton copyTSButton;
     private ToolStripSeparator detailSeparator2;
     private ToolStripStatusLabel toolStripStatusLabel;
-    private TextBox cbPLZ;
     //private TextBox comboBox1;
     //private TextBox comboBox2;
     private ImageList imageList;
-    private TextBox tbNotizen;
     private ToolStripMenuItem importToolStripMenuItem;
     private ToolStripSeparator toolStripSeparator6;
-    private TextBox tbInternet;
-    private TextBox tbBetreff;
     private Label labelBetreff;
     private Label ageLabel;
     private LinkLabel internetLinkLabel;
@@ -2694,7 +2747,7 @@ partial class FrmAdressen
     private ToolStripMenuItem birthdaysToolStripMenuItem;
     private ToolStripSeparator toolStripSeparator17;
     private Panel panelBirthdayContainer;
-    private MaskedTextBox maskedTextBox;
+    private cls.PaddedMaskedTextBox maskedTextBox;
     private Button btnCalendar;
     private Panel panelBirthdayTextbox;
     private Panel panelVerticalBar;
@@ -2714,11 +2767,8 @@ partial class FrmAdressen
     private ToolStripSeparator dokuSeparator2;
     private Panel dokuTopPanel;
     private PictureBox searchPictureBox;
-    private TextBox searchTextBox;
     private System.Windows.Forms.Timer debounceTimer;
-    private FileSystemWatcher fileSystemWatcher;
-    private TextBox tbNickname;
-    private TextBox tbZwischenname;
+    private FileSystemWatcher fileSysWatcher;
     private ToolStripSeparator toolStripSeparator3;
     private ToolStripMenuItem websiteToolStripMenuItem;
     private ToolStripMenuItem githubToolStripMenuItem;
@@ -2751,23 +2801,52 @@ partial class FrmAdressen
     private Button tagButton;
     private ToolStripMenuItem groupFilterToolStripMenuItem;
     private ToolStripSeparator toolStripSeparator9;
-    private ToolStripMenuItem manageGroupsToolStripMenuItem;
     private ToolStripMenuItem photoMinusFilterToolStripMenuItem;
     private ToolStripSeparator toolStripSeparator20;
     private ToolStripMenuItem copyCellToolStripMenuItem;
-    private BindingSource addressBindingSource;
-    private BindingSource bindingSource1;
-    private BindingSource contactBindingSource;
+    private BindingSource addressBSource;
+    private BindingSource contactBSource;
     private System.Windows.Forms.Timer searchTimer;
     private ToolStripMenuItem datePlusFilterMenuItem;
     private ToolStripMenuItem dateMinusFilterMenuItem;
     private ToolStripSeparator toolStripSeparator25;
     private cls.TopAlignZoomPictureBox topAlignZoomPictureBox;
-    private System.Windows.Forms.Timer scrollTimer;
-    private TextBox tbPosition;
-    private TextBox tbPostfach;
     private ToolStripMenuItem updateCheckToolStripMenuItem;
     private ToolStripStatusLabel springSpacer;
     private ToolStripButton btnUpdateAvailable;
     private ToolStripMenuItem move2OtherDGVToolStripMenuItem;
+    private cls.PaddedTextBox tbStraße;
+    private cls.PaddedTextBox tbFirma;
+    private cls.PaddedTextBox tbNachname;
+    private cls.PaddedTextBox tbVorname;
+    private cls.PaddedTextBox cbAnrede;
+    private cls.PaddedTextBox cbPraefix;
+    private cls.PaddedTextBox tbFax;
+    private cls.PaddedTextBox tbMobil;
+    private cls.PaddedTextBox tbTelefon2;
+    private cls.PaddedTextBox tbTelefon1;
+    private cls.PaddedTextBox tbMail2;
+    private cls.PaddedTextBox tbMail1;
+    private cls.PaddedTextBox cbSchlussformel;
+    private cls.PaddedTextBox cbGrussformel;
+    private cls.PaddedTextBox cbLand;
+    private cls.PaddedTextBox tbSuffix;
+    private cls.PaddedTextBox cbOrt;
+    private cls.PaddedTextBox cbPLZ;
+    private cls.PaddedTextBox tbNotizen;
+    private cls.PaddedTextBox tbInternet;
+    private cls.PaddedTextBox tbBetreff;
+    private cls.PaddedTextBox searchTextBox;
+    private cls.PaddedTextBox tbNickname;
+    private cls.PaddedTextBox tbZwischenname;
+    private cls.PaddedTextBox tbPosition;
+    private cls.PaddedTextBox tbPostfach;
+    private ToolStripMenuItem manageGroupsToolStripMenuItem;
+    private ToolStripMenuItem adressenOhneBriefToolStripMenuItem;
+    private ContextMenuStrip contextPhotoMenu;
+    private ToolStripMenuItem copyToolStripMenuItem;
+    private ToolStripMenuItem pasteToolStripMenuItem;
+    private Panel panelTBNotizenFrame;
+    private ToolStripMenuItem findDuplicatesToolStripMenuItem;
+    private ToolStripSeparator toolStripSeparator18;
 }

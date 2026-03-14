@@ -8,6 +8,7 @@ public class AppSettings
 {
     public const int DatabaseSchemaVersion = 3; // Wird ignoriert (da const)
     public const int MaxRecentFiles = 10;      // kein JsonIgnore erforderlich
+    public const int TextBoxPadding = 3;
 
     [JsonIgnore]
     public static readonly int[] DefaultColumnWidths =
@@ -102,6 +103,7 @@ public class AppSettings
     public string ColorScheme { get; set; } = "blue";
     public bool ContactsAutoload { get; set; } = false;
     public bool AskBeforeSaveSQL { get; set; } = false;
+    public bool AskBeforeSaveSQLExpander { get; set; } = false; 
     public bool ReloadRecent { get; set; } = true;
     public bool NoAutoload { get; set; } = false;
     public string StandardFile { get; set; } = string.Empty;
@@ -135,11 +137,18 @@ public class AppSettings
     public List<string> RecentFiles { get; set; } = [];
     public bool? WordProcessorProgram { get; set; } = null;
 
+    public string AppFontName { get; set; } = "Segoe UI";
+    public float AppFontSize { get; set; } = 10f;
+
+    public WindowPlacement? CopyWindowPosition
+    {
+        get; set;
+    }
     public WindowPlacement? PrintWindowPosition
     {
         get; set;
     }
-    public WindowPlacement? WindowPosition
+    public WindowPlacement? MainWindowPosition
     {
         get; set;
     }
@@ -224,22 +233,6 @@ internal static class SettingsManager
         }
         catch { return new AppSettings(); }
     }
-
-    //public static async Task<AppSettings> LoadAsync(string filePath)
-    //{
-    //    if (!File.Exists(filePath)) { return new AppSettings(); }
-    //    try
-    //    {
-    //        await using var stream = File.OpenRead(filePath);
-    //        var settings = await JsonSerializer.DeserializeAsync<AppSettings>(stream, _options);
-
-    //        // Validierung: Wenn JSON Arrays leer waren, fülle sie auf
-    //        if (settings != null) { settings.ValidateDefaults(); return settings; }
-
-    //        return new AppSettings();
-    //    }
-    //    catch { return new AppSettings(); }
-    //}
 
     public static void Save(AppSettings settings, string filePath)
     {

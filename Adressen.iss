@@ -1,6 +1,6 @@
 #define MyAppLong "Adressen & Kontakte"
 #define MyAppName "Adressen"
-#define MyAppVersion "1.1.7"
+#define MyAppVersion "1.1.11"
 
 [Setup]
 AppName={#MyAppName}
@@ -97,10 +97,10 @@ Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppName}.exe\SupportedType
 Name: fileassoc; Description: {cm:AssocFileExtension,{#MyAppName},.adb}
 Name: desktopicon; Description: {cm:CreateDesktopIcon}
 
-[InstallDelete]
-Type: filesandordirs; Name: "{userappdata}\{#MyAppName}\token.json";
-Type: files; Name: "{app}\System.Data.SQLite.dll"
-Type: files; Name: "{app}\SQLite.Interop.dll"
+;[InstallDelete]
+;Type: filesandordirs; Name: "{userappdata}\{#MyAppName}\token.json";
+;Type: files; Name: "{app}\System.Data.SQLite.dll"
+;Type: files; Name: "{app}\SQLite.Interop.dll"
 
 [Run]
 Filename: "{app}\{#MyAppName}.exe"; Description: "Starte Adressen && Kontakte"; Flags: postinstall nowait skipifsilent shellexec
@@ -108,10 +108,10 @@ Filename: "{app}\{#MyAppName}.exe"; Description: "Starte Adressen && Kontakte"; 
 [Messages]
 BeveledLabel=
 WinVersionTooLowError=Das Programm erfordert eine höhere Windowsversion.
-ConfirmUninstall=Möchten Sie '%1' von Ihrem PC entfernen? Eine Deinstallation ist vor einem Update nicht erforderlich.
+ConfirmUninstall=Möchtest du '%1' von deinem PC entfernen? Eine Deinstallation ist vor einem Update nicht erforderlich.
 
 [CustomMessages]
-RemoveSettings=Möchten Sie die Einstellungsdateien ebenfalls entfernen?
+RemoveSettings=Möchtest du die Einstellungsdateien ebenfalls entfernen?
 Description=Adressen-Datenbank
 
 [Code]

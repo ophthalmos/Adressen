@@ -1,49 +1,31 @@
 ﻿using System.Data;
+using Adressen.cls;
 
 namespace Adressen.frm;
 
 public partial class FrmGroupsEdit : Form
 {
     public Dictionary<string, string> groupNameMap = [];
+    private record GroupItemData(string Name, int Count);
 
     public FrmGroupsEdit(Dictionary<string, int> groupDict)
     {
         InitializeComponent();
-        //var sortedGroups = groupDict.OrderByDescending(kvp => kvp.Value);
-        //groupNameMap = sortedGroups.ToDictionary(kvp => kvp.Key, kvp => kvp.Key);
-        //var listViewIndex = 0;
-        //foreach (var kvp in sortedGroups)
-        //{
-        //    var item = new ListViewItem($"{kvp.Key} ({kvp.Value})") { Tag = listViewIndex };
-        //    listView.Items.Add(item);
-        //    listViewIndex++;
-        //}
-        // ★ nach oben, danach nach Anzahl absteigend sortieren
-        var sortedGroups = groupDict
-            .OrderByDescending(kvp => kvp.Key == "★")
-            .ThenByDescending(kvp => kvp.Value)
-            .ToList();
-
+        listBox.ItemHeight = listBox.Font.Height + 4;
+        var sortedGroups = groupDict.OrderByDescending(kvp => kvp.Key == "★").ThenByDescending(kvp => kvp.Value).ToList();
         groupNameMap = sortedGroups.ToDictionary(kvp => kvp.Key, kvp => kvp.Key);
-
-        listView.Items.Clear();
-        for (var i = 0; i < sortedGroups.Count; i++)
-        {
-            var kvp = sortedGroups[i];
-            var item = new ListViewItem($"{kvp.Key} ({kvp.Value})") { Tag = i };
-            listView.Items.Add(item);
-        }
+        foreach (var kvp in sortedGroups) { listBox.Items.Add(new GroupItemData(kvp.Key, kvp.Value)); } // Daten direkt als Objekte hinzufügen
+        UpdateStatusCount();
     }
 
     private void BtnDelete_Click(object sender, EventArgs e)
     {
-        if (listView.SelectedItems.Count > 0)
+        if (listBox.SelectedItem is GroupItemData selectedData)
         {
-            var originalIndex = listView.SelectedItems[0].Tag as int? ?? -1;
-            var oldGroupName = groupNameMap.Keys.ElementAt(originalIndex);
-            if (oldGroupName == "★") { return; }
-            groupNameMap[oldGroupName] = string.Empty;
-            listView.Items.Remove(listView.SelectedItems[0]);
+            if (selectedData.Name == "★") { return; }
+            groupNameMap[selectedData.Name] = string.Empty;
+            listBox.Items.Remove(selectedData); // Einfach das Objekt entfernen
+            UpdateStatusCount();
             btnClose.Enabled = true;
             btnClose.Focus();
         }
@@ -51,19 +33,19 @@ public partial class FrmGroupsEdit : Form
 
     private void BtnEdit_Click(object sender, EventArgs e)
     {
-        if (listView.SelectedItems.Count > 0)
+        if (listBox.SelectedItem is GroupItemData oldData)
         {
-            var originalIndex = listView.SelectedItems[0].Tag as int? ?? -1;
-            var oldGroupName = groupNameMap.Keys.ElementAt(originalIndex);
-            if (oldGroupName == "★") { return; }
-            using var frm = new FrmGroupRename(oldGroupName);
+            if (oldData.Name == "★") { return; }
+            using var frm = new FrmGroupRename(oldData.Name);
             if (frm.ShowDialog(this) == DialogResult.OK)
             {
-                var text = frm.GetText();
-                if (!string.IsNullOrEmpty(text))
+                var newName = frm.GetText();
+                if (!string.IsNullOrEmpty(newName))
                 {
-                    listView.SelectedItems[0].Text = $"{text} (geändert)"; // Optionaler Hinweis
-                    groupNameMap[oldGroupName] = text;
+                    groupNameMap[oldData.Name] = newName; // 1. Dictionary aktualisieren
+                    var index = listBox.SelectedIndex; // 2. Element in der ListBox austauschen
+                    listBox.Items[index] = new GroupItemData(newName, oldData.Count);
+                    UpdateStatusCount();
                     btnClose.Enabled = true;
                     btnClose.Focus();
                 }
@@ -71,26 +53,64 @@ public partial class FrmGroupsEdit : Form
         }
     }
 
-    private void ListView_SelectedIndexChanged(object sender, EventArgs e)
+    private void ListBox_SelectedIndexChanged(object? sender, EventArgs e)
     {
-        if (listView.SelectedItems.Count > 0)
+        if (listBox.SelectedItem is GroupItemData selectedData)
         {
-            // Den Originalnamen über den im Tag gespeicherten Index ermitteln
-            var originalIndex = listView.SelectedItems[0].Tag as int? ?? -1;
-            var groupNames = groupNameMap.Keys.ToList();
-
-            if (originalIndex >= 0 && originalIndex < groupNames.Count)
-            {
-                var currentName = groupNames[originalIndex];
-                var isSpecialGroup = currentName == "★";
-
-                btnEdit.Enabled = !isSpecialGroup;
-                btnDelete.Enabled = !isSpecialGroup;
-                return;
-            }
+            var isSpecialGroup = selectedData.Name == "★";
+            btnEdit.Enabled = !isSpecialGroup;
+            btnDelete.Enabled = !isSpecialGroup;
+            return;
         }
         btnEdit.Enabled = btnDelete.Enabled = false;
     }
 
-    private void FrmGroups_Shown(object sender, EventArgs e) => listView.Focus();
+    private void FrmGroups_Shown(object sender, EventArgs e) => listBox.Focus();
+
+    private void ListBox_DrawItem(object? sender, DrawItemEventArgs e)
+    {
+        if (e.Index < 0)
+        {
+            return;
+        }
+
+        // Hintergrund zeichnen (behandelt Selektion automatisch)
+        e.DrawBackground();
+
+        if (listBox.Items[e.Index] is GroupItemData data)
+        {
+            var g = e.Graphics;
+
+            // Das Geheimnis für scharfen Text
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+            var fontToUse = e.Font ?? listBox.Font;
+            var suffix = $" ({data.Count})";
+
+            // Den Text berechnen (deine Utils-Funktion bleibt, sollte aber intern idealerweise auch auf GDI+ basieren)
+            var displayText = Utils.TruncateMiddle(data.Name, suffix, fontToUse, e.Bounds.Width);
+
+            // Text-Bereich mit Padding definieren
+            var textBounds = new Rectangle(e.Bounds.X + 2, e.Bounds.Y, e.Bounds.Width - 4, e.Bounds.Height);
+
+            using var textBrush = new SolidBrush(e.ForeColor);
+            using var stringFormat = new StringFormat
+            {
+                Alignment = StringAlignment.Near,      // Links
+                LineAlignment = StringAlignment.Center, // Vertikal mittig
+                FormatFlags = StringFormatFlags.NoWrap,
+                Trimming = StringTrimming.EllipsisCharacter
+            };
+
+            // Zeichnen mit GDI+
+            g.DrawString(displayText, fontToUse, textBrush, textBounds, stringFormat);
+        }
+
+        // Fokus-Rechteck zeichnen (punktierte Linie bei Tastaturnavigation)
+        e.DrawFocusRectangle();
+    }
+
+    private void UpdateStatusCount() => toolStripStatusLabel.Text = $"{listBox.Items.Count} Gruppen";
+
+    private void ListBox_SizeChanged(object sender, EventArgs e) => listBox.Invalidate();
 }

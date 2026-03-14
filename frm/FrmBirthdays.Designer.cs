@@ -53,14 +53,15 @@ partial class FrmBirthdays
         listView.Location = new Point(0, 0);
         listView.Name = "listView";
         listView.OwnerDraw = true;
-        listView.Size = new Size(409, 250);
+        listView.Size = new Size(409, 258);
         listView.TabIndex = 0;
-        listView.TabStop = true;
         listView.UseCompatibleStateImageBehavior = false;
         listView.View = View.Details;
         listView.DrawColumnHeader += ListView_DrawColumnHeader;
         listView.DrawSubItem += ListView_DrawSubItem;
+        listView.ItemSelectionChanged += ListView_ItemSelectionChanged;
         listView.SelectedIndexChanged += ListView_SelectedIndexChanged;
+        listView.ClientSizeChanged += ListView_ClientSizeChanged;
         listView.KeyDown += ListView_KeyDown;
         listView.MouseDoubleClick += ListView_MouseDoubleClick;
         // 
@@ -86,7 +87,7 @@ partial class FrmBirthdays
         // 
         // beforeNumUpDown
         // 
-        beforeNumUpDown.Location = new Point(352, 256);
+        beforeNumUpDown.Location = new Point(352, 264);
         beforeNumUpDown.Maximum = new decimal(new int[] { 99, 0, 0, 0 });
         beforeNumUpDown.Name = "beforeNumUpDown";
         beforeNumUpDown.Size = new Size(45, 25);
@@ -96,7 +97,7 @@ partial class FrmBirthdays
         // label1
         // 
         label1.AutoSize = true;
-        label1.Location = new Point(5, 258);
+        label1.Location = new Point(5, 266);
         label1.Name = "label1";
         label1.Size = new Size(344, 19);
         label1.TabIndex = 2;
@@ -106,7 +107,7 @@ partial class FrmBirthdays
         // 
         btnShowAddress.DialogResult = DialogResult.OK;
         btnShowAddress.Enabled = false;
-        btnShowAddress.Location = new Point(117, 318);
+        btnShowAddress.Location = new Point(117, 326);
         btnShowAddress.Name = "btnShowAddress";
         btnShowAddress.Size = new Size(164, 27);
         btnShowAddress.TabIndex = 4;
@@ -116,7 +117,7 @@ partial class FrmBirthdays
         // btnCancel
         // 
         btnCancel.DialogResult = DialogResult.Continue;
-        btnCancel.Location = new Point(287, 318);
+        btnCancel.Location = new Point(287, 326);
         btnCancel.Name = "btnCancel";
         btnCancel.Size = new Size(110, 27);
         btnCancel.TabIndex = 5;
@@ -126,7 +127,7 @@ partial class FrmBirthdays
         // label2
         // 
         label2.AutoSize = true;
-        label2.Location = new Point(5, 289);
+        label2.Location = new Point(5, 297);
         label2.Name = "label2";
         label2.Size = new Size(344, 19);
         label2.TabIndex = 6;
@@ -134,7 +135,7 @@ partial class FrmBirthdays
         // 
         // afterNumUpDown
         // 
-        afterNumUpDown.Location = new Point(352, 287);
+        afterNumUpDown.Location = new Point(352, 295);
         afterNumUpDown.Maximum = new decimal(new int[] { 99, 0, 0, 0 });
         afterNumUpDown.Name = "afterNumUpDown";
         afterNumUpDown.Size = new Size(45, 25);
@@ -144,7 +145,7 @@ partial class FrmBirthdays
         // chkBxBirthdayAutoShow
         // 
         chkBxBirthdayAutoShow.AutoSize = true;
-        chkBxBirthdayAutoShow.Location = new Point(10, 321);
+        chkBxBirthdayAutoShow.Location = new Point(10, 329);
         chkBxBirthdayAutoShow.Name = "chkBxBirthdayAutoShow";
         chkBxBirthdayAutoShow.Size = new Size(86, 23);
         chkBxBirthdayAutoShow.TabIndex = 3;
@@ -156,7 +157,7 @@ partial class FrmBirthdays
         AcceptButton = btnCancel;
         AutoScaleDimensions = new SizeF(7F, 17F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(409, 357);
+        ClientSize = new Size(409, 365);
         Controls.Add(chkBxBirthdayAutoShow);
         Controls.Add(label2);
         Controls.Add(afterNumUpDown);

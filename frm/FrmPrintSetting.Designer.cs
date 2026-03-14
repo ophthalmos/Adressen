@@ -19,6 +19,15 @@ partial class FrmPrintSetting
         {
             components.Dispose();
         }
+        if (_tcFont != null)
+        {
+            _tcFont.Dispose();
+        }
+
+        if (_tcStringFormat != null)
+        {
+            _tcStringFormat.Dispose();
+        }
         base.Dispose(disposing);
     }
 
@@ -56,17 +65,17 @@ partial class FrmPrintSetting
         senderPage = new TabPage();
         tcSender = new TabControl();
         tpSender1 = new TabPage();
-        tbSender1 = new TextBox();
+        tbSender1 = new PaddedTextBox();
         tpSender2 = new TabPage();
-        tbSender2 = new TextBox();
+        tbSender2 = new PaddedTextBox();
         tpSender3 = new TabPage();
-        tbSender3 = new TextBox();
+        tbSender3 = new PaddedTextBox();
         tpSender4 = new TabPage();
-        tbSender4 = new TextBox();
+        tbSender4 = new PaddedTextBox();
         tpSender5 = new TabPage();
-        tbSender5 = new TextBox();
+        tbSender5 = new PaddedTextBox();
         tpSender6 = new TabPage();
-        tbSender6 = new TextBox();
+        tbSender6 = new PaddedTextBox();
         ckbPrintSender = new CheckBox();
         recipientPage = new TabPage();
         ckbPrintRecipient = new CheckBox();
@@ -346,12 +355,14 @@ partial class FrmPrintSetting
         // 
         // cbFont
         // 
+        cbFont.DrawMode = DrawMode.OwnerDrawFixed;
         cbFont.DropDownStyle = ComboBoxStyle.DropDownList;
         cbFont.FormattingEnabled = true;
         cbFont.Location = new Point(6, 24);
         cbFont.Name = "cbFont";
-        cbFont.Size = new Size(288, 25);
+        cbFont.Size = new Size(288, 26);
         cbFont.TabIndex = 0;
+        cbFont.DrawItem += CbFont_DrawItem;
         cbFont.SelectedIndexChanged += GenericControl_ValueChanged;
         // 
         // gbFormat
@@ -586,9 +597,9 @@ partial class FrmPrintSetting
         recipientPage.Controls.Add(ckbAnredeOberhalb);
         recipientPage.Controls.Add(ckbAnredePrint);
         recipientPage.Controls.Add(ckbLandPrint);
-        recipientPage.Location = new Point(4, 26);
+        recipientPage.Location = new Point(4, 24);
         recipientPage.Name = "recipientPage";
-        recipientPage.Size = new Size(316, 171);
+        recipientPage.Size = new Size(316, 173);
         recipientPage.TabIndex = 4;
         recipientPage.Text = "Empfänger";
         recipientPage.UseVisualStyleBackColor = true;
@@ -1029,7 +1040,6 @@ partial class FrmPrintSetting
         // 
         // timerDebounce
         // 
-        timerDebounce.Interval = 300;
         timerDebounce.Tick += TimerDebounce_Tick;
         // 
         // FrmPrintSetting
@@ -1128,7 +1138,6 @@ partial class FrmPrintSetting
     private PictureBox picLandscape;
     internal ComboBox cbFont;
     private TabPage senderPage;
-    private TextBox tbSender1;
     private NumericUpDown nudRecipOffsetX;
     private Label lblRecipOffsetX;
     private Label lblAddressOffset;
@@ -1148,8 +1157,6 @@ partial class FrmPrintSetting
     private TabPage tpSender1;
     private TabPage tpSender2;
     private TabPage tpSender3;
-    private TextBox tbSender2;
-    private TextBox tbSender3;
     private TabPage recipientPage;
     private CheckBox ckbAnredePrint;
     private CheckBox ckbLandPrint;
@@ -1164,9 +1171,6 @@ partial class FrmPrintSetting
     private TabPage tpSender4;
     private TabPage tpSender5;
     private TabPage tpSender6;
-    private TextBox tbSender4;
-    private TextBox tbSender5;
-    private TextBox tbSender6;
     private Panel rightPanel;
     private System.Windows.Forms.Timer timerDebounce;
     private CheckBox ckbLandGROSS;
@@ -1181,4 +1185,10 @@ partial class FrmPrintSetting
     private Label lblLineHeight;
     private NumericUpDown nudLineHeightFactor;
     private CheckBox ckbPrintRecipient;
+    private PaddedTextBox tbSender1;
+    private PaddedTextBox tbSender2;
+    private PaddedTextBox tbSender3;
+    private PaddedTextBox tbSender4;
+    private PaddedTextBox tbSender5;
+    private PaddedTextBox tbSender6;
 }

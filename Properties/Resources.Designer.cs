@@ -193,6 +193,16 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap clipboard_image16 {
+            get {
+                object obj = ResourceManager.GetObject("clipboard-image16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap clipboard_plus16 {
             get {
                 object obj = ResourceManager.GetObject("clipboard-plus16", resourceCulture);
@@ -256,6 +266,16 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap contacts_24 {
             get {
                 object obj = ResourceManager.GetObject("contacts_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap control_double16 {
+            get {
+                object obj = ResourceManager.GetObject("control-double16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -526,6 +546,16 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap import16 {
             get {
                 object obj = ResourceManager.GetObject("import16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap inbox_minus16 {
+            get {
+                object obj = ResourceManager.GetObject("inbox-minus16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

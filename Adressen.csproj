@@ -11,20 +11,20 @@
     <SourceRevisionId>build$([System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss"))</SourceRevisionId>
     <NeutralLanguage>de</NeutralLanguage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion>1.1.7</AssemblyVersion>
-    <FileVersion>1.1.7</FileVersion>
+    <AssemblyVersion>1.1.11</AssemblyVersion>
+    <FileVersion>1.1.11</FileVersion>
     <StartupObject>Adressen.Program</StartupObject>
     <Product>$(AssemblyName) &amp; Kontakte</Product>
     <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <NoWarn>1701;1702;SYSLIB1054;SYSLIB1045</NoWarn>
+    <NoWarn>1701;1702;SYSLIB1045;IDE0028</NoWarn>
     <WarningLevel>8</WarningLevel>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <NoWarn>1701;1702;SYSLIB1054;SYSLIB1045</NoWarn>
+    <NoWarn>1701;1702;SYSLIB1045;IDE0028</NoWarn>
     <WarningLevel>8</WarningLevel>
   </PropertyGroup>
 
@@ -86,7 +86,7 @@
   <ItemGroup>
     <PackageReference Include="Google.Apis.Oauth2.v2" Version="1.68.0.1869" />
     <PackageReference Include="Google.Apis.PeopleService.v1" Version="1.72.0.3973" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.5" />
   </ItemGroup>
 
   <ItemGroup>
@@ -124,5 +124,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="powershell -NoProfile -Command &quot;$d=(Get-Date).ToString('ddd'); &amp; 'C:\Program Files\7-Zip\7z.exe' a -t7z -mx=9 -y \&quot;$(ProjectDir)_Backups\backup_$d.7z\&quot; \&quot;$(ProjectDir)frm\&quot; \&quot;$(ProjectDir)cls\&quot;&quot;" />
+  </Target>
 
 </Project>
