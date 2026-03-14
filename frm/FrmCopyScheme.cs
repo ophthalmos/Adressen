@@ -1,6 +1,5 @@
-﻿using Adressen.cls;
-using System.Data;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
+using Adressen.cls;
 
 namespace Adressen; // WICHTIG: Muss exakt wie im Designer heißen
 
@@ -8,6 +7,7 @@ public partial class FrmCopyScheme : Form
 {
     private readonly AppSettings _settings;
     private readonly Dictionary<string, string> _addBookDict;
+    private readonly Font _tabFont = new("Segoe UI", 10.0f, FontStyle.Bold, GraphicsUnit.Point);
 
     // Helper-Property für Zugriff auf die Textbox des aktuellen Tabs
     private TextBox CurrentPatternBox
@@ -31,7 +31,7 @@ public partial class FrmCopyScheme : Form
         _addBookDict = addressDict;
 
         // --- Farben anwenden ---
-        panel.BackColor = _settings.ColorScheme switch
+        panelLeft.BackColor = _settings.ColorScheme switch
         {
             "blue" => SystemColors.GradientInactiveCaption,
             "pale" => SystemColors.ControlLightLight,
@@ -53,7 +53,7 @@ public partial class FrmCopyScheme : Form
         // --- Combobox füllen ---
         cbxFields.Items.AddRange([.. _addBookDict.Keys]);
         if (cbxFields.Items.Count > 0) { cbxFields.SelectedIndex = 0; }
-
+        Utils.AdjustComboBoxDropDownWidth(cbxFields);
         // --- Textboxen aus Settings füllen ---
         tbPattern1.Lines = _settings.CopyPattern1 ?? [];
         tbPattern2.Lines = _settings.CopyPattern2 ?? [];
@@ -81,6 +81,7 @@ public partial class FrmCopyScheme : Form
     {
         tbPattern1.Select(tbPattern1.Text.Length, 0);
         btnCopy.Focus();
+        Utils.MoveCursorToControl(btnCopy);
     }
 
     // WICHTIG: Dies ist der Button "Text in Zwischenablage kopieren"
@@ -104,19 +105,12 @@ public partial class FrmCopyScheme : Form
     private void BtnInsert_Click(object sender, EventArgs e)
     {
         var tbPattern = CurrentPatternBox; // Nutzt den Helper oben
-        var textToInsert = cbxFields.Text;
+        var textToInsert = $"[{cbxFields.Text}]"; // var textToInsert = cbxFields.Text;
         var cursorPosition = tbPattern.SelectionStart;
 
         // Logik: Leerzeichen automatisch einfügen
-        while (cursorPosition < tbPattern.Text.Length && !char.IsWhiteSpace(tbPattern.Text[cursorPosition]))
-        {
-            cursorPosition++;
-        }
-
-        if (cursorPosition > 0 && !char.IsWhiteSpace(tbPattern.Text[cursorPosition - 1]))
-        {
-            textToInsert = " " + textToInsert;
-        }
+        while (cursorPosition < tbPattern.Text.Length && !char.IsWhiteSpace(tbPattern.Text[cursorPosition])) { cursorPosition++; }
+        if (cursorPosition > 0 && !char.IsWhiteSpace(tbPattern.Text[cursorPosition - 1])) { textToInsert = " " + textToInsert; }
 
         tbPattern.Text = tbPattern.Text.Insert(cursorPosition, textToInsert);
         tbPattern.SelectionStart = cursorPosition + textToInsert.Length;
@@ -124,17 +118,11 @@ public partial class FrmCopyScheme : Form
     }
 
     // Wird für alle tbPatternX TextChanged Events aufgerufen
-    private void TbPattern_TextChanged(object sender, EventArgs e)
-    {
-        UpdateCurrentTabInfo();
-    }
+    private void TbPattern_TextChanged(object sender, EventArgs e) => UpdateCurrentTabInfo();
 
     private void TabControl_SelectedIndexChanged(object sender, EventArgs e)
     {
-        if (tabControl.Visible && tabControl.Focused)
-        {
-            UpdateCurrentTabInfo();
-        }
+        if (tabControl.Visible && tabControl.Focused) { UpdateCurrentTabInfo(); }
     }
 
     // Aktualisiert Tooltip und Scrollbars für den aktuellen Tab
@@ -175,18 +163,34 @@ public partial class FrmCopyScheme : Form
 
     private string[] UsePattern(string[] pattern)
     {
-        if (pattern == null) { return []; }
+        if (pattern == null)
+        {
+            return [];
+        }
+
         var result = new string[pattern.Length];
 
         for (var i = 0; i < pattern.Length; i++)
         {
             var line = pattern[i];
-            var words = Regex.Matches(line, @"\b\w+\b")
-                .Cast<Match>()
-                .Select(m => _addBookDict.TryGetValue(m.Value, out var value) ? value : null);
 
-            result[i] = string.Join(" ", words).Trim();
+            // Das Pattern @"\[([^\]]+)\]" sucht nach:
+            // \[       -> einer öffnenden eckigen Klammer
+            // ([^\]]+) -> (Gruppe 1) beliebig vielen Zeichen, die KEINE schließende eckige Klammer sind
+            // \]       -> einer schließenden eckigen Klammer
+            result[i] = Regex.Replace(line, @"\[([^\]]+)\]", match =>
+            {
+                // match.Groups[1].Value enthält den reinen Key OHNE die Klammern (z.B. "Vorname")
+                var key = match.Groups[1].Value;
+
+                if (_addBookDict.TryGetValue(key, out var value)) { return value; }
+
+                // Wenn der Key nicht im Dictionary existiert (z.B. wenn der Nutzer manuell [Hallo] tippt), 
+                // bleibt der Originaltext inklusive Klammern unangetastet stehen.
+                return match.Value;
+            });
         }
+
         return result;
     }
 
@@ -200,26 +204,35 @@ public partial class FrmCopyScheme : Form
     {
         if (sender is not TabControl tabControlSender) { return; }
 
-        using var g = e.Graphics;
+        var g = e.Graphics;
+        g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
         var tabPage = tabControlSender.TabPages[e.Index];
         var tabBounds = tabControlSender.GetTabRect(e.Index);
 
-        // Hintergrund
-        if (e.State == DrawItemState.Selected)
-        {
-            g.FillRectangle(Brushes.Gray, e.Bounds);
-        }
-        else
-        {
-            e.DrawBackground();
-        }
+        if (e.State == DrawItemState.Selected) { g.FillRectangle(Brushes.Gray, e.Bounds); }
+        else { e.DrawBackground(); }
 
-        // Text
-        using var textBrush = new SolidBrush(e.State == DrawItemState.Selected ? Color.White : e.ForeColor);
-        using var tabFont = new Font("Segoe UI", 10.0f, FontStyle.Bold, GraphicsUnit.Point);
-        using var stringFlags = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+        var textColor = e.State == DrawItemState.Selected ? Color.White : tabControlSender.ForeColor;
+        using var textBrush = new SolidBrush(textColor);
 
+        using var stringFlags = new StringFormat
+        {
+            Alignment = StringAlignment.Center,
+            LineAlignment = StringAlignment.Center,
+            FormatFlags = StringFormatFlags.NoWrap,
+            Trimming = StringTrimming.EllipsisCharacter
+        };
         tabBounds.Inflate(-2, -2);
-        g.DrawString(tabPage.Text, tabFont, textBrush, tabBounds, stringFlags);
+        g.DrawString(tabPage.Text, _tabFont, textBrush, tabBounds, stringFlags);
     }
+
+    private void StatusStrip_Paint(object sender, PaintEventArgs e)
+    {
+        if (sender is not StatusStrip strip) { return; }
+        var splitX = panelLeft.Width;  // Die Grenze ist exakt die Breite des linken Panels
+        using var brush = new SolidBrush(panelLeft.BackColor);  // Den linken Teil mit der Farbe von panelLeft übermalen
+        e.Graphics.FillRectangle(brush, 0, 0, splitX, strip.Height);  // Wir füllen das Rechteck von (0,0) bis (splitX, Höhe)
+    }
+
 }

@@ -16,6 +16,8 @@ namespace Adressen.cls;
 
 internal static class Utils
 {
+    public static List<string> SearchHistory { get; } = [];
+
     public static void MsgTaskDlg(nint hwnd, string heading, string message, TaskDialogIcon? icon = null)
     {
         TaskDialog.ShowDialog(hwnd, new TaskDialogPage() { Caption = Application.ProductName, SizeToContent = true, Heading = heading, Text = message, Icon = icon ?? TaskDialogIcon.None, AllowCancel = true, Buttons = { TaskDialogButton.OK } });
@@ -86,12 +88,42 @@ internal static class Utils
         return success;
     }
 
+    //public static void SortContacts(BindingList<Contact>? contacts)
+    //{
+    //    if (contacts == null || contacts.Count == 0) { return; }
+    //    var sortedList = contacts.OrderBy(x => x.Nachname).ThenBy(x => x.Vorname).ThenBy(x => x.Unternehmen).ToList();  // ignoriert Groß-/Kleinschreibung
+    //    contacts.Clear();  // BindingList wird geleert, weil sie keine Sortiermethode hat
+    //    foreach (var c in sortedList) { contacts.Add(c); }
+    //}
+
     public static void SortContacts(BindingList<Contact>? contacts)
     {
-        if (contacts == null || contacts.Count == 0) { return; }
-        var sortedList = contacts.OrderBy(x => x.Nachname).ThenBy(x => x.Vorname).ThenBy(x => x.Unternehmen).ToList();  // ignoriert Groß-/Kleinschreibung
-        contacts.Clear();  // BindingList wird geleert, weil sie keine Sortiermethode hat
-        foreach (var c in sortedList) { contacts.Add(c); }
+        if (contacts == null || contacts.Count == 0)
+        {
+            return;
+        }
+
+        var sortedList = contacts
+            .OrderBy(x => x.Nachname, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(x => x.Vorname, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(x => x.Unternehmen, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+
+        // Um Event-Spam zu vermeiden, schalten wir die Benachrichtigung kurz ab
+        contacts.RaiseListChangedEvents = false;
+        try
+        {
+            contacts.Clear();
+            foreach (var c in sortedList)
+            {
+                contacts.Add(c);
+            }
+        }
+        finally
+        {
+            contacts.RaiseListChangedEvents = true;
+            contacts.ResetBindings(); // Ein einziges Event für die ganze Liste
+        }
     }
 
     public static int GetAddressInsertIndex(BindingSource source, Adresse newItem)
@@ -111,37 +143,72 @@ internal static class Utils
         return source.Count;
     }
 
+    public static void SortAddresses(BindingSource source)
+    {
+        // Wir arbeiten auf der aktuellen Liste der Source
+        if (source.List is not IEnumerable<Adresse> currentItems) { return; }
+
+        // Wir nutzen die gleiche Culture wie in deiner SQLite-Verbindung (de-DE)
+        var culture = new CultureInfo("de-DE");
+
+        var sorted = currentItems
+            .OrderBy(a => a.Nachname ?? "", StringComparer.Create(culture, true))
+            .ThenBy(a => a.Vorname ?? "", StringComparer.Create(culture, true))
+            .ThenBy(a => a.Unternehmen ?? "", StringComparer.Create(culture, true))
+            .ToList();
+
+        // DER TRICK: Nicht die Liste leeren, sondern die DataSource der BindingSource tauschen.
+        // Das ist in .NET 10 nahezu instantan.
+        source.DataSource = new BindingList<Adresse>(sorted);
+    }
+
     public static List<(DateOnly Datum, string Name, int Alter, int Tage, string Id)> CalculateUpcomingBirthdays(IEnumerable<IContactEntity> contacts, int daysLookBack, int daysLookAhead)
     {
         var heute = DateOnly.FromDateTime(DateTime.Today);
+        var result = new List<(DateOnly Datum, string Name, int Alter, int Tage, string Id)>();
 
-        return [.. contacts.Where(x => x.BirthdayDate.HasValue).Select(x => {
-                var g = x.BirthdayDate!.Value;
+        foreach (var contact in contacts.Where(c => c.BirthdayDate.HasValue))
+        {
+            var gebDatum = contact.BirthdayDate!.Value;
+            var targetYear = heute.Year;
 
-                // Schaltjahr-Korrektur
-                var day = (g.Month == 2 && g.Day == 29 && !DateTime.IsLeapYear(heute.Year)) ? 28 : g.Day;
+            // 1. Tag für das aktuelle Jahr ermitteln (inklusive Schaltjahr-Korrektur)
+            var day = (gebDatum.Month == 2 && gebDatum.Day == 29 && !DateTime.IsLeapYear(targetYear)) ? 28 : gebDatum.Day;
+            var gebTagDiesesJahr = new DateOnly(targetYear, gebDatum.Month, day);
+            var tage = gebTagDiesesJahr.DayNumber - heute.DayNumber;
 
-                var gebTagDiesesJahr = new DateOnly(heute.Year, g.Month, day);
-                var tage = gebTagDiesesJahr.DayNumber - heute.DayNumber;
+            // 2. Jahreswechsel-Logik
+            if (tage < -daysLookBack)
+            {
+                // Geburtstag war schon vor langer Zeit, wir schauen aufs nächste Jahr
+                targetYear = heute.Year + 1;
+                var dayNext = (gebDatum.Month == 2 && gebDatum.Day == 29 && !DateTime.IsLeapYear(targetYear)) ? 28 : gebDatum.Day;
+                tage = new DateOnly(targetYear, gebDatum.Month, dayNext).DayNumber - heute.DayNumber;
+            }
+            else if (tage > daysLookAhead)
+            {
+                // Geburtstag ist zu weit weg im aktuellen Jahr. Vielleicht schauen wir im Januar auf den Dezember des Vorjahres zurück?
+                var prevYear = heute.Year - 1;
+                var dayPrev = (gebDatum.Month == 2 && gebDatum.Day == 29 && !DateTime.IsLeapYear(prevYear)) ? 28 : gebDatum.Day;
+                var prevTage = new DateOnly(prevYear, gebDatum.Month, dayPrev).DayNumber - heute.DayNumber;
 
-                // Jahreswechsel-Logik
-                if (tage < -daysLookBack)
+                if (prevTage >= -daysLookBack)
                 {
-                    var dayNext = (g.Month == 2 && g.Day == 29 && !DateTime.IsLeapYear(heute.Year + 1)) ? 28 : g.Day;
-                    tage = new DateOnly(heute.Year + 1, g.Month, dayNext).DayNumber - heute.DayNumber;
+                    targetYear = prevYear;
+                    tage = prevTage;
                 }
-                else if (tage > daysLookAhead)
-                {
-                    var dayPrev = (g.Month == 2 && g.Day == 29 && !DateTime.IsLeapYear(heute.Year - 1)) ? 28 : g.Day;
-                    var tageLetztesJahr = new DateOnly(heute.Year - 1, g.Month, dayPrev).DayNumber - heute.DayNumber;
-                    if (tageLetztesJahr >= -daysLookBack) { tage = tageLetztesJahr; } }
+            }
 
-                return new { Entity = x, Tage = tage, OriginalGeb = g };
-            })
-            .Where(x => x.Tage >= -daysLookBack && x.Tage <= daysLookAhead).OrderBy(x => x.Tage).Select(x =>            {
-                var alter = heute.Year - x.OriginalGeb.Year;
-                if (x.Tage > 0) { alter--; } return (Datum: x.OriginalGeb, Name: x.Entity.DisplayName, Alter: alter, x.Tage, Id: x.Entity.UniqueId);
-            })];
+            // 3. Wenn es ins Zeitfenster passt, Alter berechnen und hinzufügen
+            if (tage >= -daysLookBack && tage <= daysLookAhead)
+            {
+                // Das Alter ist schlicht das Zieljahr der Feier minus das Geburtsjahr
+                var alter = targetYear - gebDatum.Year;
+                result.Add((gebDatum, contact.DisplayName, alter, tage, contact.UniqueId));
+            }
+        }
+
+        return [.. result.OrderBy(x => x.Tage)];
     }
 
     internal static void StartFile(nint handle, string filePath)
@@ -172,18 +239,33 @@ internal static class Utils
         catch (Exception ex) when (ex is Win32Exception || ex is InvalidOperationException) { ErrTaskDlg(handle, ex); }
     }
 
-    internal static bool GoogleConnectionCheck(nint hwnd, string path)
+    internal static async Task<bool> GoogleConnectionCheckAsync(nint hwnd, string path)
     {
-        if (new Ping().Send(new IPAddress([8, 8, 8, 8]), 1000).Status != IPStatus.Success)
+        try
         {
-            MsgTaskDlg(hwnd, "Keine Internetverbindung!", "Überprüfen Sie das Netzwerk.", TaskDialogIcon.ShieldWarningYellowBar);
+            var ping = new Ping();
+            // Löst keinen UI-Freeze aus, auch wenn es 1000ms dauert
+            var reply = await ping.SendPingAsync(new IPAddress([8, 8, 8, 8]), 1000);
+
+            if (reply.Status != IPStatus.Success)
+            {
+                MsgTaskDlg(hwnd, "Keine Internetverbindung!", "Überprüfe das Netzwerk.", TaskDialogIcon.ShieldWarningYellowBar);
+                return false;
+            }
+        }
+        catch
+        {
+            // Fängt Ausnahmen ab, z.B. wenn gar keine Netzwerkkarte aktiv ist
+            MsgTaskDlg(hwnd, "Keine Internetverbindung!", "Überprüfe das Netzwerk.", TaskDialogIcon.ShieldWarningYellowBar);
             return false;
         }
-        else if (!File.Exists(path))
+
+        if (!File.Exists(path))
         {
-            MsgTaskDlg(hwnd, "Der Key-File wurde nicht gefunden!", "'" + path + "' fehlt.", TaskDialogIcon.ShieldWarningYellowBar);
+            MsgTaskDlg(hwnd, "Der Key-File wurde nicht gefunden!", $"'{path}' fehlt.", TaskDialogIcon.ShieldWarningYellowBar);
             return false;
         }
+
         return true;
     }
 
@@ -217,33 +299,120 @@ internal static class Utils
                 var sOld = (valOld as string) ?? string.Empty;
                 var sNew = (valNew as string) ?? string.Empty;
 
-                if (sOld != sNew)
+                if (!string.Equals(sOld, sNew, StringComparison.Ordinal))
                 {
-                    var displayOld = string.IsNullOrEmpty(sOld) ? "" : sOld;
-                    var displayNew = string.IsNullOrEmpty(sNew) ? "∅" : sNew;
-                    sb.AppendLine($"{fieldName}: {displayOld} ➔ {displayNew}");
+                    if (fieldName == nameof(Contact.Notizen))
+                    {
+                        var status = string.Empty;
+                        if (sOld == string.Empty && sNew != string.Empty) { status = "Text hinzugefügt"; }
+                        else if (sOld != string.Empty && sNew == string.Empty) { status = "Text gelöscht"; }
+                        else { status = "Text geändert"; }
+                        sb.AppendLine($"Notizen: {status}");
+                    }
+                    else  // Reguläres Verhalten für alle anderen Strings
+                    {
+                        var displayOld = sOld == string.Empty ? "[Leer]" : sOld;
+                        var displayNew = sNew == string.Empty ? "∅" : sNew;
+                        sb.AppendLine($"{fieldName}: {displayOld} ➔ {displayNew}");
+                    }
                 }
             }
             else // z.B. Datum (Geburtstag) oder Zahlen
             {
-                if (!Equals(valOld, valNew))
-                {
-                    // Formatierung für Nicht-Strings (übernimmt Ihre Logik für [Leer])
-                    static string FormatObj(object? o)
-                    {
-                        if (o == null) { return "[Leer]"; }
-                        if (o is DateTime d) { return d.ToShortDateString(); }
-                        if (o is DateOnly dO) { return dO.ToString(); }  // Falls .NET 10 DateOnly nutzt
-                        return o.ToString() ?? "";
-                    }
-                    sb.AppendLine($"{fieldName}: {FormatObj(valOld)} ➔ {FormatObj(valNew)}");
-                }
+                if (!Equals(valOld, valNew)) { sb.AppendLine($"{fieldName}: {FormatObj(valOld)} ➔ {FormatObj(valNew)}"); }
             }
         }
-        return sb.ToString();
+
+        // Spezialbehandlung für Gruppen (da diese nicht in dataFields stehen)
+        var oldGroups = old.GroupNames ?? [];
+        var newGroups = current.GroupNames ?? [];
+
+        if (!oldGroups.OrderBy(x => x).SequenceEqual(newGroups.OrderBy(x => x)))
+        {
+            var displayOldGroups = oldGroups.Count == 0 ? "[Keine]" : string.Join(", ", oldGroups);
+            var displayNewGroups = newGroups.Count == 0 ? "[Keine]" : string.Join(", ", newGroups);
+            sb.AppendLine($"Gruppen: {displayOldGroups} ➔ {displayNewGroups}");
+        }
+
+        return sb.ToString().TrimEnd(); // TrimEnd entfernt den letzten überflüssigen Zeilenumbruch
+
+        // Lokale Funktion zur Formatierung von Nicht-Strings
+        static string FormatObj(object? o)
+        {
+            if (o == null) { return "[Leer]"; }
+            if (o is DateTime d) { return d.ToShortDateString(); }
+            if (o is DateOnly dO) { return dO.ToString(); }
+            return o.ToString() ?? string.Empty;
+        }
     }
 
-    internal static void StartSearchCacheWarmup(IEnumerable<IContactEntity> items) => Task.Run(() => { foreach (var item in items) { var warmup = item.SearchText; } });
+    //internal static void StartSearchCacheWarmup(IEnumerable<IContactEntity> items) => Task.Run(() => { foreach (var item in items) { var warmup = item.SearchText; } });
+    internal static void StartSearchCacheWarmup(IEnumerable<IContactEntity> items)
+    {
+        // Wir erstellen erst einen Snapshot (Array), solange wir noch im UI-Thread sind.
+        // Das verhindert Abstürze, wenn sich die Original-Liste während des Warmups ändert.
+        var snapshot = items.ToArray();
+        _ = Task.Run(() => { foreach (var item in snapshot) { _ = item.SearchText; } });
+    }
+
+    public static IEnumerable<string[]> ReadCsv(string filePath)
+    {
+        using var reader = new StreamReader(filePath, Encoding.UTF8);
+        var currentFields = new List<string>();
+        var currentField = new StringBuilder();
+        var inQuotes = false;
+
+        while (reader.Peek() >= 0)
+        {
+            var line = reader.ReadLine();
+            if (line == null)
+            {
+                break;
+            }
+
+            for (var i = 0; i < line.Length; i++)
+            {
+                var c = line[i];
+
+                if (c == '"')
+                {
+                    // Wenn wir in Quotes sind und das nächste Zeichen auch ein Quote ist -> Escaped Quote ""
+                    if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                    {
+                        currentField.Append('"');
+                        i++; // Das zweite Quote überspringen
+                    }
+                    else
+                    {
+                        inQuotes = !inQuotes; // Quote-Modus umschalten
+                    }
+                }
+                else if (c == ';' && !inQuotes)
+                {
+                    currentFields.Add(currentField.ToString());
+                    currentField.Clear();
+                }
+                else
+                {
+                    currentField.Append(c);
+                }
+            }
+
+            if (!inQuotes)
+            {
+                // Zeile zu Ende und nicht in Quotes -> Datensatz komplett
+                currentFields.Add(currentField.ToString());
+                yield return [.. currentFields];
+                currentFields.Clear();
+                currentField.Clear();
+            }
+            else
+            {
+                // Zeilenumbruch innerhalb von Quotes -> \n hinzufügen und weiterlesen
+                currentField.Append(Environment.NewLine);
+            }
+        }
+    }
 
     internal static void WendeExifOrientierungAn(Image bild)
     {
@@ -441,7 +610,7 @@ internal static class Utils
         var page = new TaskDialogPage
         {
             Caption = Application.ProductName,
-            Heading = "Wählen Sie die Textverarbeitung",
+            Heading = "Wähle die Textverarbeitung",
             Icon = TaskDialogIcon.ShieldBlueBar,
             Buttons = { wordButton, libreButton, TaskDialogButton.Cancel },
             AllowCancel = true,
@@ -510,13 +679,13 @@ internal static class Utils
             using TaskDialogIcon questionDialogIcon = new(Properties.Resources.question32);
             var page = new TaskDialogPage()
             {
-                Heading = "Möchten Sie den Datensatz löschen?",
+                Heading = "Möchtest du den Datensatz löschen?",
                 Text = (details + zusatzInfo).Trim(),
                 Caption = Application.ProductName,
                 Icon = questionDialogIcon,
                 AllowCancel = true,
                 SizeToContent = true,
-                Verification = showVerification ? new TaskDialogVerificationCheckBox() { Text = "Diese Frage immer anzeigen" } : null,
+                Verification = showVerification ? new TaskDialogVerificationCheckBox() { Text = "Immer fragen" } : null,
                 Buttons = { TaskDialogButton.Yes, TaskDialogButton.No },
             };
 
@@ -533,7 +702,7 @@ internal static class Utils
             {
                 if (askBeforeDelete && !finalCheck.Checked)
                 {
-                    MsgTaskDlg(page.BoundDialog?.Handle ?? IntPtr.Zero, "Hinweis", "Sie können die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.", new(Properties.Resources.info32));
+                    MsgTaskDlg(page.BoundDialog?.Handle ?? IntPtr.Zero, "Hinweis", "Du kannst die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.", new(Properties.Resources.info32));
                     askBeforeDelete = false;
                 }
                 else if (finalCheck.Checked)
@@ -560,29 +729,45 @@ internal static class Utils
             var plz = adresse.PLZ ?? string.Empty;
             var ort = adresse.Ort ?? string.Empty;
             using TaskDialogIcon questionDialogIcon = new(Properties.Resources.question32);
+
             var page = new TaskDialogPage()
             {
-                Heading = "Möchten Sie den Datensatz löschen?",
+                Heading = "Möchtest du den Datensatz löschen?",
                 Text = $"{vorname} {nachname}\n{unternehmen}\n{strasse}\n{plz} {ort}".Trim(),
                 Caption = Application.ProductName,
                 Icon = questionDialogIcon,
                 AllowCancel = true,
                 SizeToContent = true,
-                Verification = showVerification ? new TaskDialogVerificationCheckBox() { Text = "Diese Frage immer anzeigen" } : "",
+                Verification = showVerification ? new TaskDialogVerificationCheckBox() { Text = "Immer fragen" } : null, // Korrigiert: null statt ""
                 Buttons = { TaskDialogButton.Yes, TaskDialogButton.No },
             };
-            page.Verification.Checked = askBeforeDelete;
+
+            // Korrigiert: Sicherer Null-Check für die Zuweisung
+            if (page.Verification is TaskDialogVerificationCheckBox check)
+            {
+                check.Checked = askBeforeDelete;
+            }
+
             var resultButton = TaskDialog.ShowDialog(hwnd, page);
 
-            if (askBeforeDelete && !page.Verification.Checked)
+            // Korrigiert: Sicheres Auslesen des Ergebnisses
+            if (page.Verification is TaskDialogVerificationCheckBox finalCheck)
             {
-                MsgTaskDlg(hwnd, "Hinweis", "Sie können die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.", new(Properties.Resources.info32));
-                askBeforeDelete = false;
+                if (askBeforeDelete && !finalCheck.Checked)
+                {
+                    MsgTaskDlg(hwnd, "Hinweis", "Du kannst die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.", new(Properties.Resources.info32));
+                    askBeforeDelete = false;
+                }
+                else if (finalCheck.Checked)
+                {
+                    askBeforeDelete = true;
+                }
             }
-            else { askBeforeDelete = true; }
+
             if (resultButton == TaskDialogButton.Yes) { deleteNow = true; }
         }
         catch (Exception ex) { ErrTaskDlg(hwnd, ex); }
+
         return (askBeforeDelete, deleteNow);
     }
 
@@ -626,7 +811,20 @@ internal static class Utils
         return false;
     }
 
-    internal static string CorrectUNC(string unc) => unc.StartsWith('\\') ? @"\\" + unc.TrimStart('\\') : unc;
+    //internal static string CorrectUNC(string unc) => unc.StartsWith('\\') ? @"\\" + unc.TrimStart('\\') : unc;
+
+    internal static string CorrectUNC(string unc)
+    {
+        if (string.IsNullOrWhiteSpace(unc)) { return string.Empty; }
+
+        // Wenn es kein lokaler Pfad (C:\) und kein relativer Pfad ist, 
+        // aber mit einem Backslash startet, erzwingen wir genau zwei.
+        if (unc.StartsWith('\\') && !unc.StartsWith(@"\\"))
+        {
+            return @"\\" + unc.TrimStart('\\');
+        }
+        return unc;
+    }
 
     internal static bool SetClipboardText(string text)
     {
@@ -653,12 +851,6 @@ internal static class Utils
             }
         }
         return default;
-    }
-
-    public static IEnumerable<string> ReadAsLines(string filename)
-    {
-        using var reader = new StreamReader(filename);
-        while (!reader.EndOfStream) { yield return reader.ReadLine()!; }
     }
 
     public static async Task UpdateZipBackupAsync(string sourceDbPath, string targetZipFilePath)
@@ -750,6 +942,110 @@ internal static class Utils
         {
             Debug.WriteLine($"Backup fehlgeschlagen: {ex.Message}");
         }
+    }
+
+    public static string TruncateMiddle(string name, string suffix, Font font, int maxWidth)
+    {
+        var fullText = $"{name}{suffix}";
+
+        // Puffer leicht anpassen, da ListBox weniger fixes internes Padding hat.
+        var availableWidth = maxWidth - 4;
+
+        if (TextRenderer.MeasureText(fullText, font).Width <= availableWidth)
+        {
+            return fullText;
+        }
+
+        var leftLen = name.Length / 2;
+        var rightLen = name.Length - leftLen;
+
+        while (leftLen + rightLen > 0)
+        {
+            if (leftLen > rightLen)
+            {
+                leftLen--;
+            }
+            else
+            {
+                rightLen--;
+            }
+
+            var testName = name[..leftLen] + "…" + name[^rightLen..];
+            var testFull = $"{testName}{suffix}";
+
+            if (TextRenderer.MeasureText(testFull, font).Width <= availableWidth)
+            {
+                return testFull;
+            }
+        }
+
+        return $"…{suffix}";
+    }
+
+    public static void AddToSearchHistory(string searchTerm)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm)) { return; }
+        // Falls der Begriff schon existiert, entfernen, damit er gleich wieder nach oben rutscht
+        SearchHistory.Remove(searchTerm);
+        // Den neuesten Suchbegriff immer an die erste Stelle setzen
+        SearchHistory.Insert(0, searchTerm);
+        // Historie auf z. B. 10 Einträge begrenzen
+        if (SearchHistory.Count > 10) { SearchHistory.RemoveAt(SearchHistory.Count - 1); }
+    }
+
+    public static void SetPlaceholder(this TextBoxBase control, string text) => _ = NativeMethods.SendMessage(control.Handle, NativeMethods.EM_SETCUEBANNER, 0, text);  // maskedTextBox
+
+    public static void RestoreWindowBounds(Form form, WindowPlacement? placement, bool isMaximized = false)
+    {
+        if (isMaximized)
+        {
+            form.WindowState = FormWindowState.Maximized;
+            return;
+        }
+        if (placement == null) { return; }
+        form.StartPosition = FormStartPosition.Manual;
+        form.WindowState = FormWindowState.Normal;
+        var targetRect = new Rectangle(placement.X, placement.Y, placement.Width, placement.Height);
+        var screen = Screen.FromRectangle(targetRect);  // Screen.FromRectangle ist robuster als FromPoint, da es prüft, wo der größte Teil des Fensters liegt.
+        var workArea = screen.WorkingArea;
+        var width = Math.Max(targetRect.Width, form.MinimumSize.Width);  // nicht größer als Bildschirm, aber nicht kleiner als MinimumSize
+        var height = Math.Max(targetRect.Height, form.MinimumSize.Height);
+        width = Math.Min(width, workArea.Width);
+        height = Math.Min(height, workArea.Height);
+        targetRect.Width = width;
+        targetRect.Height = height;
+        if (targetRect.Right > workArea.Right) { targetRect.X = workArea.Right - targetRect.Width; }
+        if (targetRect.Left < workArea.Left) { targetRect.X = workArea.Left; }
+        if (targetRect.Bottom > workArea.Bottom) { targetRect.Y = workArea.Bottom - targetRect.Height; }
+        if (targetRect.Top < workArea.Top) { targetRect.Y = workArea.Top; }
+        form.DesktopBounds = targetRect;
+    }
+
+    public static void AdjustComboBoxDropDownWidth(ComboBox cb)
+    {
+        var maxWidth = cb.Width;
+        using var g = cb.CreateGraphics();
+        foreach (var item in cb.Items)
+        {
+            var itemWidth = (int)g.MeasureString(item.ToString(), cb.Font).Width;
+            if (itemWidth > maxWidth) { maxWidth = itemWidth; }
+        }
+        cb.DropDownWidth = maxWidth + SystemInformation.VerticalScrollBarWidth; // Platz für den vertikalen Scrollbalken addieren, um horizontales Scrollen zu vermeiden
+    }
+
+    internal static bool RowIsVisible(DataGridView dgv, DataGridViewRow row)
+    {
+        if (dgv.FirstDisplayedCell == null) { return false; }
+        var firstVisibleRowIndex = dgv.FirstDisplayedCell.RowIndex;
+        var lastVisibleRowIndex = firstVisibleRowIndex + dgv.DisplayedRowCount(false) - 1;
+        return row.Index >= firstVisibleRowIndex && row.Index <= lastVisibleRowIndex;
+    }
+    internal static void MoveCursorToControl(Control control)
+    {
+        if (control == null || control.IsDisposed || !control.IsHandleCreated) { return; }
+        var clientCenter = new Point(control.Width / 2, control.Height / 2);
+        var screenCenter = control.PointToScreen(clientCenter);
+        Cursor.Position = screenCenter;
     }
 }
 

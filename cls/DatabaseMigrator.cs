@@ -33,7 +33,7 @@ internal static class DatabaseMigrator
         catch { return 0; }
     }
 
-    internal static bool MigrateLegacyData(AdressenDbContext context, IntPtr ownerHandle)
+    internal static bool MigrateLegacyData(AdressenDbContext context)
     {
         if (context == null) { return false; }
 
@@ -271,18 +271,15 @@ internal static class DatabaseMigrator
             if (changesMade)
             {
                 context.Database.ExecuteSqlRaw("VACUUM;");
-                Utils.MsgTaskDlg(ownerHandle, "Datenbank aktualisiert",
-                    $"Die Datenbank wurde erfolgreich migriert (v{AppSettings.DatabaseSchemaVersion}).",
-                    TaskDialogIcon.ShieldSuccessGreenBar);
-                return true;
+                return true; // Erfolgsdialog wurde entfernt, machen wir jetzt in ConnectSQLDatabaseAsync
             }
             return false;
         }
         catch (Exception ex)
         {
             transaction.Rollback();
-            Utils.ErrTaskDlg(ownerHandle, ex);
-            return false;
+            // Er wird in ConnectSQLDatabaseAsync im catch-Block gefangen und sicher im UI-Thread angezeigt!
+            throw new Exception("Fehler während der Datenbankmigration.", ex);
         }
     }
 

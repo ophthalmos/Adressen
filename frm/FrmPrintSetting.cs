@@ -5,10 +5,11 @@ namespace Adressen;
 
 public partial class FrmPrintSetting : Form
 {
-    //private readonly double _zoom = 0.50F;
     private readonly AppSettings _settings;
     private readonly BindingSource _bindingSource; // Der Vermittler für das DataBinding
     private readonly Dictionary<string, string> _recipientDict;
+    private readonly Font _tcFont = new("Segoe UI", 10.0f, FontStyle.Bold, GraphicsUnit.Point);  // wird in Designer.cs disposed
+    private readonly StringFormat _tcStringFormat = new() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center }; // wird in Designer.cs disposed
 
     internal FrmPrintSetting(AppSettings settings, Dictionary<string, string> recipientDict)
     {
@@ -26,7 +27,8 @@ public partial class FrmPrintSetting : Form
                 _ => SystemColors.ButtonFace,
             };
         }
-        cbFont.Items.AddRange([.. FontFamily.Families.Select(f => f.Name)]);  // muss vor dem Binding passieren
+        cbFont.Items.AddRange([.. FontManager.GetValidFonts()]);  // muss vor dem Binding passieren
+        Utils.AdjustComboBoxDropDownWidth(cbFont);  // Wichtig für lange Schriftartnamen, damit sie nicht abgeschnitten werden
         foreach (string s in PrinterSettings.InstalledPrinters) { cbPrinter.Items.Add(s); }
         InitializeDataBindings();
         UpdateUiState();  // UI Logik (Enable/Disable) initial anstoßen
@@ -35,8 +37,7 @@ public partial class FrmPrintSetting : Form
 
     private void InitializeDataBindings()
     {
-        // Hilfsmethode um Schreibarbeit zu sparen
-        // OnPropertyChanged sorgt dafür, dass Änderungen sofort im Objekt landen (wichtig für Preview)
+        // Hilfsmethode um Schreibarbeit zu sparen. OnPropertyChanged sorgt dafür, dass Änderungen sofort im Objekt landen (wichtig für Preview)
         void Bind(Control control, string propertyName, string dataMember) { control.DataBindings.Add(propertyName, _bindingSource, dataMember, true, DataSourceUpdateMode.OnPropertyChanged); }
 
         // --- Tab 1: Format ---
@@ -96,10 +97,11 @@ public partial class FrmPrintSetting : Form
                 // Papierschächte laden
                 cbSources.Items.Clear();
                 foreach (PaperSource ps in printDocument.PrinterSettings.PaperSources) { cbSources.Items.Add(ps.SourceName); }
-
+                //Utils.AdjustComboBoxDropDownWidth(cbSources);
                 // Papierformate laden
                 cbPapersize.Items.Clear();
                 foreach (PaperSize ps in printDocument.PrinterSettings.PaperSizes) { if (ps.Kind != PaperKind.Custom) { cbPapersize.Items.Add(ps.PaperName); } }
+                Utils.AdjustComboBoxDropDownWidth(cbPapersize);
 
                 // Initial Landscape setzen für Preview
                 printDocument.DefaultPageSettings.Landscape = _settings.PrintLandscape;
@@ -237,12 +239,6 @@ public partial class FrmPrintSetting : Form
 
     private void FrmPrintSetting_Load(object sender, EventArgs e)
     {
-        tbSender1.SetInnerMargins(8, 8);
-        tbSender2.SetInnerMargins(8, 8);
-        tbSender3.SetInnerMargins(8, 8);
-        tbSender4.SetInnerMargins(8, 8);
-        tbSender5.SetInnerMargins(8, 8);
-        tbSender6.SetInnerMargins(8, 8);
         printPreviewControl.Document = printDocument;
         printPreviewControl.Zoom = GetBestFitZoom();
         UpdateStatusBarInfo();
@@ -263,7 +259,7 @@ public partial class FrmPrintSetting : Form
     {
         var g = e.Graphics;
         if (g == null) { return; }
-        g.PageUnit = GraphicsUnit.Display;
+        //g.PageUnit = GraphicsUnit.Display; //besser Standard HundredthsOfAnInch belassen
         float lineH;
         var fontName = "Arial"; // Fallback
         if (!string.IsNullOrEmpty(_settings.PrintFont))
@@ -388,28 +384,27 @@ public partial class FrmPrintSetting : Form
 
     private void TcSender_DrawItem(object sender, DrawItemEventArgs e)
     {
-        if (sender is TabControl tabControlSender)
-        {
-            using var g = e.Graphics;
-            Brush textBrush;
-            e.DrawBackground();
-            var tabPage = tabControlSender.TabPages[e.Index];
-            if (e.State == DrawItemState.Selected)
-            {
-                textBrush = new SolidBrush(Color.White);
-                g.FillRectangle(Brushes.Gray, e.Bounds);
-            }
-            else
-            {
-                textBrush = new SolidBrush(e.ForeColor);
-                e.DrawBackground();
-            }
-            using var tabFont = new Font("Segoe UI", 10.0f, FontStyle.Bold, GraphicsUnit.Point);
-            using var stringFlags = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-            var tabBounds = tabControlSender.GetTabRect(e.Index);
-            tabBounds.Inflate(-2, -2);
-            g.DrawString(tabPage.Text, tabFont, textBrush, tabBounds, new StringFormat(stringFlags));
-        }
+        if (sender is not TabControl tabControlSender) { return; }
+
+
+        var g = e.Graphics;   // WICHTIG: Kein 'using' für e.Graphics!
+        g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+        var tabPage = tabControlSender.TabPages[e.Index];
+        var isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+
+        if (isSelected) { g.FillRectangle(Brushes.Gray, e.Bounds); }
+        else { e.DrawBackground(); }
+
+        // Farbe ermitteln und den Pinsel mit 'using' sauber erstellen und danach freigeben
+        var textColor = isSelected ? Color.White : e.ForeColor;
+        using var textBrush = new SolidBrush(textColor);
+
+        var tabBounds = tabControlSender.GetTabRect(e.Index);
+        tabBounds.Inflate(-2, -2);
+
+        // Performantes Zeichnen mit den vorbereiteten Klassenvariablen
+        g.DrawString(tabPage.Text, _tcFont, textBrush, tabBounds, _tcStringFormat);
     }
 
     private void TbSender_TextChanged(object sender, EventArgs e)  // TextBox Debounce (Wichtig für Performance beim Tippen)
@@ -436,18 +431,27 @@ public partial class FrmPrintSetting : Form
     private double GetBestFitZoom()
     {
         if (printDocument.DefaultPageSettings.PaperSize == null) { return 1.0; }
+
         double clientWidth = printPreviewControl.ClientSize.Width - 25;
         double clientHeight = printPreviewControl.ClientSize.Height - 25;
         if (clientWidth <= 0 || clientHeight <= 0) { return 0.1; }
+
         var paperSize = printDocument.DefaultPageSettings.PaperSize;
         var isLandscape = printDocument.DefaultPageSettings.Landscape;
+
         double paperW = paperSize.Width;
         double paperH = paperSize.Height;
         if (isLandscape) { (paperW, paperH) = (paperH, paperW); }
-        var paperPixelWidth = paperW / 100.0 * 96.0;
-        var paperPixelHeight = paperH / 100.0 * 96.0;
+
+        // Dynamische DPI des aktuellen Monitors abfragen statt 96 hart zu codieren!
+        float currentDpi = DeviceDpi;
+
+        var paperPixelWidth = paperW / 100.0 * currentDpi;
+        var paperPixelHeight = paperH / 100.0 * currentDpi;
+
         var zoomX = clientWidth / paperPixelWidth;
         var zoomY = clientHeight / paperPixelHeight;
+
         return Math.Max(Math.Min(zoomX, zoomY), 0.1);
     }
 
@@ -455,9 +459,9 @@ public partial class FrmPrintSetting : Form
     {
         switch (keyData)
         {
-            case Keys.Tab:
-                tabControl.SelectedIndex = (tabControl.SelectedIndex + 1) % tabControl.TabCount;
-                return true;
+            //case Keys.Tab:
+            //    tabControl.SelectedIndex = (tabControl.SelectedIndex + 1) % tabControl.TabCount;
+            //    return true;
             case Keys.Oemplus | Keys.Control:
             case Keys.Add | Keys.Control:
                 if (printPreviewControl.Zoom < 1.0)
@@ -484,6 +488,30 @@ public partial class FrmPrintSetting : Form
                 return true;
         }
         return base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    private void CbFont_DrawItem(object sender, DrawItemEventArgs e)
+    {
+        if (e.Index < 0) { return; }
+
+        e.DrawBackground();
+        var fontName = cbFont.Items[e.Index]?.ToString();
+
+        // Schrift zentral abrufen (wird automatisch gecacht)
+        var displayFont = FontManager.GetDisplayFont(fontName);
+
+        // --- 2. Farben definieren ---
+        var isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+        var textColor = isSelected ? SystemColors.HighlightText : e.ForeColor;
+        var backColor = isSelected ? SystemColors.Highlight : e.BackColor;
+
+        // --- 3. Zeichnen mit TextRenderer (Scharfes ClearType) ---
+        var textRect = e.Bounds;
+        var flags = TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding;
+
+        TextRenderer.DrawText(e.Graphics, fontName, displayFont, textRect, textColor, backColor, flags);
+
+        e.DrawFocusRectangle();
     }
 
 }

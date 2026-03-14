@@ -17,6 +17,15 @@ partial class FrmProgSettings
         {
             components.Dispose();
         }
+        if (_tabFont != null)
+        {
+            _tabFont.Dispose();
+        }
+
+        if (_tabStringFormat != null)
+        {
+            _tabStringFormat.Dispose();
+        }
         base.Dispose(disposing);
     }
 
@@ -30,6 +39,10 @@ partial class FrmProgSettings
     {
         tabControl = new TabControl();
         tpAllgemein = new TabPage();
+        gbxFontSize = new GroupBox();
+        btnFontReset = new Button();
+        nudFontSize = new NumericUpDown();
+        cbxFontName = new ComboBox();
         gbTextProcessing = new GroupBox();
         rbManualSelect = new RadioButton();
         rbLibreOffice = new RadioButton();
@@ -40,6 +53,7 @@ partial class FrmProgSettings
         rbtnBlue = new RadioButton();
         rbtnGrey = new RadioButton();
         tpAdressen = new TabPage();
+        ckbAskBeforeSaveSQLExpander = new CheckBox();
         ckbAskBeforeDelete = new CheckBox();
         ckbAskBeforeSaveSQL = new CheckBox();
         groupBox = new GroupBox();
@@ -79,6 +93,8 @@ partial class FrmProgSettings
         openFileDialog = new OpenFileDialog();
         tabControl.SuspendLayout();
         tpAllgemein.SuspendLayout();
+        gbxFontSize.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)nudFontSize).BeginInit();
         gbTextProcessing.SuspendLayout();
         gbxColorScheme.SuspendLayout();
         tpAdressen.SuspendLayout();
@@ -114,6 +130,7 @@ partial class FrmProgSettings
         // 
         tpAllgemein.BackColor = SystemColors.ControlLightLight;
         tpAllgemein.BorderStyle = BorderStyle.FixedSingle;
+        tpAllgemein.Controls.Add(gbxFontSize);
         tpAllgemein.Controls.Add(gbTextProcessing);
         tpAllgemein.Controls.Add(gbxColorScheme);
         tpAllgemein.Location = new Point(114, 4);
@@ -122,12 +139,58 @@ partial class FrmProgSettings
         tpAllgemein.TabIndex = 3;
         tpAllgemein.Text = " Allgemein";
         // 
+        // gbxFontSize
+        // 
+        gbxFontSize.Controls.Add(btnFontReset);
+        gbxFontSize.Controls.Add(nudFontSize);
+        gbxFontSize.Controls.Add(cbxFontName);
+        gbxFontSize.Location = new Point(3, 67);
+        gbxFontSize.Name = "gbxFontSize";
+        gbxFontSize.Size = new Size(263, 91);
+        gbxFontSize.TabIndex = 7;
+        gbxFontSize.TabStop = false;
+        gbxFontSize.Text = "Schriftart für Textfelder";
+        // 
+        // btnFontReset
+        // 
+        btnFontReset.Location = new Point(6, 56);
+        btnFontReset.Name = "btnFontReset";
+        btnFontReset.Size = new Size(251, 27);
+        btnFontReset.TabIndex = 5;
+        btnFontReset.Text = "Standard: Segoe UI, Schriftgröße 10";
+        btnFontReset.UseVisualStyleBackColor = true;
+        btnFontReset.Click += BtnFontReset_Click;
+        // 
+        // nudFontSize
+        // 
+        nudFontSize.Location = new Point(217, 25);
+        nudFontSize.Maximum = new decimal(new int[] { 12, 0, 0, 0 });
+        nudFontSize.Minimum = new decimal(new int[] { 9, 0, 0, 0 });
+        nudFontSize.Name = "nudFontSize";
+        nudFontSize.Size = new Size(40, 25);
+        nudFontSize.TabIndex = 1;
+        nudFontSize.Value = new decimal(new int[] { 10, 0, 0, 0 });
+        nudFontSize.ValueChanged += NudFontSize_ValueChanged;
+        // 
+        // cbxFontName
+        // 
+        cbxFontName.DrawMode = DrawMode.OwnerDrawFixed;
+        cbxFontName.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbxFontName.FormattingEnabled = true;
+        cbxFontName.ItemHeight = 20;
+        cbxFontName.Location = new Point(6, 24);
+        cbxFontName.Name = "cbxFontName";
+        cbxFontName.Size = new Size(205, 26);
+        cbxFontName.TabIndex = 0;
+        cbxFontName.DrawItem += CbxFontName_DrawItem;
+        cbxFontName.SelectedIndexChanged += CbxFontName_SelectedIndexChanged;
+        // 
         // gbTextProcessing
         // 
         gbTextProcessing.Controls.Add(rbManualSelect);
         gbTextProcessing.Controls.Add(rbLibreOffice);
         gbTextProcessing.Controls.Add(rbMSWord);
-        gbTextProcessing.Location = new Point(3, 67);
+        gbTextProcessing.Location = new Point(3, 164);
         gbTextProcessing.Name = "gbTextProcessing";
         gbTextProcessing.Size = new Size(263, 113);
         gbTextProcessing.TabIndex = 6;
@@ -228,6 +291,7 @@ partial class FrmProgSettings
         // 
         tpAdressen.BackColor = SystemColors.ControlLightLight;
         tpAdressen.BorderStyle = BorderStyle.FixedSingle;
+        tpAdressen.Controls.Add(ckbAskBeforeSaveSQLExpander);
         tpAdressen.Controls.Add(ckbAskBeforeDelete);
         tpAdressen.Controls.Add(ckbAskBeforeSaveSQL);
         tpAdressen.Controls.Add(groupBox);
@@ -239,12 +303,22 @@ partial class FrmProgSettings
         tpAdressen.TabIndex = 0;
         tpAdressen.Text = " Lokale Adressen";
         // 
+        // ckbAskBeforeSaveSQLExpander
+        // 
+        ckbAskBeforeSaveSQLExpander.AutoSize = true;
+        ckbAskBeforeSaveSQLExpander.Location = new Point(26, 271);
+        ckbAskBeforeSaveSQLExpander.Name = "ckbAskBeforeSaveSQLExpander";
+        ckbAskBeforeSaveSQLExpander.Size = new Size(188, 23);
+        ckbAskBeforeSaveSQLExpander.TabIndex = 6;
+        ckbAskBeforeSaveSQLExpander.Text = "Detailanzeige ermöglichen";
+        ckbAskBeforeSaveSQLExpander.UseVisualStyleBackColor = true;
+        // 
         // ckbAskBeforeDelete
         // 
         ckbAskBeforeDelete.AutoSize = true;
         ckbAskBeforeDelete.Checked = true;
         ckbAskBeforeDelete.CheckState = CheckState.Checked;
-        ckbAskBeforeDelete.Location = new Point(6, 221);
+        ckbAskBeforeDelete.Location = new Point(6, 215);
         ckbAskBeforeDelete.Name = "ckbAskBeforeDelete";
         ckbAskBeforeDelete.Size = new Size(248, 23);
         ckbAskBeforeDelete.TabIndex = 5;
@@ -254,12 +328,13 @@ partial class FrmProgSettings
         // ckbAskBeforeSaveSQL
         // 
         ckbAskBeforeSaveSQL.AutoSize = true;
-        ckbAskBeforeSaveSQL.Location = new Point(6, 251);
+        ckbAskBeforeSaveSQL.Location = new Point(6, 244);
         ckbAskBeforeSaveSQL.Name = "ckbAskBeforeSaveSQL";
         ckbAskBeforeSaveSQL.Size = new Size(249, 23);
         ckbAskBeforeSaveSQL.TabIndex = 4;
         ckbAskBeforeSaveSQL.Text = "Abfrage vor Datenbankspeicherung ";
         ckbAskBeforeSaveSQL.UseVisualStyleBackColor = true;
+        ckbAskBeforeSaveSQL.CheckedChanged += CkbAskBeforeSaveSQL_CheckedChanged;
         // 
         // groupBox
         // 
@@ -631,6 +706,8 @@ partial class FrmProgSettings
         FormClosing += FrmProgSettings_FormClosing;
         tabControl.ResumeLayout(false);
         tpAllgemein.ResumeLayout(false);
+        gbxFontSize.ResumeLayout(false);
+        ((System.ComponentModel.ISupportInitialize)nudFontSize).EndInit();
         gbTextProcessing.ResumeLayout(false);
         gbTextProcessing.PerformLayout();
         gbxColorScheme.ResumeLayout(false);
@@ -702,4 +779,9 @@ partial class FrmProgSettings
     private Label lblZipText;
     private Label lblZipArchive;
     private Button btnZipArchive;
+    private GroupBox gbxFontSize;
+    private ComboBox cbxFontName;
+    private NumericUpDown nudFontSize;
+    private Button btnFontReset;
+    private CheckBox ckbAskBeforeSaveSQLExpander;
 }

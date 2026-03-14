@@ -13,25 +13,11 @@ internal class AdressenDbContext(string dbPath) : DbContext
 
     private readonly string _dbPath = dbPath;
 
-    protected override void OnConfiguring(DbContextOptionsBuilder options)
-        => options.UseSqlite($"Data Source={_dbPath}");
+    protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlite($"Data Source={_dbPath}");
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) => configurationBuilder.Properties<string>().UseCollation("NOCASE"); // Setzt 'NOCASE' global für alle string-Eigenschaften im gesamten Modell
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // 1. Globales Verhalten: Alle Strings case-insensitive (NOCASE) für SQLite
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-        {
-            foreach (var property in entityType.GetProperties())
-            {
-                if (property.ClrType == typeof(string))
-                {
-                    property.SetCollation("NOCASE");
-                }
-            }
-        }
-
-        // 2. Beziehungen konfigurieren
-
         // 1:1 Foto Beziehung
         modelBuilder.Entity<Adresse>()
             .HasOne(a => a.Foto)

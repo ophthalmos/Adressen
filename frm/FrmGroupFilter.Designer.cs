@@ -48,7 +48,7 @@ partial class FrmGroupFilter
         panelBottom.Controls.Add(buttonFilter);
         panelBottom.Controls.Add(buttonCancel);
         panelBottom.Dock = DockStyle.Bottom;
-        panelBottom.Location = new Point(0, 395);
+        panelBottom.Location = new Point(0, 407);
         panelBottom.Name = "panelBottom";
         panelBottom.Size = new Size(280, 45);
         panelBottom.TabIndex = 5;
@@ -133,7 +133,7 @@ partial class FrmGroupFilter
         panelParent.Dock = DockStyle.Fill;
         panelParent.Location = new Point(0, 33);
         panelParent.Name = "panelParent";
-        panelParent.Size = new Size(280, 362);
+        panelParent.Size = new Size(280, 374);
         panelParent.TabIndex = 3;
         // 
         // FrmGroupFilter
@@ -142,7 +142,7 @@ partial class FrmGroupFilter
         AutoScaleDimensions = new SizeF(7F, 17F);
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = buttonCancel;
-        ClientSize = new Size(280, 440);
+        ClientSize = new Size(280, 452);
         Controls.Add(panelParent);
         Controls.Add(panelTop);
         Controls.Add(panelBottom);

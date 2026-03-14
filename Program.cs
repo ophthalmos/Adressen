@@ -1,3 +1,4 @@
+using Adressen.cls;
 using Adressen.frm;
 
 namespace Adressen;
@@ -17,6 +18,7 @@ internal static class Program
         {
             ApplicationConfiguration.Initialize();
             Application.SetColorMode(SystemColorMode.System); // .NET 10 unterstützt Dark Mode nativ! 
+            FontManager.StartPreloading();  // Vorladen so früh wie möglich anstoßen (läuft asynchron im Hintergrund)
             var showSplash = !args.Contains("-nosplash", StringComparer.OrdinalIgnoreCase);
             FrmSplashScreen? splashScreen = null;
             if (showSplash)
@@ -28,5 +30,6 @@ internal static class Program
             Application.Run(new FrmAdressen(splashScreen, args));
         }
         catch (Exception ex) { MessageBox.Show(ex.Message + Environment.NewLine + Environment.NewLine + ex.StackTrace, "Startfehler"); }
+        finally { FontManager.Cleanup(); }  // Globales Aufräumen der GDI-Ressourcen beim regulären oder fehlerhaften Beenden
     }
 }

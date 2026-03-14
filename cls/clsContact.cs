@@ -1,5 +1,8 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Concurrent;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
+using Google.Apis.PeopleService.v1.Data;
 
 namespace Adressen.cls;
 
@@ -12,145 +15,197 @@ internal class GoogleFieldAttribute(string category) : Attribute
 internal class Contact : ICloneable, IContactEntity
 {
     private string? _searchTextCache;
+    private static readonly ConcurrentDictionary<string, byte[]> _photoCache = new(); // Statischer Cache, der für die gesamte Laufzeit der App existiert
 
     // ========================================================================
     // 1. EIGENSCHAFTEN MIT MAPPING-ATTRIBUTEN
     // ========================================================================
 
     [GoogleField("userDefined")]
+    [MaxLength(50)]
     public string? Anrede
     {
         get; set;
     }
+
     [GoogleField("names")]
+    [MaxLength(50)]
     public string? Praefix
     {
         get; set;
     }
+
     [GoogleField("names")]
+    [MaxLength(100)]
     public string? Nachname
     {
         get; set;
     }
+
     [GoogleField("names")]
+    [MaxLength(100)]
     public string? Vorname
     {
         get; set;
     }
+
     [GoogleField("names")]
+    [MaxLength(100)]
     public string? Zwischenname
     {
         get; set;
     }
+
     [GoogleField("nicknames")]
+    [MaxLength(50)]
     public string? Nickname
     {
         get; set;
     }
+
     [GoogleField("names")]
+    [MaxLength(50)]
     public string? Suffix
     {
         get; set;
     }
+
     [GoogleField("organizations")]
+    [MaxLength(150)]
     public string? Unternehmen
     {
         get; set;
     }
+
     [GoogleField("organizations")]
+    [MaxLength(100)]
     public string? Position
     {
         get; set;
     }
+
     [GoogleField("addresses")]
+    [MaxLength(150)]
     public string? Strasse
     {
         get; set;
     }
+
     [GoogleField("addresses")]
+    [MaxLength(20)]
     public string? PLZ
     {
         get; set;
     }
+
     [GoogleField("addresses")]
+    [MaxLength(100)]
     public string? Ort
     {
         get; set;
     }
+
     [GoogleField("addresses")]
+    [MaxLength(50)]
     public string? Postfach
     {
         get; set;
     }
+
     [GoogleField("addresses")]
+    [MaxLength(100)]
     public string? Land
     {
         get; set;
     }
+
     [GoogleField("userDefined")]
+    [MaxLength(150)]
     public string? Betreff
     {
         get; set;
     }
+
     [GoogleField("userDefined")]
+    [MaxLength(100)]
     public string? Grussformel
     {
         get; set;
     }
+
     [GoogleField("userDefined")]
+    [MaxLength(100)]
     public string? Schlussformel
     {
         get; set;
     }
+
     [GoogleField("birthdays")]
     public DateOnly? Geburtstag
     {
         get; set;
     }
+
     [GoogleField("emailAddresses")]
+    [MaxLength(254)] // Strenger RFC-Standard für E-Mails
     public string? Mail1
     {
         get; set;
     }
+
     [GoogleField("emailAddresses")]
+    [MaxLength(254)]
     public string? Mail2
     {
         get; set;
     }
+
     [GoogleField("phoneNumbers")]
+    [MaxLength(50)]
     public string? Telefon1
     {
         get; set;
     }
+
     [GoogleField("phoneNumbers")]
+    [MaxLength(50)]
     public string? Telefon2
     {
         get; set;
     }
+
     [GoogleField("phoneNumbers")]
+    [MaxLength(50)]
     public string? Mobil
     {
         get; set;
     }
+
     [GoogleField("phoneNumbers")]
+    [MaxLength(50)]
     public string? Fax
     {
         get; set;
     }
+
     [GoogleField("urls")]
+    [MaxLength(2048)] // Ausreichend für extrem lange Links
     public string? Internet
     {
         get; set;
     }
+
     [GoogleField("biographies")]
+    [MaxLength(1000)] // Das besprochene sichere Sync-Limit für Smartphones
     public string? Notizen
     {
         get; set;
     }
 
     // Eigenschaften ohne Attribut (werden manuell oder gar nicht geprüft)
+    [MaxLength(200)] // Auch hier eine Obergrenze für die DB sinnvoll
     public string ResourceName { get; set; } = string.Empty;
-
+    
     // ========================================================================
     // 2. HILFS-PROPERTIES (Browsable false)
     // ========================================================================
@@ -162,6 +217,13 @@ internal class Contact : ICloneable, IContactEntity
         get; set;
     }
     [Browsable(false)] public string ETag { get; set; } = string.Empty;
+
+    [Browsable(false)]
+    [Newtonsoft.Json.JsonIgnore]
+    public Person? RawGooglePerson
+    {
+        get; set;
+    }
 
     // ========================================================================
     // 3. IContactEntity IMPLEMENTIERUNG
@@ -202,9 +264,17 @@ internal class Contact : ICloneable, IContactEntity
     public async Task<Image?> GetPhotoAsync()
     {
         if (string.IsNullOrEmpty(PhotoUrl)) { return null; }
+
         try
         {
-            var bytes = await HttpService.Client.GetByteArrayAsync(PhotoUrl);
+            // 1. Prüfen, ob das Bild schon im Speicher liegt
+            if (!_photoCache.TryGetValue(PhotoUrl, out var bytes))
+            {
+                // 2. Falls nicht: Herunterladen und sicher im Cache ablegen
+                bytes = await HttpService.Client.GetByteArrayAsync(PhotoUrl);
+                _photoCache.TryAdd(PhotoUrl, bytes);
+            }
+
             using var ms = new MemoryStream(bytes);
             return new Bitmap(ms);
         }
@@ -215,6 +285,11 @@ internal class Contact : ICloneable, IContactEntity
     {
         var clone = (Contact)MemberwiseClone();
         clone.GroupNames = [.. GroupNames];
+        if (RawGooglePerson != null)  // Deep Clone für das Google-Objekt, damit der Snapshot unabhängig bleibt
+        {
+            var json = Newtonsoft.Json.JsonConvert.SerializeObject(RawGooglePerson);
+            clone.RawGooglePerson = Newtonsoft.Json.JsonConvert.DeserializeObject<Person>(json);
+        }
         return clone;
     }
 

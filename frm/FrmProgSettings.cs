@@ -7,22 +7,27 @@ namespace Adressen;
 public partial class FrmProgSettings : Form
 {
     private readonly AppSettings _settings;
+    private readonly Font _tabFont = new("Segoe UI", 10f);
+    private readonly StringFormat _tabStringFormat = new() { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
 
-    // Konstruktor nimmt direkt den Klon der Settings entgegen
     internal FrmProgSettings(AppSettings settings)
     {
         InitializeComponent();
         _settings = settings;
+        //LoadFontsIntoComboBox(); // Zuerst die gefilterten Schriften laden
 
-        // 1. Werte aus dem Objekt in die Maske laden
-        MapSettingsToUi();
+        // Schriften direkt aus dem Manager abrufen (geht in ms)
+        cbxFontName.BeginUpdate();
+        cbxFontName.Items.Clear();
+        cbxFontName.Items.AddRange([.. FontManager.GetValidFonts()]);
+        Utils.AdjustComboBoxDropDownWidth(cbxFontName);
+        cbxFontName.EndUpdate();
 
-        // 2. Initiale UI-Status-Updates (Enabling/Disabling von Feldern)
+        MapSettingsToUi();       // Dann die gespeicherte Schriftart auswählen
         UpdateUiState();
     }
 
     // --- MAPPING LOGIK (Manuell statt DataBinding) ---
-
     private void MapSettingsToUi()
     {
         // CheckBoxen
@@ -32,6 +37,7 @@ public partial class FrmProgSettings : Form
         ckbZipArchive.Checked = _settings.AddZipBackup;
         ckbWatchFolder.Checked = _settings.WatchFolder;
         ckbAskBeforeSaveSQL.Checked = _settings.AskBeforeSaveSQL;
+        ckbAskBeforeSaveSQLExpander.Checked = _settings.AskBeforeSaveSQLExpander;
 
         // TextBoxen
         tbStandard.Text = _settings.StandardFile;
@@ -66,6 +72,16 @@ public partial class FrmProgSettings : Form
         if (_settings.WordProcessorProgram == true) { rbMSWord.Checked = true; }
         else if (_settings.WordProcessorProgram == false) { rbLibreOffice.Checked = true; }
         else { rbManualSelect.Checked = true; } // null
+
+        // Schriftart setzen
+        if (cbxFontName.Items.Contains(_settings.AppFontName)) { cbxFontName.SelectedItem = _settings.AppFontName; }
+        else if (cbxFontName.Items.Count > 0) { cbxFontName.SelectedIndex = 0; }  // Fallback
+        // Schriftgröße setzen (absichern gegen Werte außerhalb von 9-12)
+        var size = (decimal)_settings.AppFontSize;
+        if (size < nudFontSize.Minimum) { size = nudFontSize.Minimum; }
+        if (size > nudFontSize.Maximum) { size = nudFontSize.Maximum; }
+        nudFontSize.Value = size;
+        UpdateFontResetButtonState();
     }
 
     private void MapUiToSettings()
@@ -77,6 +93,7 @@ public partial class FrmProgSettings : Form
         _settings.AddZipBackup = ckbZipArchive.Checked;
         _settings.WatchFolder = ckbWatchFolder.Checked;
         _settings.AskBeforeSaveSQL = ckbAskBeforeSaveSQL.Checked;
+        _settings.AskBeforeSaveSQLExpander = ckbAskBeforeSaveSQLExpander.Checked;
 
         // TextBoxen
         _settings.StandardFile = Utils.CorrectUNC(tbStandard.Text.Trim());
@@ -107,6 +124,9 @@ public partial class FrmProgSettings : Form
         else if (rbtnPale.Checked) { _settings.ColorScheme = "pale"; }
         else { _settings.ColorScheme = "blue"; }
 
+        _settings.AppFontName = cbxFontName.SelectedItem?.ToString() ?? "Segoe UI";
+        _settings.AppFontSize = (float)nudFontSize.Value;
+
         // Textverarbeitung
         if (rbMSWord.Checked) { _settings.WordProcessorProgram = true; }
         else if (rbLibreOffice.Checked) { _settings.WordProcessorProgram = false; }
@@ -121,7 +141,7 @@ public partial class FrmProgSettings : Form
         {
             if (rbStandard.Checked && string.IsNullOrWhiteSpace(tbStandard.Text))
             {
-                Utils.MsgTaskDlg(Handle, "Eingabe unvollständig", "Bitte wählen Sie eine Standard-Datei aus oder ändern Sie das Start-Verhalten.", TaskDialogIcon.ShieldWarningYellowBar);
+                Utils.MsgTaskDlg(Handle, "Eingabe unvollständig", "Bitte wähle eine Standard-Datei aus oder ändere das Start-Verhalten.", TaskDialogIcon.ShieldWarningYellowBar);
                 tbStandard.Focus();
                 e.Cancel = true; // Verhindert das Schließen des Fensters
                 return;
@@ -172,7 +192,7 @@ public partial class FrmProgSettings : Form
             // 5. Prüfen, ob die Datei tatsächlich existiert
             if (!File.Exists(path))
             {
-                Utils.MsgTaskDlg(Handle, "Datei nicht gefunden", $"Die Datenbank-Datei '{Path.GetFileName(path)}' konnte nicht gefunden werden.\nBitte wählen Sie eine existierende Datei aus.", TaskDialogIcon.ShieldWarningYellowBar);
+                Utils.MsgTaskDlg(Handle, "Datei nicht gefunden", $"Die Datenbank-Datei '{Path.GetFileName(path)}' konnte nicht gefunden werden.\nBitte wähle eine existierende Datei aus.", TaskDialogIcon.ShieldWarningYellowBar);
                 e.Cancel = true;
             }
         }
@@ -219,7 +239,7 @@ public partial class FrmProgSettings : Form
             {
                 if (!Directory.Exists(directory))
                 {
-                    Utils.MsgTaskDlg(Handle, "Verzeichnis nicht gefunden", $"Das Verzeichnis '{directory}' existiert nicht.\nBitte wählen Sie einen bestehenden Ordner.", TaskDialogIcon.ShieldWarningYellowBar);
+                    Utils.MsgTaskDlg(Handle, "Verzeichnis nicht gefunden", $"Das Verzeichnis '{directory}' existiert nicht.\nBitte wähle einen bestehenden Ordner.", TaskDialogIcon.ShieldWarningYellowBar);
                     e.Cancel = true;
                 }
             }
@@ -237,6 +257,7 @@ public partial class FrmProgSettings : Form
     private void UpdateUiState()
     {
         tbStandard.Enabled = btnStandardFile.Enabled = rbStandard.Checked;
+        ckbAskBeforeSaveSQLExpander.Enabled = ckbAskBeforeSaveSQL.Checked;
 
         var backupActive = ckbBackup.Checked;
         tbBackupFolder.Enabled = btnBackupFolder.Enabled = backupActive;
@@ -269,7 +290,7 @@ public partial class FrmProgSettings : Form
 
     private void BtnDatabaseFolder_Click(object sender, EventArgs e)
     {
-        folderBrowserDialog.Description = "Wählen Sie den Datenbankordner:";
+        folderBrowserDialog.Description = "Wähle den Datenbankordner:";
         if (Directory.Exists(tbDatabaseFolder.Text))
         {
             folderBrowserDialog.InitialDirectory = tbDatabaseFolder.Text;
@@ -282,7 +303,7 @@ public partial class FrmProgSettings : Form
 
     private void BtnBackupFolder_Click(object sender, EventArgs e)
     {
-        folderBrowserDialog.Description = "Wählen Sie den Sicherungsordner:";
+        folderBrowserDialog.Description = "Wähle den Sicherungsordner:";
         folderBrowserDialog.InitialDirectory = Directory.Exists(tbBackupFolder.Text) ? tbBackupFolder.Text : string.Empty;
         if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
         {
@@ -292,7 +313,7 @@ public partial class FrmProgSettings : Form
 
     private void BtnWatchFolder_Click(object sender, EventArgs e)
     {
-        folderBrowserDialog.Description = "Wählen Sie den zu überwachenden Ordner:";
+        folderBrowserDialog.Description = "Wähle den zu überwachenden Ordner:";
         if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
         {
             tbWatchFolder.Text = folderBrowserDialog.SelectedPath;
@@ -320,7 +341,7 @@ public partial class FrmProgSettings : Form
             var dir = Path.GetDirectoryName(currentPath);
             if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir)) { initialDir = dir; }
         }
-        folderBrowserDialog.Description = "Wählen Sie den Zielordner oder klicken Sie auf ein bestehendes ZIP-Archiv:";
+        folderBrowserDialog.Description = "Wähle den Zielordner oder klicke auf ein bestehendes ZIP-Archiv:";
         if (!string.IsNullOrEmpty(initialDir)) { folderBrowserDialog.InitialDirectory = initialDir; }
         if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
         {
@@ -335,14 +356,18 @@ public partial class FrmProgSettings : Form
     {
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.HighQuality;
+        g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
         var tabPage = tabControl.TabPages[e.Index];
         var tabBounds = tabControl.GetTabRect(e.Index);
         var backBrush = e.State == DrawItemState.Selected ? SystemBrushes.GradientActiveCaption : SystemBrushes.GradientInactiveCaption;
         var textBrush = e.State == DrawItemState.Selected ? SystemBrushes.HighlightText : SystemBrushes.ControlText;
+
         g.FillRectangle(backBrush, e.Bounds);
-        using var tabFont = new Font("Segoe UI", 10f);
-        using var stringFlags = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
-        g.DrawString(tabPage.Text, tabFont, textBrush, tabBounds, stringFlags);
+
+        // Hier nutzen wir nun die performanten Klassenvariablen
+        g.DrawString(tabPage.Text, _tabFont, textBrush, tabBounds, _tabStringFormat);
+
         if (e.Index == tabControl.TabCount - 1)
         {
             var totalTabHeight = tabBounds.Height * tabControl.TabCount;
@@ -354,13 +379,48 @@ public partial class FrmProgSettings : Form
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
         if (keyData == Keys.Escape) { Close(); return true; }
-        // Kleiner Fix: Tabulatortaste sollte im TabControl navigieren, wenn Fokus nicht auf Controls liegt
-        // Wenn du willst, dass TAB immer durch die Tabs wechselt:
-        //if (keyData == Keys.Tab && !msg.HWnd.Equals(tbStandard.Handle) && !msg.HWnd.Equals(tbBackupFolder.Handle))
-        //{
-        //    // Hier Logik optional anpassen, oft reicht Standard-Windows Verhalten
-        //}
         return base.ProcessCmdKey(ref msg, keyData);
     }
 
+    private void CbxFontName_DrawItem(object sender, DrawItemEventArgs e)
+    {
+        if (e.Index < 0) { return; }
+
+        e.DrawBackground();
+
+        var fontName = cbxFontName.Items[e.Index]?.ToString();
+        // Schrift zentral abrufen (wird automatisch gecacht)
+        var displayFont = FontManager.GetDisplayFont(fontName);
+
+        var isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+        var textColor = isSelected ? SystemColors.HighlightText : e.ForeColor;
+        var backColor = isSelected ? SystemColors.Highlight : e.BackColor;
+
+        var textRect = e.Bounds;
+        var flags = TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding;
+
+        TextRenderer.DrawText(e.Graphics, fontName, displayFont, textRect, textColor, backColor, flags);
+
+        e.DrawFocusRectangle();
+    }
+
+    private void UpdateFontResetButtonState()
+    {
+        var isStandardFont = cbxFontName.SelectedItem?.ToString() == "Segoe UI";
+        var isStandardSize = nudFontSize.Value == 10m;
+        btnFontReset.Enabled = !(isStandardFont && isStandardSize);  // Der Button ist nur aktiviert, wenn NICHT beides bereits auf Standard steht
+    }
+
+    private void BtnFontReset_Click(object sender, EventArgs e)
+    {
+        var defaultFont = "Segoe UI";
+        if (cbxFontName.Items.Contains(defaultFont)) { cbxFontName.SelectedItem = defaultFont; }
+        else if (cbxFontName.Items.Count > 0) { cbxFontName.SelectedIndex = 0; }  // Extremer Fallback, falls "Segoe UI" fehlt
+        nudFontSize.Value = 10m;  // NumericUpDown akzeptiert nur decimal, daher das 'm' für die Literal-Notation
+    }
+
+    private void CbxFontName_SelectedIndexChanged(object sender, EventArgs e) => UpdateFontResetButtonState();
+    private void NudFontSize_ValueChanged(object sender, EventArgs e) => UpdateFontResetButtonState();
+
+    private void CkbAskBeforeSaveSQL_CheckedChanged(object sender, EventArgs e) => UpdateUiState();
 }

@@ -147,7 +147,7 @@ partial class FrmColumns
         ShowInTaskbar = false;
         SizeGripStyle = SizeGripStyle.Hide;
         StartPosition = FormStartPosition.CenterParent;
-        Text = "Spalten auwählen";
+        Text = "Spalten auswählen";
         ResumeLayout(false);
     }
 

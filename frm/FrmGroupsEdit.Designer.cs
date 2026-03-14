@@ -33,9 +33,12 @@ partial class FrmGroupsEdit
         btnClose = new Button();
         btnDelete = new Button();
         btnEdit = new Button();
-        listView = new ListView();
+        listBox = new ListBox();
         columnHeader = new ColumnHeader();
+        statusStrip = new StatusStrip();
+        toolStripStatusLabel = new ToolStripStatusLabel();
         panelRight.SuspendLayout();
+        statusStrip.SuspendLayout();
         SuspendLayout();
         // 
         // panelRight
@@ -47,13 +50,14 @@ partial class FrmGroupsEdit
         panelRight.Dock = DockStyle.Right;
         panelRight.Location = new Point(153, 0);
         panelRight.Name = "panelRight";
-        panelRight.Size = new Size(120, 217);
+        panelRight.Size = new Size(120, 224);
         panelRight.TabIndex = 0;
         // 
         // btnCancel
         // 
+        btnCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         btnCancel.DialogResult = DialogResult.Cancel;
-        btnCancel.Location = new Point(6, 174);
+        btnCancel.Location = new Point(6, 182);
         btnCancel.Name = "btnCancel";
         btnCancel.Size = new Size(102, 30);
         btnCancel.TabIndex = 3;
@@ -62,17 +66,19 @@ partial class FrmGroupsEdit
         // 
         // btnClose
         // 
+        btnClose.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         btnClose.DialogResult = DialogResult.OK;
         btnClose.Enabled = false;
-        btnClose.Location = new Point(6, 138);
+        btnClose.Location = new Point(6, 146);
         btnClose.Name = "btnClose";
         btnClose.Size = new Size(102, 30);
         btnClose.TabIndex = 0;
-        btnClose.Text = "Ausführen";
+        btnClose.Text = "Speichern";
         btnClose.UseVisualStyleBackColor = true;
         // 
         // btnDelete
         // 
+        btnDelete.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         btnDelete.Enabled = false;
         btnDelete.Location = new Point(6, 48);
         btnDelete.Name = "btnDelete";
@@ -84,6 +90,7 @@ partial class FrmGroupsEdit
         // 
         // btnEdit
         // 
+        btnEdit.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         btnEdit.Enabled = false;
         btnEdit.Location = new Point(6, 12);
         btnEdit.Name = "btnEdit";
@@ -93,24 +100,37 @@ partial class FrmGroupsEdit
         btnEdit.UseVisualStyleBackColor = true;
         btnEdit.Click += BtnEdit_Click;
         // 
-        // listView
+        // listBox
         // 
-        listView.Columns.AddRange(new ColumnHeader[] { columnHeader });
-        listView.Dock = DockStyle.Fill;
-        listView.FullRowSelect = true;
-        listView.HeaderStyle = ColumnHeaderStyle.None;
-        listView.Location = new Point(0, 0);
-        listView.MultiSelect = false;
-        listView.Name = "listView";
-        listView.Size = new Size(153, 217);
-        listView.TabIndex = 2;
-        listView.UseCompatibleStateImageBehavior = false;
-        listView.View = View.Details;
-        listView.SelectedIndexChanged += ListView_SelectedIndexChanged;
+        listBox.Dock = DockStyle.Fill;
+        listBox.DrawMode = DrawMode.OwnerDrawFixed;
+        listBox.Location = new Point(0, 0);
+        listBox.Name = "listBox";
+        listBox.Size = new Size(153, 224);
+        listBox.TabIndex = 2;
+        listBox.DrawItem += ListBox_DrawItem;
+        listBox.SelectedIndexChanged += ListBox_SelectedIndexChanged;
+        listBox.SizeChanged += ListBox_SizeChanged;
         // 
         // columnHeader
         // 
         columnHeader.Width = 97;
+        // 
+        // statusStrip
+        // 
+        statusStrip.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel });
+        statusStrip.Location = new Point(0, 224);
+        statusStrip.Name = "statusStrip";
+        statusStrip.Size = new Size(273, 22);
+        statusStrip.TabIndex = 3;
+        statusStrip.Text = "statusStrip1";
+        // 
+        // toolStripStatusLabel
+        // 
+        toolStripStatusLabel.Name = "toolStripStatusLabel";
+        toolStripStatusLabel.Size = new Size(258, 17);
+        toolStripStatusLabel.Spring = true;
+        toolStripStatusLabel.Text = "0";
         // 
         // FrmGroupsEdit
         // 
@@ -118,13 +138,14 @@ partial class FrmGroupsEdit
         AutoScaleDimensions = new SizeF(7F, 17F);
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = btnCancel;
-        ClientSize = new Size(273, 217);
-        Controls.Add(listView);
+        ClientSize = new Size(273, 246);
+        Controls.Add(listBox);
         Controls.Add(panelRight);
+        Controls.Add(statusStrip);
         Font = new Font("Segoe UI", 10F);
-        FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
+        MinimumSize = new Size(289, 285);
         Name = "FrmGroupsEdit";
         ShowIcon = false;
         ShowInTaskbar = false;
@@ -132,16 +153,21 @@ partial class FrmGroupsEdit
         Text = "Gruppen bearbeiten";
         Shown += FrmGroups_Shown;
         panelRight.ResumeLayout(false);
+        statusStrip.ResumeLayout(false);
+        statusStrip.PerformLayout();
         ResumeLayout(false);
+        PerformLayout();
     }
 
     #endregion
 
     private Panel panelRight;
-    private ListView listView;
+    private ListBox listBox;
     private Button btnDelete;
     private Button btnEdit;
     private Button btnClose;
     private ColumnHeader columnHeader;
     private Button btnCancel;
+    private StatusStrip statusStrip;
+    private ToolStripStatusLabel toolStripStatusLabel;
 }
