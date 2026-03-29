@@ -42,7 +42,7 @@ internal static class Utils
                 Position = TaskDialogExpanderPosition.AfterFootnote
             }
         };
-        TaskDialog.ShowDialog(hwnd ?? IntPtr.Zero, page);
+        TaskDialog.ShowDialog(hwnd ?? 0, page);
     }
 
     public static async Task<bool> RunWithProgressDialogAsync(IWin32Window owner, string caption, string text, Func<CancellationToken, Task> work)
@@ -88,21 +88,16 @@ internal static class Utils
         return success;
     }
 
-    //public static void SortContacts(BindingList<Contact>? contacts)
-    //{
-    //    if (contacts == null || contacts.Count == 0) { return; }
-    //    var sortedList = contacts.OrderBy(x => x.Nachname).ThenBy(x => x.Vorname).ThenBy(x => x.Unternehmen).ToList();  // ignoriert Groß-/Kleinschreibung
-    //    contacts.Clear();  // BindingList wird geleert, weil sie keine Sortiermethode hat
-    //    foreach (var c in sortedList) { contacts.Add(c); }
-    //}
+    public static bool IsArrowKeyDown()
+    {
+        // Das bitweise UND mit 0x8000 prüft das höchste Bit. Ist es gesetzt, wird die Taste exakt jetzt physisch gedrückt gehalten.
+        return (NativeMethods.GetAsyncKeyState(NativeMethods.VK_UP) & 0x8000) != 0 ||
+               (NativeMethods.GetAsyncKeyState(NativeMethods.VK_DOWN) & 0x8000) != 0;
+    }
 
     public static void SortContacts(BindingList<Contact>? contacts)
     {
-        if (contacts == null || contacts.Count == 0)
-        {
-            return;
-        }
-
+        if (contacts == null || contacts.Count == 0) { return; }
         var sortedList = contacts
             .OrderBy(x => x.Nachname, StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(x => x.Vorname, StringComparer.CurrentCultureIgnoreCase)
@@ -114,10 +109,7 @@ internal static class Utils
         try
         {
             contacts.Clear();
-            foreach (var c in sortedList)
-            {
-                contacts.Add(c);
-            }
+            foreach (var c in sortedList) { contacts.Add(c); }
         }
         finally
         {
@@ -211,6 +203,29 @@ internal static class Utils
         return [.. result.OrderBy(x => x.Tage)];
     }
 
+    internal static Font GetSafeFont(string fontName, float fontSize, FontFamily fallbackFamily)
+    {
+        try
+        {
+            var font = new Font(fontName, fontSize);
+
+            // Wenn Windows die Schriftart nicht findet, wird automatisch "Microsoft Sans Serif" genommen.
+            // Das prüfen wir hier, um stattdessen unseren gewünschten Fallback zu nutzen.
+            if (!string.Equals(font.Name, fontName, StringComparison.OrdinalIgnoreCase))
+            {
+                font.Dispose();
+                return new Font(fallbackFamily, fontSize);
+            }
+
+            return font;
+        }
+        catch
+        {
+            // Falls ein anderer Fehler beim Instanziieren auftritt
+            return new Font(fallbackFamily, fontSize);
+        }
+    }
+
     internal static void StartFile(nint handle, string filePath)
     {
         try
@@ -225,18 +240,33 @@ internal static class Utils
         catch (Exception ex) when (ex is Win32Exception || ex is InvalidOperationException) { ErrTaskDlg(handle, ex); }
     }
 
+    //internal static void StartLink(nint handle, string url)
+    //{
+    //    try
+    //    {
+    //        if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+    //        {
+    //            ProcessStartInfo psi = new(url) { UseShellExecute = true };
+    //            Process.Start(psi);
+    //        }
+    //        else { MsgTaskDlg(handle, "Ungültiger Link!", "'" + url + "' ist keine gültige URL.", TaskDialogIcon.ShieldWarningYellowBar); }
+    //    }
+    //    catch (Exception ex) when (ex is Win32Exception || ex is InvalidOperationException) { ErrTaskDlg(handle, ex); }
+    //}
+
     internal static void StartLink(nint handle, string url)
     {
         try
         {
-            if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+            if (Uri.TryCreate(url, UriKind.Absolute, out var uriResult) &&
+               (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps))
             {
-                ProcessStartInfo psi = new(url) { UseShellExecute = true };
+                var psi = new ProcessStartInfo(url) { UseShellExecute = true };
                 Process.Start(psi);
             }
             else { MsgTaskDlg(handle, "Ungültiger Link!", "'" + url + "' ist keine gültige URL.", TaskDialogIcon.ShieldWarningYellowBar); }
         }
-        catch (Exception ex) when (ex is Win32Exception || ex is InvalidOperationException) { ErrTaskDlg(handle, ex); }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException) { ErrTaskDlg(handle, ex); }
     }
 
     internal static async Task<bool> GoogleConnectionCheckAsync(nint hwnd, string path)
@@ -346,7 +376,38 @@ internal static class Utils
         }
     }
 
-    //internal static void StartSearchCacheWarmup(IEnumerable<IContactEntity> items) => Task.Run(() => { foreach (var item in items) { var warmup = item.SearchText; } });
+    internal static bool IsFileReady(string filename)
+    {
+        try
+        {
+            using var stream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.None);
+            return true;
+        }
+        catch (IOException) { return false; }  // Die Datei wird gerade noch von einem anderen Prozess geschrieben oder kopiert
+    }
+
+    internal static GraphicsPath GetRoundedRectanglePath(Rectangle bounds, int radius)
+    {
+        var path = new GraphicsPath();
+        if (radius <= 0)
+        {
+            path.AddRectangle(bounds);
+            return path;
+        }
+        var diameter = radius * 2;
+        var size = new Size(diameter, diameter);
+        var arc = new Rectangle(bounds.Location, size);
+        path.AddArc(arc, 180, 90);  // Oben Links
+        arc.X = bounds.Right - diameter;  // Oben Rechts
+        path.AddArc(arc, 270, 90);
+        arc.Y = bounds.Bottom - diameter;  // Unten Rechts
+        path.AddArc(arc, 0, 90);
+        arc.X = bounds.Left;  // Unten Links
+        path.AddArc(arc, 90, 90);
+        path.CloseFigure();
+        return path;
+    }
+
     internal static void StartSearchCacheWarmup(IEnumerable<IContactEntity> items)
     {
         // Wir erstellen erst einen Snapshot (Array), solange wir noch im UI-Thread sind.
@@ -702,7 +763,7 @@ internal static class Utils
             {
                 if (askBeforeDelete && !finalCheck.Checked)
                 {
-                    MsgTaskDlg(page.BoundDialog?.Handle ?? IntPtr.Zero, "Hinweis", "Du kannst die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.", new(Properties.Resources.info32));
+                    MsgTaskDlg(page.BoundDialog?.Handle ?? 0, "Hinweis", "Du kannst die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.", new(Properties.Resources.info32));
                     askBeforeDelete = false;
                 }
                 else if (finalCheck.Checked)
@@ -1071,6 +1132,18 @@ public interface IContactEntity
     {
         get;
     }
-    Task<Image?> GetPhotoAsync();
+    string? Vorname
+    {
+        get; set;
+    }
+    string? Nachname
+    {
+        get; set;
+    }
+    string? Mail1
+    {
+        get; set;
+    }
+    Task<Image?> GetPhotoAsync(CancellationToken token = default);
     void ResetSearchCache();
 }

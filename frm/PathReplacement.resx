@@ -117,23 +117,17 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="lblWatcherInfo.Text" xml:space="preserve">
-    <value>Bei Änderungen oder Neueingängen
-von Dateien im Dokumentenordner
-erhalten Sie eine automatische Benach-
-richtigung mit der Möglichkeit den
-Dateipfad in die Dokumentenliste der
-aktuellen oder einer anderen Adresse
-aufzunehmen. Wenn die Überwachung
-aktiv ist, erscheint in der Symbolleiste
-eine zusätzliche Schaltfläche, um die
-Anwendung platzsparend in das Sys-
-temTray minimieren zu können.</value>
-  </data>
-  <metadata name="folderBrowserDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+  <metadata name="helpToolTip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
-  <metadata name="openFileDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>178, 17</value>
-  </metadata>
+  <data name="infoPictureBox.ToolTip" xml:space="preserve">
+    <value>Mit dieser Funktion können Sie verwaiste Verknüpfungen reparieren.
+Geben Sie bei 'Suchen nach' den Teil des Pfades ein, der ungültig ist.
+Geben Sie bei 'Ersetzen durch' das neue Ziel ein.
+Typische Anwendungsfälle:
+• Sie haben Dokumente verschoben (C:\ wird zu D:\).
+• Sie nutzen einen neuen Server (D:\Daten wird zu \\Server\\Freigabe).
+• Ein Unterordner wurde umbenannt (\2025\ wird zu \2026\).
+Groß- und Kleinschreibung wird bei der Suche automatisch ignoriert.</value>
+  </data>
 </root>

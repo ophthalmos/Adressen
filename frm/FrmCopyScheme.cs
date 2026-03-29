@@ -72,10 +72,7 @@ public partial class FrmCopyScheme : Form
         UpdateAllTooltips();
     }
 
-    private void FrmCopyScheme_Load(object sender, EventArgs e)
-    {
-        UpdateCurrentTabInfo();
-    }
+    private void FrmCopyScheme_Load(object sender, EventArgs e) => UpdateCurrentTabInfo();
 
     private void FrmCopyScheme_Shown(object sender, EventArgs e)
     {
@@ -235,4 +232,15 @@ public partial class FrmCopyScheme : Form
         e.Graphics.FillRectangle(brush, 0, 0, splitX, strip.Height);  // Wir füllen das Rechteck von (0,0) bis (splitX, Höhe)
     }
 
+    private void LblGoogleSearch_Click(object sender, EventArgs e)
+    {
+        var searchText = tbResult.Text.Replace("\r", " ").Replace("\n", " ").Trim();
+        if (string.IsNullOrWhiteSpace(searchText)) { return; }
+        var query = Uri.EscapeDataString(searchText);
+        var url = $"https://www.google.com/search?q={query}";
+        Utils.StartLink(Handle, url);
+        BtnCopy_Click(sender, e); 
+        DialogResult = DialogResult.OK;
+        //Close();
+    }
 }

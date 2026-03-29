@@ -50,6 +50,8 @@ partial class FrmCopyScheme
         panelLeft = new Panel();
         panelRight = new Panel();
         statusStrip = new StatusStrip();
+        lblSpring = new ToolStripStatusLabel();
+        lblGoogleSearch = new ToolStripStatusLabel();
         tabControl.SuspendLayout();
         tabPage1.SuspendLayout();
         tabPage2.SuspendLayout();
@@ -59,6 +61,7 @@ partial class FrmCopyScheme
         tabPage6.SuspendLayout();
         panelLeft.SuspendLayout();
         panelRight.SuspendLayout();
+        statusStrip.SuspendLayout();
         SuspendLayout();
         // 
         // tbPattern1
@@ -70,7 +73,7 @@ partial class FrmCopyScheme
         tbPattern1.Location = new Point(3, 3);
         tbPattern1.Multiline = true;
         tbPattern1.Name = "tbPattern1";
-        tbPattern1.Size = new Size(250, 143);
+        tbPattern1.Size = new Size(250, 141);
         tbPattern1.TabIndex = 0;
         tbPattern1.WordWrap = false;
         tbPattern1.TextChanged += TbPattern_TextChanged;
@@ -80,7 +83,7 @@ partial class FrmCopyScheme
         cbxFields.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         cbxFields.DropDownStyle = ComboBoxStyle.DropDownList;
         cbxFields.FormattingEnabled = true;
-        cbxFields.Location = new Point(36, 169);
+        cbxFields.Location = new Point(36, 167);
         cbxFields.Name = "cbxFields";
         cbxFields.Size = new Size(154, 25);
         cbxFields.TabIndex = 1;
@@ -88,7 +91,7 @@ partial class FrmCopyScheme
         // btnInsert
         // 
         btnInsert.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-        btnInsert.Location = new Point(196, 167);
+        btnInsert.Location = new Point(196, 165);
         btnInsert.Name = "btnInsert";
         btnInsert.Size = new Size(90, 27);
         btnInsert.TabIndex = 2;
@@ -113,7 +116,7 @@ partial class FrmCopyScheme
         tabControl.Name = "tabControl";
         tabControl.SelectedIndex = 0;
         tabControl.ShowToolTips = true;
-        tabControl.Size = new Size(289, 157);
+        tabControl.Size = new Size(289, 155);
         tabControl.SizeMode = TabSizeMode.Fixed;
         tabControl.TabIndex = 3;
         tabControl.DrawItem += TabControl_DrawItem;
@@ -125,7 +128,7 @@ partial class FrmCopyScheme
         tabPage1.Location = new Point(29, 4);
         tabPage1.Name = "tabPage1";
         tabPage1.Padding = new Padding(3);
-        tabPage1.Size = new Size(256, 149);
+        tabPage1.Size = new Size(256, 147);
         tabPage1.TabIndex = 0;
         tabPage1.Text = "1";
         tabPage1.UseVisualStyleBackColor = true;
@@ -136,7 +139,7 @@ partial class FrmCopyScheme
         tabPage2.Location = new Point(29, 4);
         tabPage2.Name = "tabPage2";
         tabPage2.Padding = new Padding(3);
-        tabPage2.Size = new Size(256, 149);
+        tabPage2.Size = new Size(256, 147);
         tabPage2.TabIndex = 1;
         tabPage2.Text = "2";
         tabPage2.UseVisualStyleBackColor = true;
@@ -150,7 +153,7 @@ partial class FrmCopyScheme
         tbPattern2.Location = new Point(3, 3);
         tbPattern2.Multiline = true;
         tbPattern2.Name = "tbPattern2";
-        tbPattern2.Size = new Size(250, 143);
+        tbPattern2.Size = new Size(250, 141);
         tbPattern2.TabIndex = 1;
         tbPattern2.WordWrap = false;
         tbPattern2.TextChanged += TbPattern_TextChanged;
@@ -161,7 +164,7 @@ partial class FrmCopyScheme
         tabPage3.Location = new Point(29, 4);
         tabPage3.Name = "tabPage3";
         tabPage3.Padding = new Padding(3);
-        tabPage3.Size = new Size(256, 149);
+        tabPage3.Size = new Size(256, 147);
         tabPage3.TabIndex = 2;
         tabPage3.Text = "3";
         tabPage3.UseVisualStyleBackColor = true;
@@ -175,7 +178,7 @@ partial class FrmCopyScheme
         tbPattern3.Location = new Point(3, 3);
         tbPattern3.Multiline = true;
         tbPattern3.Name = "tbPattern3";
-        tbPattern3.Size = new Size(250, 143);
+        tbPattern3.Size = new Size(250, 141);
         tbPattern3.TabIndex = 1;
         tbPattern3.WordWrap = false;
         tbPattern3.TextChanged += TbPattern_TextChanged;
@@ -186,7 +189,7 @@ partial class FrmCopyScheme
         tabPage4.Location = new Point(29, 4);
         tabPage4.Name = "tabPage4";
         tabPage4.Padding = new Padding(3);
-        tabPage4.Size = new Size(256, 149);
+        tabPage4.Size = new Size(256, 147);
         tabPage4.TabIndex = 3;
         tabPage4.Text = "4";
         tabPage4.UseVisualStyleBackColor = true;
@@ -200,7 +203,7 @@ partial class FrmCopyScheme
         tbPattern4.Location = new Point(3, 3);
         tbPattern4.Multiline = true;
         tbPattern4.Name = "tbPattern4";
-        tbPattern4.Size = new Size(250, 143);
+        tbPattern4.Size = new Size(250, 141);
         tbPattern4.TabIndex = 1;
         tbPattern4.WordWrap = false;
         tbPattern4.TextChanged += TbPattern_TextChanged;
@@ -211,7 +214,7 @@ partial class FrmCopyScheme
         tabPage5.Location = new Point(29, 4);
         tabPage5.Name = "tabPage5";
         tabPage5.Padding = new Padding(3);
-        tabPage5.Size = new Size(256, 149);
+        tabPage5.Size = new Size(256, 147);
         tabPage5.TabIndex = 4;
         tabPage5.Text = "5";
         tabPage5.UseVisualStyleBackColor = true;
@@ -225,7 +228,7 @@ partial class FrmCopyScheme
         tbPattern5.Location = new Point(3, 3);
         tbPattern5.Multiline = true;
         tbPattern5.Name = "tbPattern5";
-        tbPattern5.Size = new Size(250, 143);
+        tbPattern5.Size = new Size(250, 141);
         tbPattern5.TabIndex = 1;
         tbPattern5.WordWrap = false;
         tbPattern5.TextChanged += TbPattern_TextChanged;
@@ -236,7 +239,7 @@ partial class FrmCopyScheme
         tabPage6.Location = new Point(29, 4);
         tabPage6.Name = "tabPage6";
         tabPage6.Padding = new Padding(3);
-        tabPage6.Size = new Size(256, 149);
+        tabPage6.Size = new Size(256, 147);
         tabPage6.TabIndex = 5;
         tabPage6.Text = "6";
         tabPage6.UseVisualStyleBackColor = true;
@@ -250,7 +253,7 @@ partial class FrmCopyScheme
         tbPattern6.Location = new Point(3, 3);
         tbPattern6.Multiline = true;
         tbPattern6.Name = "tbPattern6";
-        tbPattern6.Size = new Size(250, 143);
+        tbPattern6.Size = new Size(250, 141);
         tbPattern6.TabIndex = 1;
         tbPattern6.WordWrap = false;
         tbPattern6.TextChanged += TbPattern_TextChanged;
@@ -260,7 +263,7 @@ partial class FrmCopyScheme
         btnCopy.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         btnCopy.DialogResult = DialogResult.OK;
         btnCopy.Image = Properties.Resources.clipboard_plus16;
-        btnCopy.Location = new Point(3, 167);
+        btnCopy.Location = new Point(3, 165);
         btnCopy.Name = "btnCopy";
         btnCopy.Size = new Size(252, 27);
         btnCopy.TabIndex = 5;
@@ -277,8 +280,7 @@ partial class FrmCopyScheme
         tbResult.Location = new Point(5, 10);
         tbResult.Multiline = true;
         tbResult.Name = "tbResult";
-        tbResult.ReadOnly = true;
-        tbResult.Size = new Size(250, 143);
+        tbResult.Size = new Size(250, 141);
         tbResult.TabIndex = 0;
         tbResult.WordWrap = false;
         // 
@@ -291,7 +293,7 @@ partial class FrmCopyScheme
         panelLeft.Dock = DockStyle.Fill;
         panelLeft.Location = new Point(0, 0);
         panelLeft.Name = "panelLeft";
-        panelLeft.Size = new Size(298, 196);
+        panelLeft.Size = new Size(298, 194);
         panelLeft.TabIndex = 6;
         // 
         // panelRight
@@ -301,7 +303,7 @@ partial class FrmCopyScheme
         panelRight.Dock = DockStyle.Right;
         panelRight.Location = new Point(298, 0);
         panelRight.Name = "panelRight";
-        panelRight.Size = new Size(264, 196);
+        panelRight.Size = new Size(264, 194);
         panelRight.TabIndex = 7;
         // 
         // statusStrip
@@ -309,12 +311,31 @@ partial class FrmCopyScheme
         statusStrip.AutoSize = false;
         statusStrip.BackColor = Color.Transparent;
         statusStrip.BackgroundImageLayout = ImageLayout.None;
-        statusStrip.Location = new Point(0, 196);
+        statusStrip.Items.AddRange(new ToolStripItem[] { lblSpring, lblGoogleSearch });
+        statusStrip.Location = new Point(0, 194);
         statusStrip.Name = "statusStrip";
-        statusStrip.Size = new Size(562, 20);
+        statusStrip.Size = new Size(562, 22);
         statusStrip.TabIndex = 8;
         statusStrip.Text = "statusStrip";
         statusStrip.Paint += StatusStrip_Paint;
+        // 
+        // lblSpring
+        // 
+        lblSpring.Name = "lblSpring";
+        lblSpring.Size = new Size(323, 17);
+        lblSpring.Spring = true;
+        // 
+        // lblGoogleSearch
+        // 
+        lblGoogleSearch.AutoSize = false;
+        lblGoogleSearch.Font = new Font("Segoe UI", 10F);
+        lblGoogleSearch.IsLink = true;
+        lblGoogleSearch.Margin = new Padding(0, 0, 0, 2);
+        lblGoogleSearch.Name = "lblGoogleSearch";
+        lblGoogleSearch.Size = new Size(224, 20);
+        lblGoogleSearch.Text = "Text für Google-Suche verwenden";
+        lblGoogleSearch.TextAlign = ContentAlignment.MiddleLeft;
+        lblGoogleSearch.Click += LblGoogleSearch_Click;
         // 
         // FrmCopyScheme
         // 
@@ -353,6 +374,8 @@ partial class FrmCopyScheme
         panelLeft.ResumeLayout(false);
         panelRight.ResumeLayout(false);
         panelRight.PerformLayout();
+        statusStrip.ResumeLayout(false);
+        statusStrip.PerformLayout();
         ResumeLayout(false);
     }
 
@@ -378,4 +401,6 @@ partial class FrmCopyScheme
     private TextBox tbPattern6;
     private Panel panelRight;
     private StatusStrip statusStrip;
+    private ToolStripStatusLabel lblSpring;
+    private ToolStripStatusLabel lblGoogleSearch;
 }

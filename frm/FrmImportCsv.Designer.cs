@@ -65,6 +65,7 @@ partial class FrmImportCsv
         // 
         // gbSourceFile
         // 
+        gbSourceFile.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         gbSourceFile.Controls.Add(btnBrowse);
         gbSourceFile.Controls.Add(txtCsvPath);
         gbSourceFile.Controls.Add(lblSourceFile);
@@ -78,6 +79,7 @@ partial class FrmImportCsv
         // 
         // btnBrowse
         // 
+        btnBrowse.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         btnBrowse.Font = new Font("Segoe UI", 10F);
         btnBrowse.Location = new Point(321, 23);
         btnBrowse.Name = "btnBrowse";
@@ -89,6 +91,7 @@ partial class FrmImportCsv
         // 
         // txtCsvPath
         // 
+        txtCsvPath.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         txtCsvPath.Font = new Font("Segoe UI", 10F);
         txtCsvPath.Location = new Point(87, 24);
         txtCsvPath.Name = "txtCsvPath";
@@ -107,6 +110,7 @@ partial class FrmImportCsv
         // 
         // gbTarget
         // 
+        gbTarget.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         gbTarget.Controls.Add(rbNewDb);
         gbTarget.Controls.Add(rbCurrentDb);
         gbTarget.Font = new Font("Segoe UI", 9F);
@@ -144,11 +148,12 @@ partial class FrmImportCsv
         // 
         // gbMapping
         // 
+        gbMapping.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         gbMapping.Controls.Add(dgvMapping);
         gbMapping.Font = new Font("Segoe UI", 9F);
         gbMapping.Location = new Point(12, 226);
         gbMapping.Name = "gbMapping";
-        gbMapping.Size = new Size(363, 277);
+        gbMapping.Size = new Size(363, 283);
         gbMapping.TabIndex = 2;
         gbMapping.TabStop = false;
         gbMapping.Text = "Spaltenzuordnung";
@@ -159,6 +164,7 @@ partial class FrmImportCsv
         dgvMapping.AllowUserToDeleteRows = false;
         dgvMapping.AllowUserToResizeColumns = false;
         dgvMapping.AllowUserToResizeRows = false;
+        dgvMapping.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         dgvMapping.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         dgvMapping.BackgroundColor = SystemColors.ControlLightLight;
         dgvMapping.ClipboardCopyMode = DataGridViewClipboardCopyMode.Disable;
@@ -200,6 +206,9 @@ partial class FrmImportCsv
         dgvMapping.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         dgvMapping.Size = new Size(349, 250);
         dgvMapping.TabIndex = 0;
+        dgvMapping.CellValueChanged += DgvMapping_CellValueChanged;
+        dgvMapping.CurrentCellDirtyStateChanged += DgvMapping_CurrentCellDirtyStateChanged;
+        dgvMapping.EditingControlShowing += DgvMapping_EditingControlShowing;
         // 
         // csvCol
         // 
@@ -227,7 +236,7 @@ partial class FrmImportCsv
         // statusStrip
         // 
         statusStrip.Items.AddRange(new ToolStripItem[] { progressBar, toolStripStatusLabel });
-        statusStrip.Location = new Point(0, 539);
+        statusStrip.Location = new Point(0, 545);
         statusStrip.Name = "statusStrip";
         statusStrip.Size = new Size(387, 22);
         statusStrip.TabIndex = 3;
@@ -251,8 +260,9 @@ partial class FrmImportCsv
         // 
         // btnStartImport
         // 
+        btnStartImport.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         btnStartImport.Enabled = false;
-        btnStartImport.Location = new Point(158, 509);
+        btnStartImport.Location = new Point(158, 515);
         btnStartImport.Name = "btnStartImport";
         btnStartImport.Size = new Size(121, 27);
         btnStartImport.TabIndex = 4;
@@ -262,7 +272,8 @@ partial class FrmImportCsv
         // 
         // btnCancel
         // 
-        btnCancel.Location = new Point(285, 509);
+        btnCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+        btnCancel.Location = new Point(285, 515);
         btnCancel.Name = "btnCancel";
         btnCancel.Size = new Size(90, 27);
         btnCancel.TabIndex = 5;
@@ -271,8 +282,9 @@ partial class FrmImportCsv
         // 
         // lnkExample
         // 
+        lnkExample.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         lnkExample.AutoSize = true;
-        lnkExample.Location = new Point(12, 514);
+        lnkExample.Location = new Point(12, 520);
         lnkExample.Name = "lnkExample";
         lnkExample.Size = new Size(140, 19);
         lnkExample.TabIndex = 6;
@@ -306,6 +318,7 @@ partial class FrmImportCsv
         // 
         // gbDuplicate
         // 
+        gbDuplicate.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         gbDuplicate.Controls.Add(rbDuplicateSkip);
         gbDuplicate.Controls.Add(rbDuplicateCreate);
         gbDuplicate.Enabled = false;
@@ -323,7 +336,7 @@ partial class FrmImportCsv
         AutoScaleDimensions = new SizeF(7F, 17F);
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = btnCancel;
-        ClientSize = new Size(387, 561);
+        ClientSize = new Size(387, 567);
         Controls.Add(gbDuplicate);
         Controls.Add(lnkExample);
         Controls.Add(btnCancel);
@@ -336,7 +349,9 @@ partial class FrmImportCsv
         Icon = (Icon)resources.GetObject("$this.Icon");
         MaximizeBox = false;
         MinimizeBox = false;
+        MinimumSize = new Size(403, 606);
         Name = "FrmImportCsv";
+        ShowInTaskbar = false;
         SizeGripStyle = SizeGripStyle.Show;
         StartPosition = FormStartPosition.CenterParent;
         Text = "CSV-Datei importieren";
