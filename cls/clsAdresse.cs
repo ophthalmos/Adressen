@@ -50,6 +50,7 @@ public class Adresse : IContactEntity
     }
 
     [MaxLength(50)]
+    [DisplayName("Präfix")]
     public string? Praefix
     {
         get; set;
@@ -98,6 +99,7 @@ public class Adresse : IContactEntity
     }
 
     [MaxLength(150)]
+    [DisplayName("Straße")]
     public string? Strasse
     {
         get; set;
@@ -134,6 +136,7 @@ public class Adresse : IContactEntity
     }
 
     [MaxLength(100)]
+    [DisplayName("Grußformel")]
     public string? Grussformel
     {
         get; set;
@@ -234,17 +237,6 @@ public class Adresse : IContactEntity
     [Browsable(false)] // Soll nicht angezeigt werden
     public string DisplayName => $"{Vorname} {Nachname}".Trim();
 
-    //[NotMapped]
-    //[Browsable(false)]
-    //public string SearchText // Wenn Cache leer ist, berechnen (Lazy Loading)
-    //{
-    //    get
-    //    {
-    //        _searchTextCache ??= $"{Vorname} {Nachname} {Unternehmen} {Position} {Ort} {PLZ} {Strasse} {Nickname} {Telefon1} {Telefon2} {Mobil} {Mail1} {Mail2} {Notizen} {Internet}".ToLowerInvariant();
-    //        return _searchTextCache;
-    //    }
-    //}
-
     [NotMapped]
     [Browsable(false)]
     public string SearchText
@@ -255,10 +247,7 @@ public class Adresse : IContactEntity
             {
                 // Wir bauen den String erst lokal zusammen
                 var fullText = $"{Vorname} {Nachname} {Unternehmen} {Position} {Ort} {PLZ} {Strasse} {Nickname} {Telefon1} {Telefon2} {Mobil} {Mail1} {Mail2} {Notizen} {Internet}".ToLowerInvariant();
-
-                // Und weisen ihn dann erst dem Feld zu. 
-                // Das ist zwar nicht 100% atomar (dafür bräuchte man ein lock),
-                // verhindert aber seltsame Zwischenzustände beim Auslesen.
+                // Und weisen ihn dann erst dem Feld zu. Das ist zwar nicht 100% atomar (dafür bräuchte man ein lock), verhindert aber seltsame Zwischenzustände beim Auslesen.
                 _searchTextCache = fullText;
             }
             return _searchTextCache;
@@ -280,13 +269,13 @@ public class Adresse : IContactEntity
         _searchTextCache = null;
     }
 
-    public Task<Image?> GetPhotoAsync()
+    public Task<Image?> GetPhotoAsync(CancellationToken token = default)
     {
+        if (token.IsCancellationRequested) { return Task.FromResult<Image?>(null); }  // Sofortiger Abbruch, falls der Nutzer bereits weitergescrollt hat
         if (Foto?.Fotodaten == null) { return Task.FromResult<Image?>(null); }
         try
         {
             using var ms = new MemoryStream(Foto.Fotodaten);
-            // Erstellt eine Kopie (Deep Copy), damit der MemoryStream geschlossen werden kann
             using var temp = Image.FromStream(ms);
             return Task.FromResult<Image?>(new Bitmap(temp));
         }

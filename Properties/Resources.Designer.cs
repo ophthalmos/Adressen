@@ -163,6 +163,16 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap AvatarBild100 {
+            get {
+                object obj = ResourceManager.GetObject("AvatarBild100", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap calendar_small16 {
             get {
                 object obj = ResourceManager.GetObject("calendar-small16", resourceCulture);
@@ -216,6 +226,16 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap clipboard_text16 {
             get {
                 object obj = ResourceManager.GetObject("clipboard-text16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap ClipBoard24 {
+            get {
+                object obj = ResourceManager.GetObject("ClipBoard24", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -403,6 +423,26 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap DocumentExclamation16 {
+            get {
+                object obj = ResourceManager.GetObject("DocumentExclamation16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap DownArrowGreen24 {
+            get {
+                object obj = ResourceManager.GetObject("DownArrowGreen24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap envelope16 {
             get {
                 object obj = ResourceManager.GetObject("envelope16", resourceCulture);
@@ -463,6 +503,16 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Filter2HS16 {
+            get {
+                object obj = ResourceManager.GetObject("Filter2HS16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap git_16 {
             get {
                 object obj = ResourceManager.GetObject("git_16", resourceCulture);
@@ -496,6 +546,16 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap help_word16 {
             get {
                 object obj = ResourceManager.GetObject("help-word16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Help24 {
+            get {
+                object obj = ResourceManager.GetObject("Help24", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -946,6 +1006,16 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap UpArrow_Blue_24 {
             get {
                 object obj = ResourceManager.GetObject("UpArrow_Blue_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap UpArrowGreen16 {
+            get {
+                object obj = ResourceManager.GetObject("UpArrowGreen16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

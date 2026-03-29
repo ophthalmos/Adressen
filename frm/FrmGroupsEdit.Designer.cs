@@ -61,7 +61,7 @@ partial class FrmGroupsEdit
         btnCancel.Name = "btnCancel";
         btnCancel.Size = new Size(102, 30);
         btnCancel.TabIndex = 3;
-        btnCancel.Text = "Abbrechen";
+        btnCancel.Text = "&Abbrechen";
         btnCancel.UseVisualStyleBackColor = true;
         // 
         // btnClose
@@ -73,7 +73,7 @@ partial class FrmGroupsEdit
         btnClose.Name = "btnClose";
         btnClose.Size = new Size(102, 30);
         btnClose.TabIndex = 0;
-        btnClose.Text = "Speichern";
+        btnClose.Text = "&Schließen";
         btnClose.UseVisualStyleBackColor = true;
         // 
         // btnDelete
@@ -84,7 +84,7 @@ partial class FrmGroupsEdit
         btnDelete.Name = "btnDelete";
         btnDelete.Size = new Size(102, 30);
         btnDelete.TabIndex = 2;
-        btnDelete.Text = "Löschen";
+        btnDelete.Text = "&Löschen";
         btnDelete.UseVisualStyleBackColor = true;
         btnDelete.Click += BtnDelete_Click;
         // 
@@ -96,7 +96,7 @@ partial class FrmGroupsEdit
         btnEdit.Name = "btnEdit";
         btnEdit.Size = new Size(102, 30);
         btnEdit.TabIndex = 1;
-        btnEdit.Text = "Umbenennen";
+        btnEdit.Text = "&Umbenennen";
         btnEdit.UseVisualStyleBackColor = true;
         btnEdit.Click += BtnEdit_Click;
         // 

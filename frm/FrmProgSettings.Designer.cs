@@ -37,6 +37,7 @@ partial class FrmProgSettings
     /// </summary>
     private void InitializeComponent()
     {
+        var resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmProgSettings));
         tabControl = new TabControl();
         tpAllgemein = new TabPage();
         gbxFontSize = new GroupBox();
@@ -306,11 +307,11 @@ partial class FrmProgSettings
         // ckbAskBeforeSaveSQLExpander
         // 
         ckbAskBeforeSaveSQLExpander.AutoSize = true;
-        ckbAskBeforeSaveSQLExpander.Location = new Point(26, 271);
+        ckbAskBeforeSaveSQLExpander.Location = new Point(6, 273);
         ckbAskBeforeSaveSQLExpander.Name = "ckbAskBeforeSaveSQLExpander";
-        ckbAskBeforeSaveSQLExpander.Size = new Size(188, 23);
+        ckbAskBeforeSaveSQLExpander.Size = new Size(247, 23);
         ckbAskBeforeSaveSQLExpander.TabIndex = 6;
-        ckbAskBeforeSaveSQLExpander.Text = "Detailanzeige ermöglichen";
+        ckbAskBeforeSaveSQLExpander.Text = "Änderungdetailanzeige ermöglichen";
         ckbAskBeforeSaveSQLExpander.UseVisualStyleBackColor = true;
         // 
         // ckbAskBeforeDelete
@@ -477,29 +478,30 @@ partial class FrmProgSettings
         tpWatchFolder.Name = "tpWatchFolder";
         tpWatchFolder.Size = new Size(271, 304);
         tpWatchFolder.TabIndex = 4;
-        tpWatchFolder.Text = " Briefzuordnung";
+        tpWatchFolder.Text = "Dokumente";
         // 
         // lblWatcherInfo
         // 
-        lblWatcherInfo.Location = new Point(12, 14);
+        lblWatcherInfo.Location = new Point(12, 87);
         lblWatcherInfo.Name = "lblWatcherInfo";
-        lblWatcherInfo.Size = new Size(250, 100);
+        lblWatcherInfo.Size = new Size(250, 211);
         lblWatcherInfo.TabIndex = 13;
-        lblWatcherInfo.Text = "Beim Hinzufügen oder Ändern von Do-\r\nkumenten im Briefordner kann eine au-\r\ntomatische Benachrichtigung mit dem\r\nAngebot erfolgen, den Dateipfad in die\r\nBriefe-Liste der Adresse aufzunehmen.";
+        lblWatcherInfo.Text = resources.GetString("lblWatcherInfo.Text");
         // 
         // lblWatchFolder
         // 
         lblWatchFolder.AutoSize = true;
-        lblWatchFolder.Location = new Point(12, 145);
+        lblWatchFolder.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+        lblWatchFolder.Location = new Point(12, 7);
         lblWatchFolder.Name = "lblWatchFolder";
-        lblWatchFolder.Size = new Size(80, 19);
+        lblWatchFolder.Size = new Size(140, 19);
         lblWatchFolder.TabIndex = 12;
-        lblWatchFolder.Text = "Briefordner:";
+        lblWatchFolder.Text = "Dokumentenordner";
         // 
         // ckbWatchFolder
         // 
         ckbWatchFolder.AutoSize = true;
-        ckbWatchFolder.Location = new Point(12, 119);
+        ckbWatchFolder.Location = new Point(16, 29);
         ckbWatchFolder.Name = "ckbWatchFolder";
         ckbWatchFolder.Size = new Size(225, 23);
         ckbWatchFolder.TabIndex = 11;
@@ -509,7 +511,7 @@ partial class FrmProgSettings
         // 
         // btnWatchFolder
         // 
-        btnWatchFolder.Location = new Point(220, 167);
+        btnWatchFolder.Location = new Point(220, 58);
         btnWatchFolder.Name = "btnWatchFolder";
         btnWatchFolder.Size = new Size(36, 25);
         btnWatchFolder.TabIndex = 10;
@@ -519,7 +521,7 @@ partial class FrmProgSettings
         // 
         // tbWatchFolder
         // 
-        tbWatchFolder.Location = new Point(12, 167);
+        tbWatchFolder.Location = new Point(12, 58);
         tbWatchFolder.Name = "tbWatchFolder";
         tbWatchFolder.Size = new Size(202, 25);
         tbWatchFolder.TabIndex = 9;

@@ -163,19 +163,13 @@ internal class WordManager
 
             var listPara = wordDoc.Paragraphs.Add();
             listPara.Range.Font.Name = "Courier New";
-            listPara.Range.Text = string.Join("\v", allKeys);
+            listPara.Range.Text = string.Join("\v", allKeys.OrderBy(k => k).ToArray());
 
             wordDoc.SaveAs2(downloadPath, Word.WdSaveFormat.wdFormatXMLTemplate);
             wordApp.Activate();
         }
-        catch (Exception ex)
-        {
-            Utils.ErrTaskDlg(ownerHandle, ex);
-        }
-        finally
-        {
-            ReleaseWordObjects(ref wordDoc, ref wordApp);
-        }
+        catch (Exception ex) { Utils.ErrTaskDlg(ownerHandle, ex); }
+        finally { ReleaseWordObjects(ref wordDoc, ref wordApp); }
     }
 
     private static void AddParagraph(Word.Document doc, string text, float fontSize, float spaceAfter = 0f, bool asBookmark = false, bool bold = false)
@@ -184,36 +178,30 @@ internal class WordManager
         p.Range.Font.Size = fontSize;
         p.Range.Font.Bold = bold ? 1 : 0;
         p.Range.Text = text;
-
-        if (asBookmark)
-        {
-            doc.Bookmarks.Add(text, p.Range);
-        }
-
-        if (spaceAfter > 0f)
-        {
-            p.Format.SpaceAfter = spaceAfter;
-        }
-
+        if (asBookmark) { doc.Bookmarks.Add(text, p.Range); }
+        if (spaceAfter > 0f) { p.Format.SpaceAfter = spaceAfter; }
         p.Range.InsertParagraphAfter();
     }
 
     internal static void ShowWordBookmarksInfoDialog(nint ownerHandle, string[] allKeys)
     {
-        var btnCreateDoc = new TaskDialogButton("Beispieldokument erstellen");
+        if (allKeys == null || allKeys.Length == 0) { return; }
+        var sortedKeys = allKeys.OrderBy(k => k).ToArray();  // Die Keys alphabetisch sortieren, damit der Nutzer sie schneller findet
+        var btnCreateDoc = new TaskDialogButton("&Beispieldokument erstellen");
         var btnClose = TaskDialogButton.Close;
-        btnCreateDoc.Click += (s, e) => { CreateTemplateDocument(allKeys, ownerHandle); };
+        btnCreateDoc.Click += (s, e) => { CreateTemplateDocument(sortedKeys, ownerHandle); };
         var expander = new TaskDialogExpander
         {
-            Text = $"Folgende Textmarken stehen zur Verfügung:\n{string.Join(", ", allKeys)}\n\nDie Namen wurden gerade in die Zwischenablage kopiert!",
+            Text = $"Folgende Textmarken stehen zur Verfügung:\n\n" +
+                   $"{string.Join(", ", sortedKeys)}\n\n" +
+                   "(Die Namen wurden soeben in die Zwischenablage kopiert!)",
             CollapsedButtonText = "Verfügbare Textmarken anzeigen",
             ExpandedButtonText = "Verfügbare Textmarken ausblenden",
             Position = TaskDialogExpanderPosition.AfterText
         };
-
         expander.ExpandedChanged += (s, e) =>
         {
-            if (expander.Expanded && allKeys != null && allKeys.Length > 0) { Clipboard.SetText(string.Join(Environment.NewLine, allKeys)); }
+            if (expander.Expanded) { Clipboard.SetText(string.Join(Environment.NewLine, sortedKeys)); }
         };
         var page = new TaskDialogPage()
         {
@@ -233,32 +221,16 @@ internal class WordManager
     {
         if (wordDoc != null)
         {
-            try
-            {
-                Marshal.FinalReleaseComObject(wordDoc);
-            }
-            catch
-            {
-            }
-            finally
-            {
-                wordDoc = null;
-            }
+            try { Marshal.FinalReleaseComObject(wordDoc); }
+            catch { }
+            finally { wordDoc = null; }
         }
 
         if (wordApp != null)
         {
-            try
-            {
-                Marshal.FinalReleaseComObject(wordApp);
-            }
-            catch
-            {
-            }
-            finally
-            {
-                wordApp = null;
-            }
+            try { Marshal.FinalReleaseComObject(wordApp); }
+            catch { }
+            finally { wordApp = null; }
         }
 
         try
@@ -266,8 +238,6 @@ internal class WordManager
             GC.Collect();
             GC.WaitForPendingFinalizers();
         }
-        catch
-        {
-        }
+        catch { }
     }
 }

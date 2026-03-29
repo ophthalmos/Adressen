@@ -30,6 +30,7 @@ internal class Contact : ICloneable, IContactEntity
 
     [GoogleField("names")]
     [MaxLength(50)]
+    [DisplayName("Präfix")]
     public string? Praefix
     {
         get; set;
@@ -86,6 +87,7 @@ internal class Contact : ICloneable, IContactEntity
 
     [GoogleField("addresses")]
     [MaxLength(150)]
+    [DisplayName("Straße")]
     public string? Strasse
     {
         get; set;
@@ -128,6 +130,7 @@ internal class Contact : ICloneable, IContactEntity
 
     [GoogleField("userDefined")]
     [MaxLength(100)]
+    [DisplayName("Grußformel")]
     public string? Grussformel
     {
         get; set;
@@ -205,7 +208,7 @@ internal class Contact : ICloneable, IContactEntity
     // Eigenschaften ohne Attribut (werden manuell oder gar nicht geprüft)
     [MaxLength(200)] // Auch hier eine Obergrenze für die DB sinnvoll
     public string ResourceName { get; set; } = string.Empty;
-    
+
     // ========================================================================
     // 2. HILFS-PROPERTIES (Browsable false)
     // ========================================================================
@@ -261,24 +264,60 @@ internal class Contact : ICloneable, IContactEntity
 
     public void ResetSearchCache() => _searchTextCache = null;
 
-    public async Task<Image?> GetPhotoAsync()
+    //public async Task<Image?> GetPhotoAsync()
+    //{
+    //    if (string.IsNullOrEmpty(PhotoUrl)) { return null; }
+
+    //    try
+    //    {
+    //        // 1. Prüfen, ob das Bild schon im Speicher liegt
+    //        if (!_photoCache.TryGetValue(PhotoUrl, out var bytes))
+    //        {
+    //            // 2. Falls nicht: Herunterladen und sicher im Cache ablegen
+    //            bytes = await HttpService.Client.GetByteArrayAsync(PhotoUrl);
+    //            _photoCache.TryAdd(PhotoUrl, bytes);
+    //        }
+
+    //        using var ms = new MemoryStream(bytes);
+    //        return new Bitmap(ms);
+    //    }
+    //    catch { return null; }
+    //}
+
+    public async Task<Image?> GetPhotoAsync(CancellationToken token = default)
     {
-        if (string.IsNullOrEmpty(PhotoUrl)) { return null; }
+        if (string.IsNullOrEmpty(PhotoUrl))
+        {
+            return null;
+        }
 
         try
         {
             // 1. Prüfen, ob das Bild schon im Speicher liegt
             if (!_photoCache.TryGetValue(PhotoUrl, out var bytes))
             {
-                // 2. Falls nicht: Herunterladen und sicher im Cache ablegen
-                bytes = await HttpService.Client.GetByteArrayAsync(PhotoUrl);
+                // 2. Falls nicht: Herunterladen und Token durchreichen!
+                // Der HttpClient bricht den Web-Request bei einem Scroll-Event sofort ab.
+                bytes = await HttpService.Client.GetByteArrayAsync(PhotoUrl, token);
                 _photoCache.TryAdd(PhotoUrl, bytes);
             }
 
+            // 3. Wenn während des Wartens auf den Cache oder den Stream abgebrochen wurde:
+            if (token.IsCancellationRequested) { return null; }
+
             using var ms = new MemoryStream(bytes);
-            return new Bitmap(ms);
+            using var temp = Image.FromStream(ms);
+            return new Bitmap(temp);  // Deep Copy, damit der MemoryStream sofort geschlossen werden kann
         }
-        catch { return null; }
+        catch (TaskCanceledException)
+        {
+            // Der Download wurde durch das schnelle Scrollen im DataGridView planmäßig abgebrochen
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public object Clone()

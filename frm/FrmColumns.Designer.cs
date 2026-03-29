@@ -29,21 +29,21 @@ partial class FrmColumns
     private void InitializeComponent()
     {
         var listViewItem1 = new ListViewItem("Anrede");
-        var listViewItem2 = new ListViewItem("Praefix");
+        var listViewItem2 = new ListViewItem("Präfix");
         var listViewItem3 = new ListViewItem("Nachname");
         var listViewItem4 = new ListViewItem("Vorname");
         var listViewItem5 = new ListViewItem("Zwischenname");
         var listViewItem6 = new ListViewItem("Nickname");
         var listViewItem7 = new ListViewItem("Suffix");
         var listViewItem8 = new ListViewItem("Unternehmen");
-        var listViewItem9 = new ListViewItem(" Position");
-        var listViewItem10 = new ListViewItem("Strasse");
+        var listViewItem9 = new ListViewItem("Position");
+        var listViewItem10 = new ListViewItem("Straße");
         var listViewItem11 = new ListViewItem("PLZ");
         var listViewItem12 = new ListViewItem("Ort");
         var listViewItem13 = new ListViewItem("Postfach");
         var listViewItem14 = new ListViewItem("Land");
         var listViewItem15 = new ListViewItem("Betreff");
-        var listViewItem16 = new ListViewItem("Grussformel");
+        var listViewItem16 = new ListViewItem("Grußformel");
         var listViewItem17 = new ListViewItem("Schlussformel");
         var listViewItem18 = new ListViewItem("Geburtstag");
         var listViewItem19 = new ListViewItem("Mail1");

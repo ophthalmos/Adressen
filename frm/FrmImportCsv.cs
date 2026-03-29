@@ -75,8 +75,13 @@ public partial class FrmImportCsv : Form
             var row = dgvMapping.Rows[rowIndex];
             var bestMatch = FindBestMatch(header);
             if (bestMatch != null) { row.Cells[2].Value = bestMatch; }
-            else { row.Cells[2].Value = "- Ignorieren -"; }
+            else { row.Cells[2].Value = "Notizen"; }  // Alle unbekannten Spalten landen hier
+
+            //var bestMatch = FindBestMatch(header);
+            //if (bestMatch != null) { row.Cells[2].Value = bestMatch; }
+            //else { row.Cells[2].Value = "- Ignorieren -"; }
             toolStripStatusLabel.Text = $"{_csvData.Count - 1} Zeilen, {_csvHeaders.Count} Spalten";  // minus 1, weil die erste Zeile die Header sind
+            HighlightDuplicates();
         }
     }
 
@@ -176,6 +181,9 @@ public partial class FrmImportCsv : Form
             foreach (var csvRow in _csvData.Skip(1))
             {
                 var adresse = new Adresse();
+                var gesammelteNotizen = new List<string>();
+                var hasData = false;  // Flag für leere Zeilen
+
                 foreach (var kvp in fieldMapping)
                 {
                     var colIndex = kvp.Key;
@@ -183,6 +191,7 @@ public partial class FrmImportCsv : Form
                     if (colIndex >= csvRow.Length) { continue; }
                     var val = csvRow[colIndex]?.Trim();
                     if (string.IsNullOrEmpty(val)) { continue; }
+                    hasData = true; // Wir haben mindestens einen gültigen Wert gefunden
                     if (targetProperty == "Gruppen")
                     {
                         var gruppenNamen = val.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -190,7 +199,6 @@ public partial class FrmImportCsv : Form
                         {
                             var gruppe = context.Gruppen.Local.FirstOrDefault(g => g.Name.Equals(gName, StringComparison.OrdinalIgnoreCase))
                                          ?? context.Gruppen.FirstOrDefault(g => g.Name.Equals(gName, StringComparison.CurrentCultureIgnoreCase));
-
                             if (gruppe == null)
                             {
                                 gruppe = new Gruppe { Name = gName };
@@ -203,7 +211,24 @@ public partial class FrmImportCsv : Form
                     {
                         if (DateOnly.TryParse(val, culture, out var dt)) { adresse.Geburtstag = dt; }
                     }
+                    else if (targetProperty == "Notizen")
+                    {
+                        var headerName = _csvHeaders[colIndex];
+                        var isMainNote = FindBestMatch(headerName) == "Notizen";
+
+                        if (isMainNote)
+                        {
+                            gesammelteNotizen.Insert(0, val);
+                        }
+                        else { gesammelteNotizen.Add($"{headerName}: {val}"); }
+                    }
                     else { adresse.SetPropertyValue(targetProperty, val); }
+                }
+                if (!hasData) { continue; }  // Wenn die komplette Zeile leer war, direkt zur nächsten CSV-Zeile springen
+                if (gesammelteNotizen.Count > 0)
+                {
+                    var combinedNotes = string.Join(Environment.NewLine, gesammelteNotizen);
+                    adresse.SetPropertyValue("Notizen", combinedNotes);
                 }
 
                 // --- 3. Duplikat prüfen ---
@@ -297,5 +322,99 @@ public partial class FrmImportCsv : Form
             Utils.MsgTaskDlg(Handle, "Vorlage erstellt", $"Die Datei '{Path.GetFileName(filePath)}' wurde erfolgreich auf deinem Desktop gespeichert.", TaskDialogIcon.Information);
         }
         catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); }
+    }
+
+    private void DgvMapping_CurrentCellDirtyStateChanged(object? sender, EventArgs e)
+    {
+        // Löst CellValueChanged sofort aus, sobald im Dropdown etwas ausgewählt wird
+        if (dgvMapping.IsCurrentCellDirty && dgvMapping?.CurrentCell?.ColumnIndex == 2)
+        {
+            dgvMapping.CommitEdit(DataGridViewDataErrorContexts.Commit);
+            dgvMapping.EndEdit(); // Beendet den Edit-Modus, damit die Zelle sich neu zeichnet und ggf. roter Rahmen verschwindet, wenn die Auswahl geändert wurde.
+        }
+    }
+
+    private void DgvMapping_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
+    {
+        if (e.ColumnIndex == 2 && e.RowIndex >= 0)
+        {
+            HighlightDuplicates();
+            //dgvMapping.Invalidate();
+            var selectedValue = dgvMapping.Rows[e.RowIndex].Cells[e.ColumnIndex].Value?.ToString();
+            if (!string.IsNullOrEmpty(selectedValue) && selectedValue != "- Ignorieren -")
+            {
+                var duplicateCount = 0;
+                foreach (DataGridViewRow row in dgvMapping.Rows)
+                {
+                    if (row.Cells[2].Value?.ToString() == selectedValue) { duplicateCount++; }
+                }
+                if (duplicateCount > 1)
+                {
+                    if (selectedValue != "Notizen")  // Bei Notizen keine nervige Meldung anzeigen, da das ja unser Sammelbecken ist
+                    {
+                        Utils.MsgTaskDlg(
+                            Handle,
+                            "Achtung beim Überschreiben",
+                            $"Das Zielfeld '{selectedValue}' wurde bereits einer\nanderen CSV-Spalte zugeordnet.\nEs wird nur der letzte Wert übernommen!\n\nWenn deine CSV-Datei Spalten enthält, für\ndie es kein passendes Zielfeld gibt, kannst\ndu diese ALLE dem Feld 'Notizen' zuordnen.",
+                            TaskDialogIcon.Warning);
+                    }
+                }
+            }
+        }
+    }
+
+    private void HighlightDuplicates()
+    {
+        var mappedFields = new Dictionary<string, List<DataGridViewCell>>();
+
+        // 1. Alle Zellen auf Standard-Stil zurücksetzen
+        foreach (DataGridViewRow row in dgvMapping.Rows)
+        {
+            row.Cells[2].Style.BackColor = Color.Empty;
+            row.Cells[2].Style.ForeColor = Color.Empty;
+        }
+
+        // 2. Zuordnungen sammeln (aber "Notizen" ignorieren)
+        foreach (DataGridViewRow row in dgvMapping.Rows)
+        {
+            var cell = row.Cells[2];
+            var val = cell.Value?.ToString();
+
+            // Hier schließen wir "Notizen" von der Prüfung aus
+            if (!string.IsNullOrEmpty(val) && val != "- Ignorieren -" && val != "Notizen")
+            {
+                if (!mappedFields.TryGetValue(val, out var list))
+                {
+                    list = new();
+                    mappedFields[val] = list;
+                }
+                list.Add(cell);
+            }
+        }
+
+        // 3. Duplikate rot färben
+        foreach (var kvp in mappedFields)
+        {
+            if (kvp.Value.Count > 1)
+            {
+                foreach (var cell in kvp.Value)
+                {
+                    cell.Style.BackColor = Color.LightCoral;
+                    cell.Style.ForeColor = Color.Black;
+                }
+            }
+        }
+    }
+
+    private void DgvMapping_EditingControlShowing(object? sender, DataGridViewEditingControlShowingEventArgs e)
+    {
+        if (dgvMapping.CurrentCell != null && dgvMapping.CurrentCell.ColumnIndex == 2)
+        {
+            // Überschreibt den (eventuell roten) Zell-Stil speziell für das ComboBox-Control
+            e.CellStyle.BackColor = SystemColors.Window;
+            e.CellStyle.ForeColor = SystemColors.ControlText;
+            e.CellStyle.SelectionBackColor = SystemColors.Highlight;
+            e.CellStyle.SelectionForeColor = SystemColors.HighlightText;
+        }
     }
 }
