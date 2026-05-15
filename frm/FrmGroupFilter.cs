@@ -7,10 +7,13 @@ public partial class FrmGroupFilter : Form
     private readonly Dictionary<string, (CheckBox Include, CheckBox Exclude)> _groupControls = [];
     public List<string> IncludedGroups { get; private set; } = [];
     public List<string> ExcludedGroups { get; private set; } = [];
+    public bool RefineExistingFilter => chckBxRefine.Checked;
 
-    public FrmGroupFilter(SortedSet<string> groupList)
+    public FrmGroupFilter(SortedSet<string> groupList, bool isFilterActive)
     {
         InitializeComponent();
+        chckBxRefine.Enabled = isFilterActive;
+        if (isFilterActive) { chckBxRefine.Checked = true; }
         tableLayoutPanel.SuspendLayout();
         tableLayoutPanel.RowCount = 0; // Bestehende Zeilen entfernen
         tableLayoutPanel.RowStyles.Clear();

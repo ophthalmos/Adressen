@@ -1,6 +1,6 @@
 #define MyAppLong "Adressen & Kontakte"
 #define MyAppName "Adressen"
-#define MyAppVersion "1.2"
+#define MyAppVersion "1.2.3"
 
 [Setup]
 AppName={#MyAppName}
@@ -43,8 +43,8 @@ Name: "German"; MessagesFile: "compiler:Languages\German.isl"
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\{#MyAppName}.exe"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\{#MyAppName}.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\{#MyAppName}.runtimeconfig.json"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
-Source: "AdressenKontakte.pdf"; DestDir: "{app}"; Permissions: users-modify;
-Source: "Lizenzvereinbarung.txt"; DestDir: "{app}"; Permissions: users-modify;
+Source: "AdressenKontakte.pdf"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
+Source: "Lizenzvereinbarung.txt"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Google.Apis.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Google.Apis.Auth.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
@@ -75,12 +75,16 @@ Source: "bin\x64\Release\net10.0-windows10.0.19041.0\SQLitePCLRaw.core.dll"; Des
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\SQLitePCLRaw.provider.e_sqlite3.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\System.Management.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\WinRT.Runtime.dll"; DestDir: "{app}"; Flags: ignoreversion
+; Source: "bin\x64\Release\net10.0-windows10.0.19041.0\geodata.db"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
+
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\geodata.db"; DestDir: "{app}"; DestName: "geodata.db"; Permissions: users-modify; Flags: ignoreversion; Tasks: geode
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\geodata_at.db"; DestDir: "{app}"; DestName: "geodata.db"; Permissions: users-modify; Flags: ignoreversion; Tasks: geoat
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\geodata_ch.db"; DestDir: "{app}"; DestName: "geodata.db"; Permissions: users-modify; Flags: ignoreversion; Tasks: geoch
+
 
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\client_secret.json"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion  
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\adb_file.ico"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\LibreHelper\*.*"; DestDir: "{app}\LibreHelper"; Permissions: users-modify; Flags: ignoreversion  
-;Source: "MännlicheVornamen.txt"; DestDir: "{userappdata}\{#MyAppName}"; Flags: onlyifdoesntexist
-;Source: "WeiblicheVornamen.txt"; DestDir: "{userappdata}\{#MyAppName}"; Flags: onlyifdoesntexist
 
 [Icons]
 Name: "{autodesktop}\{#MyAppLong}"; Filename: "{app}\{#MyAppName}.exe"; Tasks: desktopicon
@@ -96,8 +100,13 @@ Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppName}.exe\SupportedType
 [Tasks]
 Name: fileassoc; Description: {cm:AssocFileExtension,{#MyAppName},.adb}
 Name: desktopicon; Description: {cm:CreateDesktopIcon}
+Name: geode; Description: "Deutschland"; GroupDescription: "{cm:GeoGroupDesc}"; Flags: exclusive
+Name: geoat; Description: "Österreich"; GroupDescription: "{cm:GeoGroupDesc}"; Flags: exclusive unchecked
+Name: geoch; Description: "Schweiz"; GroupDescription: "{cm:GeoGroupDesc}"; Flags: exclusive unchecked
+Name: geono; Description: "Keines"; GroupDescription: "{cm:GeoGroupDesc}"; Flags: exclusive unchecked
 
-;[InstallDelete]
+[InstallDelete]
+Type: files; Name: "{app}\geodata.db"; Tasks: geono
 ;Type: filesandordirs; Name: "{userappdata}\{#MyAppName}\token.json";
 ;Type: files; Name: "{app}\System.Data.SQLite.dll"
 ;Type: files; Name: "{app}\SQLite.Interop.dll"
@@ -113,6 +122,8 @@ ConfirmUninstall=Möchtest du '%1' von deinem PC entfernen? Eine Deinstallation i
 [CustomMessages]
 RemoveSettings=Möchtest du die Einstellungsdateien ebenfalls entfernen?
 Description=Adressen-Datenbank
+;Eintrag für die Tasks-Seite mit vorangestelltem Zeilenumbruch:
+GeoGroupDesc=%nWelches Straßenverzeichnis soll installiert werden?
 
 [Code]
 procedure CurUninstallStepChanged (CurUninstallStep: TUninstallStep);

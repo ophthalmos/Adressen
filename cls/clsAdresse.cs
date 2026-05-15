@@ -50,7 +50,7 @@ public class Adresse : IContactEntity
     }
 
     [MaxLength(50)]
-    [DisplayName("Präfix")]
+    [DisplayName("Titel")]
     public string? Praefix
     {
         get; set;
@@ -211,6 +211,9 @@ public class Adresse : IContactEntity
 
     // --- 2. Ausgeblendete Navigation Properties ---
 
+    //[Browsable(false)]
+    public bool Reminder { get; set; } = true; // Standardmäßig aktivieren wir die Erinnerung für bestehende/neue Adressen
+
     [Browsable(false)]
     public virtual ICollection<Gruppe> Gruppen { get; set; } = [];
 
@@ -223,6 +226,8 @@ public class Adresse : IContactEntity
         get; set;
     }
 
+    [Browsable(false)]
+    public DateTime? LastModified { get; set; } = DateTime.UtcNow;
 
     // --- 3. IContactEntity Implementierung (Ausgeblendet für Grid) ---
 
@@ -305,6 +310,7 @@ public class Adresse : IContactEntity
             nameof(Grussformel) => Grussformel,
             nameof(Schlussformel) => Schlussformel,
             nameof(Geburtstag) => Geburtstag,
+            nameof(Reminder) => Reminder,
             nameof(Mail1) => Mail1,
             nameof(Mail2) => Mail2,
             nameof(Telefon1) => Telefon1,
@@ -346,6 +352,11 @@ public class Adresse : IContactEntity
             case nameof(Fax): Fax = value; break;
             case nameof(Internet): Internet = value; break;
             case nameof(Notizen): Notizen = value; break;
+            case nameof(Reminder):
+                if (bool.TryParse(value, out var bValue)) { Reminder = bValue; }
+                else if (value == "1") { Reminder = true; }
+                else if (value == "0") { Reminder = false; }
+                break;
             default: break; // Unbekannte Spalten einfach ignorieren
         }
     }

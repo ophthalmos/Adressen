@@ -13,10 +13,6 @@ internal record LegacyRawData(int Id, string? Gruppen, string? Dokumente, string
 
 internal static class DatabaseMigrator
 {
-    // Definiere hier, ab welcher Version NOCASE aktiv sein soll.
-    // Wenn AppSettings.DatabaseSchemaVersion z.B. 2 ist, wird das Update ausgeführt.
-    private const int VersionIntroducingNoCase = 3;
-
     public static int GetDatabaseVersion(string filePath)
     {
         if (!File.Exists(filePath)) { return AppSettings.DatabaseSchemaVersion; }
@@ -36,7 +32,6 @@ internal static class DatabaseMigrator
     internal static bool MigrateLegacyData(AdressenDbContext context)
     {
         if (context == null) { return false; }
-
         var connectionString = context.Database.GetConnectionString();
         var currentDbVersion = 0;
         try
@@ -47,6 +42,8 @@ internal static class DatabaseMigrator
             currentDbVersion = Convert.ToInt32(cmd.ExecuteScalar() ?? 0);
         }
         catch { /* Ignorieren */ }
+
+        //MessageBox.Show($"User_version = {currentDbVersion}.\nDatabaseSchemaVersion = {AppSettings.DatabaseSchemaVersion}.");
 
         if (currentDbVersion >= AppSettings.DatabaseSchemaVersion) { return false; }
 
@@ -110,16 +107,21 @@ internal static class DatabaseMigrator
                 .Where(p => p.Name != "Id"
                             && !Attribute.IsDefined(p, typeof(NotMappedAttribute))
                             && !p.GetAccessors().Any(x => x.IsVirtual));
-
             foreach (var prop in entityProperties)
             {
                 if (!dbColumns.Contains(prop.Name))
                 {
-                    context.Database.ExecuteSqlRaw($"ALTER TABLE Adressen ADD COLUMN \"{prop.Name}\" TEXT");
+                    var columnType = prop.PropertyType == typeof(bool) ? "INTEGER DEFAULT 1" : "TEXT";
+                    context.Database.ExecuteSqlRaw($"ALTER TABLE Adressen ADD COLUMN \"{prop.Name}\" {columnType}");
+
+                    // Sicherheitshalber NULL-Werte bei bestehenden Bool-Spalten mit 1 überschreiben
+                    if (prop.PropertyType == typeof(bool))
+                    {
+                        context.Database.ExecuteSqlRaw($"UPDATE Adressen SET \"{prop.Name}\" = 1 WHERE \"{prop.Name}\" IS NULL");
+                    }
                     changesMade = true;
                 }
             }
-
             // 1.3 Hilfstabellen sicherstellen
             // Hinweis: Da FKs jetzt OFF sind, laufen diese Befehle durch, auch wenn die Referenzen "krumm" sind.
             context.Database.ExecuteSqlRaw(@"CREATE TABLE IF NOT EXISTS ""Fotos"" (""Id"" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, ""AdressId"" INTEGER NOT NULL UNIQUE, ""Fotodaten"" BLOB, FOREIGN KEY(""AdressId"") REFERENCES ""Adressen""(""Id"") ON DELETE CASCADE);");
@@ -136,7 +138,7 @@ internal static class DatabaseMigrator
             // PHASE 2: Table Rebuild (Hier werden die kaputten Referenzen korrigiert)
             // ---------------------------------------------------------
 
-            if (currentDbVersion < VersionIntroducingNoCase)
+            if (currentDbVersion < 3)  // Version Introducing NoCase = 3
             {
                 context.SaveChanges();
 
@@ -167,6 +169,7 @@ internal static class DatabaseMigrator
                     ""Grussformel"" TEXT COLLATE NOCASE,
                     ""Schlussformel"" TEXT COLLATE NOCASE,
                     ""Geburtstag"" TEXT,
+                    ""Reminder"" INTEGER DEFAULT 1,
                     ""Mail1"" TEXT COLLATE NOCASE,
                     ""Mail2"" TEXT COLLATE NOCASE,
                     ""Telefon1"" TEXT COLLATE NOCASE,
@@ -174,12 +177,13 @@ internal static class DatabaseMigrator
                     ""Mobil"" TEXT COLLATE NOCASE,
                     ""Fax"" TEXT COLLATE NOCASE,
                     ""Internet"" TEXT COLLATE NOCASE,
-                    ""Notizen"" TEXT COLLATE NOCASE
+                    ""Notizen"" TEXT COLLATE NOCASE,
+                    ""LastModified"" TEXT
                 );";
                 context.Database.ExecuteSqlRaw(createSql);
 
                 // 2.4 Daten kopieren
-                var columns = "\"Id\", \"Anrede\", \"Praefix\", \"Nachname\", \"Vorname\", \"Zwischenname\", \"Nickname\", \"Suffix\", \"Unternehmen\", \"Position\", \"Strasse\", \"PLZ\", \"Ort\", \"Postfach\", \"Land\", \"Betreff\", \"Grussformel\", \"Schlussformel\", \"Geburtstag\", \"Mail1\", \"Mail2\", \"Telefon1\", \"Telefon2\", \"Mobil\", \"Fax\", \"Internet\", \"Notizen\"";
+                var columns = "\"Id\", \"Anrede\", \"Praefix\", \"Nachname\", \"Vorname\", \"Zwischenname\", \"Nickname\", \"Suffix\", \"Unternehmen\", \"Position\", \"Strasse\", \"PLZ\", \"Ort\", \"Postfach\", \"Land\", \"Betreff\", \"Grussformel\", \"Schlussformel\", \"Geburtstag\", \"Reminder\", \"Mail1\", \"Mail2\", \"Telefon1\", \"Telefon2\", \"Mobil\", \"Fax\", \"Internet\", \"Notizen\", \"LastModified\"";
                 context.Database.ExecuteSqlRaw($"INSERT INTO \"Adressen\" ({columns}) SELECT {columns} FROM \"{backupTableName}\"");
 
                 // ---------------------------------------------------------
@@ -250,11 +254,30 @@ internal static class DatabaseMigrator
     SELECT ag.""AdressenId"", ag.""GruppenId"" 
     FROM ""AdresseGruppen_Backup"" ag
     WHERE EXISTS (SELECT 1 FROM ""Adressen"" a WHERE a.""Id"" = ag.""AdressenId"")
-      AND EXISTS (SELECT 1 FROM ""Gruppen"" g WHERE g.""Id"" = ag.""GruppenId"")");
-
+    AND EXISTS (SELECT 1 FROM ""Gruppen"" g WHERE g.""Id"" = ag.""GruppenId"")");
                 context.Database.ExecuteSqlRaw("DROP TABLE \"AdresseGruppen_Backup\"");
-
                 changesMade = true;
+            }
+
+            if (currentDbVersion < 4)
+            {
+                var dbColumnsCheck = GetTableColumns(context, "Adressen");
+                if (!dbColumnsCheck.Contains("Reminder"))
+                {
+                    context.Database.ExecuteSqlRaw("ALTER TABLE Adressen ADD COLUMN \"Reminder\" INTEGER DEFAULT 1");
+                    context.Database.ExecuteSqlRaw("UPDATE Adressen SET \"Reminder\" = 1 WHERE \"Reminder\" IS NULL");
+                    changesMade = true;
+                }
+            }
+
+            if (currentDbVersion < 5)
+            {
+                var dbColumnsV5 = GetTableColumns(context, "Adressen");
+                if (!dbColumnsV5.Contains("LastModified"))
+                {
+                    context.Database.ExecuteSqlRaw("ALTER TABLE Adressen ADD COLUMN \"LastModified\" TEXT");
+                    changesMade = true;  // Kein UPDATE – bestehende Datensätze bleiben NULL
+                }
             }
 
             // Schema Version setzen

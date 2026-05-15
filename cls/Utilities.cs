@@ -16,8 +16,6 @@ namespace Adressen.cls;
 
 internal static class Utils
 {
-    public static List<string> SearchHistory { get; } = [];
-
     public static void MsgTaskDlg(nint hwnd, string heading, string message, TaskDialogIcon? icon = null)
     {
         TaskDialog.ShowDialog(hwnd, new TaskDialogPage() { Caption = Application.ProductName, SizeToContent = true, Heading = heading, Text = message, Icon = icon ?? TaskDialogIcon.None, AllowCancel = true, Buttons = { TaskDialogButton.OK } });
@@ -83,16 +81,13 @@ internal static class Utils
                 if (owner is Control c) { c.Cursor = Cursors.Default; }
             }
         };
-
         TaskDialog.ShowDialog(owner, pageProgress);
         return success;
     }
 
-    public static bool IsArrowKeyDown()
-    {
-        // Das bitweise UND mit 0x8000 prüft das höchste Bit. Ist es gesetzt, wird die Taste exakt jetzt physisch gedrückt gehalten.
-        return (NativeMethods.GetAsyncKeyState(NativeMethods.VK_UP) & 0x8000) != 0 ||
-               (NativeMethods.GetAsyncKeyState(NativeMethods.VK_DOWN) & 0x8000) != 0;
+    public static bool IsArrowKeyUpDownDown()
+    {   // Das bitweise UND mit 0x8000 prüft das höchste Bit. Ist es gesetzt, wird die Taste exakt jetzt physisch gedrückt gehalten.
+        return (NativeMethods.GetAsyncKeyState(NativeMethods.VK_UP) & 0x8000) != 0 || (NativeMethods.GetAsyncKeyState(NativeMethods.VK_DOWN) & 0x8000) != 0;
     }
 
     public static void SortContacts(BindingList<Contact>? contacts)
@@ -158,8 +153,7 @@ internal static class Utils
     {
         var heute = DateOnly.FromDateTime(DateTime.Today);
         var result = new List<(DateOnly Datum, string Name, int Alter, int Tage, string Id)>();
-
-        foreach (var contact in contacts.Where(c => c.BirthdayDate.HasValue))
+        foreach (var contact in contacts.Where(c => c.BirthdayDate.HasValue && c.Reminder))
         {
             var gebDatum = contact.BirthdayDate!.Value;
             var targetYear = heute.Year;
@@ -240,33 +234,18 @@ internal static class Utils
         catch (Exception ex) when (ex is Win32Exception || ex is InvalidOperationException) { ErrTaskDlg(handle, ex); }
     }
 
-    //internal static void StartLink(nint handle, string url)
-    //{
-    //    try
-    //    {
-    //        if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
-    //        {
-    //            ProcessStartInfo psi = new(url) { UseShellExecute = true };
-    //            Process.Start(psi);
-    //        }
-    //        else { MsgTaskDlg(handle, "Ungültiger Link!", "'" + url + "' ist keine gültige URL.", TaskDialogIcon.ShieldWarningYellowBar); }
-    //    }
-    //    catch (Exception ex) when (ex is Win32Exception || ex is InvalidOperationException) { ErrTaskDlg(handle, ex); }
-    //}
-
     internal static void StartLink(nint handle, string url)
     {
         try
         {
-            if (Uri.TryCreate(url, UriKind.Absolute, out var uriResult) &&
-               (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps))
+            if (Uri.TryCreate(url, UriKind.Absolute, out var uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps))
             {
                 var psi = new ProcessStartInfo(url) { UseShellExecute = true };
                 Process.Start(psi);
             }
-            else { MsgTaskDlg(handle, "Ungültiger Link!", "'" + url + "' ist keine gültige URL.", TaskDialogIcon.ShieldWarningYellowBar); }
+            else { MsgTaskDlg(handle, "Ungültiger Link!", $"'{url}' ist keine gültige URL.", TaskDialogIcon.ShieldWarningYellowBar); }
         }
-        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException) { ErrTaskDlg(handle, ex); }
+        catch (Exception ex) { ErrTaskDlg(handle, ex); }
     }
 
     internal static async Task<bool> GoogleConnectionCheckAsync(nint hwnd, string path)
@@ -683,7 +662,7 @@ internal static class Utils
         return null;
     }
 
-    internal static (bool IsYes, bool IsNo, bool IsCancelled) YesNo_TaskDialog(IWin32Window? owner, string caption, string heading, string text, string yes = "", string no = "", bool defBtn = true)
+    internal static (bool IsYes, bool IsNo, bool IsCancelled) YesNo_TaskDialog(IWin32Window? owner, string caption, string heading, string text, string yes = "", string no = "")
     {
         var yesButton = string.IsNullOrEmpty(yes) ? TaskDialogButton.Yes : new TaskDialogButton(yes);
         var noButton = string.IsNullOrEmpty(no) ? TaskDialogButton.No : new TaskDialogButton(no);
@@ -694,7 +673,6 @@ internal static class Utils
             Text = text,
             Icon = new TaskDialogIcon(Properties.Resources.question32),
             Buttons = { yesButton, noButton },
-            DefaultButton = defBtn ? yesButton : noButton,
             AllowCancel = true,
             SizeToContent = true
         };
@@ -1043,16 +1021,10 @@ internal static class Utils
         return $"…{suffix}";
     }
 
-    public static void AddToSearchHistory(string searchTerm)
-    {
-        if (string.IsNullOrWhiteSpace(searchTerm)) { return; }
-        // Falls der Begriff schon existiert, entfernen, damit er gleich wieder nach oben rutscht
-        SearchHistory.Remove(searchTerm);
-        // Den neuesten Suchbegriff immer an die erste Stelle setzen
-        SearchHistory.Insert(0, searchTerm);
-        // Historie auf z. B. 10 Einträge begrenzen
-        if (SearchHistory.Count > 10) { SearchHistory.RemoveAt(SearchHistory.Count - 1); }
-    }
+    //public static void SetImage(ToolStripItem item, Image img)
+    //{
+    //    if (item != null && img != null) { item.Image = img; }
+    //}
 
     public static void SetPlaceholder(this TextBoxBase control, string text) => _ = NativeMethods.SendMessage(control.Handle, NativeMethods.EM_SETCUEBANNER, 0, text);  // maskedTextBox
 
@@ -1108,42 +1080,4 @@ internal static class Utils
         var screenCenter = control.PointToScreen(clientCenter);
         Cursor.Position = screenCenter;
     }
-}
-
-public interface IContactEntity
-{
-    string UniqueId
-    {
-        get;
-    }
-    string DisplayName
-    {
-        get;
-    }
-    string SearchText
-    {
-        get;
-    }
-    DateOnly? BirthdayDate
-    {
-        get;
-    }
-    IList<string> GroupList
-    {
-        get;
-    }
-    string? Vorname
-    {
-        get; set;
-    }
-    string? Nachname
-    {
-        get; set;
-    }
-    string? Mail1
-    {
-        get; set;
-    }
-    Task<Image?> GetPhotoAsync(CancellationToken token = default);
-    void ResetSearchCache();
 }

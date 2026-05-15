@@ -10,6 +10,8 @@ internal static partial class NativeMethods
     internal const int EM_SETRECT = 0x00B3;
     internal const int EM_SETMARGINS = 0xD3;
     internal const int WM_SETFONT = 0x0030;
+    internal const int WM_UNDO = 0x304;
+    internal const int EM_CANUNDO = 0x00C6;
     internal const int VK_CONTROL = 0x11;
     internal const int EM_SETCUEBANNER = 0x1501;
     internal const int WM_SETTINGCHANGE = 0x001A;
@@ -17,6 +19,7 @@ internal static partial class NativeMethods
     internal const int EM_GETRECT = 0x00B2;
     internal const uint WM_SETREDRAW = 0x000B; // Typ auf uint geändert, passend zur Signatur
     internal const int WM_PAINT = 0x000F;
+    internal const int WM_PASTE = 0x0302;
     internal const int WM_PRINTCLIENT = 0x0318;
     internal const int PRF_CLIENT = 0x04;
     internal const int PRF_ERASEBKGND = 0x08;

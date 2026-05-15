@@ -36,6 +36,7 @@ partial class FrmGroupFilter
         labelHeader = new Label();
         tableLayoutPanel = new TableLayoutPanel();
         panelParent = new Panel();
+        chckBxRefine = new CheckBox();
         panelBottom.SuspendLayout();
         panelTop.SuspendLayout();
         panelParent.SuspendLayout();
@@ -44,18 +45,19 @@ partial class FrmGroupFilter
         // panelBottom
         // 
         panelBottom.BackColor = SystemColors.ControlLight;
+        panelBottom.Controls.Add(chckBxRefine);
         panelBottom.Controls.Add(buttonAll);
         panelBottom.Controls.Add(buttonFilter);
         panelBottom.Controls.Add(buttonCancel);
         panelBottom.Dock = DockStyle.Bottom;
         panelBottom.Location = new Point(0, 407);
         panelBottom.Name = "panelBottom";
-        panelBottom.Size = new Size(280, 45);
+        panelBottom.Size = new Size(280, 74);
         panelBottom.TabIndex = 5;
         // 
         // buttonAll
         // 
-        buttonAll.Location = new Point(12, 6);
+        buttonAll.Location = new Point(12, 35);
         buttonAll.Name = "buttonAll";
         buttonAll.Size = new Size(46, 27);
         buttonAll.TabIndex = 1;
@@ -66,7 +68,7 @@ partial class FrmGroupFilter
         // buttonFilter
         // 
         buttonFilter.DialogResult = DialogResult.OK;
-        buttonFilter.Location = new Point(64, 6);
+        buttonFilter.Location = new Point(64, 35);
         buttonFilter.Name = "buttonFilter";
         buttonFilter.Size = new Size(114, 27);
         buttonFilter.TabIndex = 0;
@@ -77,7 +79,7 @@ partial class FrmGroupFilter
         // buttonCancel
         // 
         buttonCancel.DialogResult = DialogResult.Cancel;
-        buttonCancel.Location = new Point(184, 6);
+        buttonCancel.Location = new Point(184, 35);
         buttonCancel.Name = "buttonCancel";
         buttonCancel.Size = new Size(84, 27);
         buttonCancel.TabIndex = 0;
@@ -136,13 +138,24 @@ partial class FrmGroupFilter
         panelParent.Size = new Size(280, 374);
         panelParent.TabIndex = 3;
         // 
+        // chckBxRefine
+        // 
+        chckBxRefine.AutoSize = true;
+        chckBxRefine.Enabled = false;
+        chckBxRefine.Location = new Point(16, 6);
+        chckBxRefine.Name = "chckBxRefine";
+        chckBxRefine.Size = new Size(252, 23);
+        chckBxRefine.TabIndex = 2;
+        chckBxRefine.Text = "Mit vorhandenem Filter kombinieren";
+        chckBxRefine.UseVisualStyleBackColor = true;
+        // 
         // FrmGroupFilter
         // 
         AcceptButton = buttonFilter;
         AutoScaleDimensions = new SizeF(7F, 17F);
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = buttonCancel;
-        ClientSize = new Size(280, 452);
+        ClientSize = new Size(280, 481);
         Controls.Add(panelParent);
         Controls.Add(panelTop);
         Controls.Add(panelBottom);
@@ -156,6 +169,7 @@ partial class FrmGroupFilter
         Text = "Nach Gruppenzugehörigkeit filtern";
         Load += FrmGroupFilter_Load;
         panelBottom.ResumeLayout(false);
+        panelBottom.PerformLayout();
         panelTop.ResumeLayout(false);
         panelParent.ResumeLayout(false);
         panelParent.PerformLayout();
@@ -171,4 +185,5 @@ partial class FrmGroupFilter
     private TableLayoutPanel tableLayoutPanel;
     private Panel panelParent;
     private Button buttonAll;
+    private CheckBox chckBxRefine;
 }

@@ -6,9 +6,9 @@ namespace Adressen.cls;
 
 public class AppSettings
 {
-    public const int DatabaseSchemaVersion = 3; // Wird ignoriert (da const)
-    public const int MaxRecentFiles = 10;      // kein JsonIgnore erforderlich
-    public const int TextBoxPadding = 3;
+    public const int DatabaseSchemaVersion = 5; // v5: zuletzt "LastModified" hinzugefügt
+    public const int MaxRecentFiles = 10;   // Wird für JSON-Speicherung nicht verwendet, da es sich um eine Konstante handelt      
+    public const int TextBoxPadding = 3;  // kein JsonIgnore erforderlich
 
     [JsonIgnore]
     public static readonly int[] DefaultColumnWidths =
@@ -98,6 +98,7 @@ public class AppSettings
     public decimal LineHeightFactor { get; set; } = 1.2m;
     public decimal ZipGapFactor { get; set; } = 0.3m;
     public decimal LandGapFactor { get; set; } = 0.3m;
+    public bool AskPrintEnvelope { get; set; } = true;
 
     public bool AskBeforeDelete { get; set; } = true;
     public string ColorScheme { get; set; } = "blue";
