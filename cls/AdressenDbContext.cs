@@ -5,9 +5,6 @@ namespace Adressen.cls;
 internal class AdressenDbContext(string dbPath) : DbContext
 {
     public DbSet<Adresse> Adressen { get; set; } = null!;
-    // Hinweis: Die DbSet<Foto> ist eigentlich optional, da sie über Adresse.Foto erreichbar ist, 
-    // aber es schadet nicht, sie direkt abrufbar zu haben.
-    public DbSet<Foto> Fotos { get; set; } = null!;
     public DbSet<Gruppe> Gruppen { get; set; } = null!;
     public DbSet<Dokument> Dokumente { get; set; } = null!;
 
@@ -51,5 +48,54 @@ internal class AdressenDbContext(string dbPath) : DbContext
                 // Konfiguration des PKs der Verknüpfungstabelle
                 j => j.HasKey("AdressenId", "GruppenId")
             );
+    }
+
+    public async override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        SetLastModified();
+        return await base.SaveChangesAsync(cancellationToken);
+    }
+
+
+    public override int SaveChanges()  // Synchrone Variante absichern (wird z.B. im Migrator verwendet)
+    {
+        SetLastModified();
+        return base.SaveChanges();
+    }
+
+    private void SetLastModified()
+    {
+        // Direkt geänderte Adressen
+        var changedAddresses = ChangeTracker.Entries<Adresse>().Where(e => e.State is EntityState.Modified or EntityState.Added).Select(e => e.Entity).ToHashSet();
+
+        // Indirekte Änderungen über Kind-Objekte: Fotos
+        foreach (var entry in ChangeTracker.Entries<Foto>().Where(e => e.State is EntityState.Modified or EntityState.Added or EntityState.Deleted))
+        {
+            var adressId = entry.State is EntityState.Modified or EntityState.Deleted ? (int)entry.OriginalValues[nameof(Foto.AdressId)]! : entry.Entity.AdressId;
+            var addr = Set<Adresse>().Local.FirstOrDefault(a => a.Id == adressId);
+            if (addr != null) { changedAddresses.Add(addr); }
+        }
+
+        // Indirekte Änderungen über Kind-Objekte: Dokumente
+        foreach (var entry in ChangeTracker.Entries<Dokument>().Where(e => e.State is EntityState.Modified or EntityState.Added or EntityState.Deleted))
+        {
+            var adressId = entry.State == EntityState.Deleted ? (int)entry.OriginalValues[nameof(Dokument.AdressId)]! : entry.Entity.AdressId;
+            var addr = Set<Adresse>().Local.FirstOrDefault(a => a.Id == adressId);
+            if (addr != null) { changedAddresses.Add(addr); }
+        }
+
+        // Indirekte Änderungen über M:N Verknüpfungstabelle: Gruppen
+        foreach (var entry in ChangeTracker.Entries().Where(e => e.Metadata.Name == "AdresseGruppen" && e.State is EntityState.Added or EntityState.Deleted))
+        {
+            // Wir greifen auf den in OnModelCreating definierten FK "AdressenId" zu
+            var adressIdProp = entry.Properties.FirstOrDefault(p => p.Metadata.Name == "AdressenId");
+            if (adressIdProp != null)
+            {
+                var adressId = entry.State == EntityState.Deleted ? (int)adressIdProp.OriginalValue! : (int)adressIdProp.CurrentValue!;
+                var addr = Set<Adresse>().Local.FirstOrDefault(a => a.Id == adressId);  // Local: Funktioniert nur, wenn die Adresse bereits im aktuellen DbContext-Scope geladen wurde                                                                                        
+                if (addr != null) { changedAddresses.Add(addr); }
+            }
+        }
+        foreach (var adresse in changedAddresses) { adresse.LastModified = DateTime.UtcNow; }
     }
 }

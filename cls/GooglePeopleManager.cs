@@ -16,7 +16,7 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
     private static readonly SemaphoreSlim _serviceLock = new(1, 1);
 
     // --- GOOGLE API KONSTANTEN ---
-    private const string CONTACT_PERSON_FIELDS = "names,memberships,nicknames,addresses,phoneNumbers,emailAddresses,biographies,birthdays,urls,organizations,photos,userDefined";
+    private const string CONTACT_PERSON_FIELDS = "names,memberships,nicknames,addresses,phoneNumbers,emailAddresses,biographies,birthdays,urls,organizations,photos,userDefined,metadata";
     private const string GROUP_FIELDS = "name,clientData,groupType";
 
     // System-Gruppen
@@ -64,7 +64,9 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         catch (TokenResponseException ex) { throw new UnauthorizedAccessException("Google Token abgelaufen", ex); }
     }
 
-    public async Task<Contact> CreateContactAsync(Contact contact, Image? profileImage, CancellationToken token = default)
+    //public async Task<Contact> CreateContactAsync(Contact contact, Image? profileImage, CancellationToken token = default)
+        public async Task<Contact> CreateContactAsync(Contact contact, Image? profileImage, ImageFormat? photoFormat, CancellationToken token = default)
+
     {
         var service = await GetServiceAsync(token);
         var personToCreate = new Person
@@ -125,14 +127,20 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         contact.RawGooglePerson = createdPerson;
         contact.ResourceName = createdPerson.ResourceName;
         contact.ETag = createdPerson.ETag;
+        contact.LastModified = createdPerson.Metadata?.Sources?.FirstOrDefault(static s => s.Type == "CONTACT")?.UpdateTimeDateTimeOffset?.UtcDateTime;
 
+        //if (profileImage != null && !string.IsNullOrEmpty(contact.ResourceName))
+        //{
+        //    var (photoUrl, newETag) = await UploadPhotoInternalAsync(service, contact.ResourceName, profileImage, profileImage.RawFormat, token);
+        //    if (!string.IsNullOrEmpty(photoUrl)) { contact.PhotoUrl = photoUrl; }
+        //    if (!string.IsNullOrEmpty(newETag)) { contact.ETag = newETag; }
+        //}
         if (profileImage != null && !string.IsNullOrEmpty(contact.ResourceName))
         {
-            var photoUrl = await UploadPhotoInternalAsync(service, contact.ResourceName, profileImage, profileImage.RawFormat, token);
-            if (photoUrl != null)
-            {
-                contact.PhotoUrl = photoUrl;
-            }
+            var format = photoFormat ?? profileImage.RawFormat;  // Fallback falls doch mal kein Format mitgegeben wird
+            var (photoUrl, newETag) = await UploadPhotoInternalAsync(service, contact.ResourceName, profileImage, format, token);
+            if (!string.IsNullOrEmpty(photoUrl)) { contact.PhotoUrl = photoUrl; }
+            if (!string.IsNullOrEmpty(newETag)) { contact.ETag = newETag; }
         }
         return contact;
     }
@@ -144,7 +152,7 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         var personToUpdate = contact.RawGooglePerson != null
             ? Newtonsoft.Json.JsonConvert.DeserializeObject<Person>(Newtonsoft.Json.JsonConvert.SerializeObject(contact.RawGooglePerson)) ?? new Person()
             : new Person();
-
+        personToUpdate.Metadata = null;  // beim Schreiben das Metadata-Objekt aus dem Payload entfernen, sonst PreconditionFailed-Konflikt
         personToUpdate.ResourceName = contact.ResourceName;
         personToUpdate.ETag = contact.ETag;
 
@@ -220,10 +228,7 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
             }
             else
             {
-                if (primaryBday != null)
-                {
-                    personToUpdate.Birthdays.Remove(primaryBday);
-                }
+                if (primaryBday != null) { personToUpdate.Birthdays.Remove(primaryBday); }
             }
         }
 
@@ -247,10 +252,7 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
             var primaryUrl = personToUpdate.Urls.FirstOrDefault(u => u.Type == TYPE_HOMEPAGE || u.Metadata?.Primary == true) ?? personToUpdate.Urls.FirstOrDefault();
             if (string.IsNullOrWhiteSpace(contact.Internet))
             {
-                if (primaryUrl != null)
-                {
-                    personToUpdate.Urls.Remove(primaryUrl);
-                }
+                if (primaryUrl != null) { personToUpdate.Urls.Remove(primaryUrl); }
             }
             else
             {
@@ -344,8 +346,10 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
             var updateRequest = service.People.UpdateContact(personToUpdate, contact.ResourceName);
             updateRequest.UpdatePersonFields = string.Join(",", changedFields);
             var updatedPerson = await updateRequest.ExecuteAsync(token);
+            contact.RawGooglePerson = updatedPerson;
             contact.ETag = updatedPerson.ETag;
             contact.ResourceName = updatedPerson.ResourceName;
+            contact.LastModified = updatedPerson.Metadata?.Sources?.FirstOrDefault(static s => s.Type == "CONTACT")?.UpdateTimeDateTimeOffset?.UtcDateTime;
             if (checkEmptyGroups && groupsToRemoveToCheck.Count > 0) { await CheckAndDeleteEmptyGroupsInternalAsync(service, groupsToRemoveToCheck, token); }
         }
         return contact;
@@ -390,19 +394,36 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
     // 2. FOTO API
     // ========================================================================
 
-    public async Task<string?> UpdateContactPhotoAsync(string resourceName, Image image, ImageFormat format, CancellationToken token = default)
+    public async Task<(string? PhotoUrl, string? ETag)> UpdateContactPhotoAsync(
+        string resourceName, Image image, ImageFormat format, CancellationToken token = default)
     {
         var service = await GetServiceAsync(token);
         return await UploadPhotoInternalAsync(service, resourceName, image, format, token);
     }
 
-    public async Task<string?> DeleteContactPhotoAsync(string resourceName, CancellationToken token = default)
+    public async Task<(string? PhotoUrl, string? ETag)> DeleteContactPhotoAsync(string resourceName, CancellationToken token = default)
     {
-        var service = await GetServiceAsync(token);
-        var request = service.People.DeleteContactPhoto(resourceName);
-        request.PersonFields = "photos";
-        var response = await request.ExecuteAsync(token);
-        return response?.Person?.Photos?.FirstOrDefault()?.Url;
+        try
+        {
+            var service = await GetServiceAsync(token);
+            var request = service.People.DeleteContactPhoto(resourceName);
+            request.PersonFields = "photos,metadata";
+
+            var response = await request.ExecuteAsync(token);
+            var person = response?.Person;
+
+            return (person?.Photos?.FirstOrDefault()?.Url, person?.ETag);
+        }
+        catch (Google.GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            // Foto ist serverseitig bereits gelöscht. Wir fordern die Personendaten manuell neu an, um den korrekten ETag zu erhalten.
+            var service = await GetServiceAsync(token);
+            var personRequest = service.People.Get(resourceName);
+            personRequest.PersonFields = "metadata";
+            var currentPerson = await personRequest.ExecuteAsync(token);
+
+            return (null, currentPerson?.ETag);
+        }
     }
 
     // ========================================================================
@@ -507,7 +528,8 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         }
     }
 
-    private static async Task<string?> UploadPhotoInternalAsync(PeopleServiceService service, string resourceName, Image image, ImageFormat format, CancellationToken token)
+    private static async Task<(string? PhotoUrl, string? ETag)> UploadPhotoInternalAsync(
+        PeopleServiceService service, string resourceName, Image image, ImageFormat format, CancellationToken token)
     {
         using var clonedImage = new Bitmap(image);
         using var ms = new MemoryStream();
@@ -520,7 +542,9 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
             PersonFields = "photos"
         };
         var response = await service.People.UpdateContactPhoto(updatePhotoRequest, resourceName).ExecuteAsync(token);
-        return response?.Person?.Photos?.FirstOrDefault()?.Url;
+        var photoUrl = response?.Person?.Photos?.FirstOrDefault()?.Url;
+        var etag = response?.Person?.ETag;
+        return (photoUrl, etag);
     }
 
     private static Contact MapPersonToContact(Person person, Dictionary<string, string> groupMap)
@@ -590,6 +614,8 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
             }
         }
         newContact.GroupNames = [.. groupNames];
+
+        newContact.LastModified = person.Metadata?.Sources?.FirstOrDefault(static s => s.Type == "CONTACT")?.UpdateTimeDateTimeOffset?.UtcDateTime;
         return newContact;
     }
 

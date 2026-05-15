@@ -7,12 +7,12 @@ using Google.Apis.PeopleService.v1.Data;
 namespace Adressen.cls;
 
 [AttributeUsage(AttributeTargets.Property)]
-internal class GoogleFieldAttribute(string category) : Attribute
+public class GoogleFieldAttribute(string category) : Attribute
 {
     public string Category { get; } = category;
 }
 
-internal class Contact : ICloneable, IContactEntity
+public class Contact : ICloneable, IContactEntity
 {
     private string? _searchTextCache;
     private static readonly ConcurrentDictionary<string, byte[]> _photoCache = new(); // Statischer Cache, der für die gesamte Laufzeit der App existiert
@@ -219,7 +219,14 @@ internal class Contact : ICloneable, IContactEntity
     {
         get; set;
     }
-    [Browsable(false)] public string ETag { get; set; } = string.Empty;
+    [Browsable(false)]
+    public string ETag { get; set; } = string.Empty;
+
+    [Browsable(false)]
+    public DateTime? LastModified
+    {
+        get; set;
+    }
 
     [Browsable(false)]
     [Newtonsoft.Json.JsonIgnore]
@@ -264,32 +271,9 @@ internal class Contact : ICloneable, IContactEntity
 
     public void ResetSearchCache() => _searchTextCache = null;
 
-    //public async Task<Image?> GetPhotoAsync()
-    //{
-    //    if (string.IsNullOrEmpty(PhotoUrl)) { return null; }
-
-    //    try
-    //    {
-    //        // 1. Prüfen, ob das Bild schon im Speicher liegt
-    //        if (!_photoCache.TryGetValue(PhotoUrl, out var bytes))
-    //        {
-    //            // 2. Falls nicht: Herunterladen und sicher im Cache ablegen
-    //            bytes = await HttpService.Client.GetByteArrayAsync(PhotoUrl);
-    //            _photoCache.TryAdd(PhotoUrl, bytes);
-    //        }
-
-    //        using var ms = new MemoryStream(bytes);
-    //        return new Bitmap(ms);
-    //    }
-    //    catch { return null; }
-    //}
-
     public async Task<Image?> GetPhotoAsync(CancellationToken token = default)
     {
-        if (string.IsNullOrEmpty(PhotoUrl))
-        {
-            return null;
-        }
+        if (string.IsNullOrEmpty(PhotoUrl)) { return null; }
 
         try
         {
@@ -309,15 +293,8 @@ internal class Contact : ICloneable, IContactEntity
             using var temp = Image.FromStream(ms);
             return new Bitmap(temp);  // Deep Copy, damit der MemoryStream sofort geschlossen werden kann
         }
-        catch (TaskCanceledException)
-        {
-            // Der Download wurde durch das schnelle Scrollen im DataGridView planmäßig abgebrochen
-            return null;
-        }
-        catch
-        {
-            return null;
-        }
+        catch (TaskCanceledException) { return null; }  // Der Download wurde durch das schnelle Scrollen im DataGridView planmäßig abgebrochen
+        catch { return null; }
     }
 
     public object Clone()
@@ -349,6 +326,11 @@ internal class Contact : ICloneable, IContactEntity
         if (other.GroupNames != null) { GroupNames.AddRange(other.GroupNames); }
 
         ResetSearchCache();
+    }
+
+    public static void RemoveFromPhotoCache(string? photoUrl)
+    {
+        if (!string.IsNullOrEmpty(photoUrl)) { _photoCache.TryRemove(photoUrl, out _); }
     }
 
     // --- AUTOMATISCH: Nutzt die [GoogleField] Attribute zur Erkennung ---

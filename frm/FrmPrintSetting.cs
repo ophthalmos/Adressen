@@ -94,20 +94,18 @@ public partial class FrmPrintSetting : Form
             printDocument.PrinterSettings.PrinterName = _settings.PrintDevice;
             if (printDocument.PrinterSettings.IsValid)
             {
-                // Papierschächte laden
-                cbSources.Items.Clear();
+                cbSources.Items.Clear();  // Papierschächte laden
                 foreach (PaperSource ps in printDocument.PrinterSettings.PaperSources) { cbSources.Items.Add(ps.SourceName); }
-                //Utils.AdjustComboBoxDropDownWidth(cbSources);
-                // Papierformate laden
-                cbPapersize.Items.Clear();
+                if (!string.IsNullOrEmpty(_settings.PrintSource))
+                {
+                    var selectedSource = printDocument.PrinterSettings.PaperSources.Cast<PaperSource>().FirstOrDefault(ps => ps.SourceName == _settings.PrintSource);
+                    if (selectedSource != null) { printDocument.DefaultPageSettings.PaperSource = selectedSource; }
+                }
+                cbPapersize.Items.Clear();  // Papierformate laden
                 foreach (PaperSize ps in printDocument.PrinterSettings.PaperSizes) { if (ps.Kind != PaperKind.Custom) { cbPapersize.Items.Add(ps.PaperName); } }
                 Utils.AdjustComboBoxDropDownWidth(cbPapersize);
-
-                // Initial Landscape setzen für Preview
-                printDocument.DefaultPageSettings.Landscape = _settings.PrintLandscape;
-
-                // Papierformat im PrintDocument setzen (wichtig für Preview)
-                if (!string.IsNullOrEmpty(_settings.PrintFormat))
+                printDocument.DefaultPageSettings.Landscape = _settings.PrintLandscape;  // Initial Landscape setzen für Preview
+                if (!string.IsNullOrEmpty(_settings.PrintFormat))  // Papierformat im PrintDocument setzen (wichtig für Preview)
                 {
                     foreach (PaperSize size in printDocument.PrinterSettings.PaperSizes)
                     {
@@ -129,16 +127,12 @@ public partial class FrmPrintSetting : Form
 
     private void UpdateUiState()
     {
-        // Logik für Abhängigkeiten
         ckbAnredeOberhalb.Enabled = ckbAnredePrint.Checked;
-
         var landActive = ckbLandPrint.Checked;
         lblLandGapFactor.Enabled = landActive;
         nudLandGapFactor.Enabled = landActive;
         lblLandRows.Enabled = landActive;
         ckbLandGROSS.Enabled = landActive;
-
-        // Portrait/Landscape Visualisierung
         picPortrait.BorderStyle = rbPortrait.Checked ? BorderStyle.FixedSingle : BorderStyle.None;
         picLandscape.BorderStyle = rbLandscape.Checked ? BorderStyle.FixedSingle : BorderStyle.None;
     }
@@ -146,7 +140,42 @@ public partial class FrmPrintSetting : Form
     // --- Event Handler ---
     private void PrintPreviewControl_ZoomChanged(object sender, EventArgs e) => UpdateZoomDisplay();
 
-    private void BtnSave_Click(object sender, EventArgs e) => printDocument.Print();
+    private void BtnSave_Click(object sender, EventArgs e)
+    {
+        printDocument.PrinterSettings.Copies = (short)nudCopies.Value;
+        if (_settings.AskPrintEnvelope)
+        {
+            var btnPrint = new TaskDialogButton("&Drucken");
+            var checkBox = new TaskDialogVerificationCheckBox()
+            {
+                Text = "Immer fragen",
+                Checked = _settings.AskPrintEnvelope
+            };
+            var page = new TaskDialogPage()
+            {
+                Caption = Text,
+                Heading = "Möchtest du den Druckvorgang starten?",
+                Icon = new TaskDialogIcon(Properties.Resources.Print32),
+                SizeToContent = true,
+                Text = $"Drucker:  {printDocument.PrinterSettings.PrinterName}\n" +
+                       $"Format:   {printDocument.DefaultPageSettings.PaperSize?.PaperName ?? "Unbekannt"}\n" +
+                       $"Quelle:     {printDocument.DefaultPageSettings.PaperSource?.SourceName ?? "Unbekannt"}\n" +
+                       $"Anzahl:     {printDocument.PrinterSettings.Copies}",
+                Buttons = { btnPrint, TaskDialogButton.Cancel },
+                Verification = checkBox,
+                AllowCancel = true
+            };
+            if (TaskDialog.ShowDialog(this, page) != btnPrint) { return; }  // Abbrechen: Methode verlassen, nichts drucken
+            if (!checkBox.Checked)
+            {
+                _settings.AskPrintEnvelope = false;
+                Utils.MsgTaskDlg(Handle, "Hinweis", "Du kannst die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.", new(Properties.Resources.info32));
+            }
+            else if (checkBox.Checked) { _settings.AskPrintEnvelope = true; }
+        }
+        printDocument.Print();  // wird nur erreicht, wenn die Abfrage aus war ODER "Drucken" gewählt wurde
+        DialogResult = DialogResult.OK;
+    }
 
     private void GenericControl_ValueChanged(object sender, EventArgs e)
     {
@@ -164,34 +193,45 @@ public partial class FrmPrintSetting : Form
         timerDebounce.Start(); // wichtig für Performance, damit nicht bei jedem kleinen Tippen sofort neu gerendert wird
     }
 
+    private void NumericUpDown_KeyUp(object sender, KeyEventArgs e)
+    {
+        if (sender is NumericUpDown nud)
+        {
+            if (decimal.TryParse(nud.Text, out var result))
+            {
+                if (result < nud.Minimum) { result = nud.Minimum; }
+                if (result > nud.Maximum) { result = nud.Maximum; }
+                var textBox = nud.Controls.OfType<TextBox>().FirstOrDefault();
+                var selStart = textBox?.SelectionStart ?? 0;   // Die Position *vor* der Wertänderung auslesen und speichern!
+                var selLength = textBox?.SelectionLength ?? 0;
+                nud.Value = result;  // Löst das ValueChanged-Event aus und formatiert den Text neu
+                if (textBox != null)  // Cursor-Position aus den gespeicherten Werten wiederherstellen
+                {
+                    textBox.SelectionStart = selStart;
+                    textBox.SelectionLength = selLength;
+                }
+            }
+        }
+    }
+
     private void CbPrinter_SelectedIndexChanged(object sender, EventArgs e)
     {
         if (!cbPrinter.Visible || !cbPrinter.Focused) { return; }
-
-        // Binding aktualisiert _settings automatisch, aber wir müssen printDocument validieren
-        printDocument.PrinterSettings.PrinterName = cbPrinter.Text;
-
+        printDocument.PrinterSettings.PrinterName = cbPrinter.Text;  // Binding aktualisiert _settings automatisch, printDocument muss validiert werden
         if (!printDocument.PrinterSettings.IsValid)
         {
             Utils.MsgTaskDlg(Handle, "Druckerfehler", $"Der Drucker '{cbPrinter.Text}' ist nicht gültig.");
             return;
         }
-
-        // Papierformate neu laden für gewählten Drucker
-        cbPapersize.Items.Clear();
+        cbPapersize.Items.Clear();  // Papierformate neu laden für gewählten Drucker
         foreach (PaperSize ps in printDocument.PrinterSettings.PaperSizes)
         {
             if (ps.Kind != PaperKind.Custom) { cbPapersize.Items.Add(ps.PaperName); }
         }
-
-        // Papierschächte neu laden
-        cbSources.Items.Clear();
+        cbSources.Items.Clear();  // Papierschächte neu laden
         foreach (PaperSource ps in printDocument.PrinterSettings.PaperSources) { cbSources.Items.Add(ps.SourceName); }
-
-        // Defaults setzen falls leer
-        if (cbPapersize.Items.Count > 0) { cbPapersize.SelectedIndex = 0; }
+        if (cbPapersize.Items.Count > 0) { cbPapersize.SelectedIndex = 0; }  // Defaults setzen falls leer
         if (cbSources.Items.Count > 0) { cbSources.SelectedIndex = 0; }
-
         printPreviewControl.GeneratePreviewSilently();
         UpdateStatusBarInfo();
     }
@@ -199,7 +239,6 @@ public partial class FrmPrintSetting : Form
     private void CbSources_SelectedIndexChanged(object sender, EventArgs e)
     {
         if (!cbSources.Visible || !cbSources.Focused) { return; }
-
         // Mapping Name -> PaperSource Objekt
         if (cbSources.SelectedIndex >= 0 && cbSources.SelectedIndex < printDocument.PrinterSettings.PaperSources.Count)
         {
@@ -508,10 +547,13 @@ public partial class FrmPrintSetting : Form
         // --- 3. Zeichnen mit TextRenderer (Scharfes ClearType) ---
         var textRect = e.Bounds;
         var flags = TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding;
-
         TextRenderer.DrawText(e.Graphics, fontName, displayFont, textRect, textColor, backColor, flags);
-
         e.DrawFocusRectangle();
     }
 
+    private void BtnLineHeightReset_Click(object sender, EventArgs e) => nudLineHeightFactor.Value = 1.50m;
+
+    private void BtnZipGapReset_Click(object sender, EventArgs e) => nudZipGapFactor.Value = 0.30m;
+
+    private void BtnLandGapReset_Click(object sender, EventArgs e) => nudLandGapFactor.Value = 0.30m;
 }

@@ -43,6 +43,9 @@ partial class FrmPrintSetting
         var resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmPrintSetting));
         tabControl = new TabControl();
         printerPage = new TabPage();
+        gbCopies = new GroupBox();
+        lblCopies = new Label();
+        nudCopies = new NumericUpDown();
         gbOrientation = new GroupBox();
         picLandscape = new PictureBox();
         picPortrait = new PictureBox();
@@ -78,6 +81,9 @@ partial class FrmPrintSetting
         tbSender6 = new PaddedTextBox();
         ckbPrintSender = new CheckBox();
         recipientPage = new TabPage();
+        btnLandGapReset = new Button();
+        btnZipGapReset = new Button();
+        btnLineHeightReset = new Button();
         ckbPrintRecipient = new CheckBox();
         lblLineFactor = new Label();
         lblLineHeight = new Label();
@@ -122,6 +128,8 @@ partial class FrmPrintSetting
         timerDebounce = new System.Windows.Forms.Timer(components);
         tabControl.SuspendLayout();
         printerPage.SuspendLayout();
+        gbCopies.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)nudCopies).BeginInit();
         gbOrientation.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)picLandscape).BeginInit();
         ((System.ComponentModel.ISupportInitialize)picPortrait).BeginInit();
@@ -169,6 +177,7 @@ partial class FrmPrintSetting
         // printerPage
         // 
         printerPage.BorderStyle = BorderStyle.FixedSingle;
+        printerPage.Controls.Add(gbCopies);
         printerPage.Controls.Add(gbOrientation);
         printerPage.Controls.Add(gbPrinter);
         printerPage.Location = new Point(4, 26);
@@ -178,6 +187,36 @@ partial class FrmPrintSetting
         printerPage.TabIndex = 0;
         printerPage.Text = "Drucker";
         // 
+        // gbCopies
+        // 
+        gbCopies.Controls.Add(lblCopies);
+        gbCopies.Controls.Add(nudCopies);
+        gbCopies.Location = new Point(197, 112);
+        gbCopies.Name = "gbCopies";
+        gbCopies.Size = new Size(111, 55);
+        gbCopies.TabIndex = 2;
+        gbCopies.TabStop = false;
+        gbCopies.Text = "Exemplare";
+        // 
+        // lblCopies
+        // 
+        lblCopies.AutoSize = true;
+        lblCopies.Location = new Point(6, 27);
+        lblCopies.Name = "lblCopies";
+        lblCopies.Size = new Size(38, 19);
+        lblCopies.TabIndex = 1;
+        lblCopies.Text = "Anz.:";
+        // 
+        // nudCopies
+        // 
+        nudCopies.Location = new Point(50, 25);
+        nudCopies.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+        nudCopies.Name = "nudCopies";
+        nudCopies.Size = new Size(55, 25);
+        nudCopies.TabIndex = 0;
+        nudCopies.TextAlign = HorizontalAlignment.Center;
+        nudCopies.Value = new decimal(new int[] { 1, 0, 0, 0 });
+        // 
         // gbOrientation
         // 
         gbOrientation.Controls.Add(picLandscape);
@@ -186,7 +225,7 @@ partial class FrmPrintSetting
         gbOrientation.Controls.Add(rbPortrait);
         gbOrientation.Location = new Point(8, 112);
         gbOrientation.Name = "gbOrientation";
-        gbOrientation.Size = new Size(300, 54);
+        gbOrientation.Size = new Size(183, 54);
         gbOrientation.TabIndex = 1;
         gbOrientation.TabStop = false;
         gbOrientation.Text = "Ausrichtung";
@@ -195,7 +234,7 @@ partial class FrmPrintSetting
         // 
         picLandscape.BackgroundImageLayout = ImageLayout.Center;
         picLandscape.Image = Properties.Resources.mail;
-        picLandscape.Location = new Point(270, 23);
+        picLandscape.Location = new Point(153, 24);
         picLandscape.Name = "picLandscape";
         picLandscape.Size = new Size(24, 24);
         picLandscape.TabIndex = 3;
@@ -206,7 +245,7 @@ partial class FrmPrintSetting
         // 
         picPortrait.BackgroundImageLayout = ImageLayout.Center;
         picPortrait.Image = Properties.Resources.vertical;
-        picPortrait.Location = new Point(106, 24);
+        picPortrait.Location = new Point(59, 24);
         picPortrait.Name = "picPortrait";
         picPortrait.Size = new Size(24, 24);
         picPortrait.TabIndex = 2;
@@ -217,12 +256,12 @@ partial class FrmPrintSetting
         // 
         rbLandscape.AutoSize = true;
         rbLandscape.Checked = true;
-        rbLandscape.Location = new Point(171, 24);
+        rbLandscape.Location = new Point(89, 24);
         rbLandscape.Name = "rbLandscape";
-        rbLandscape.Size = new Size(99, 23);
+        rbLandscape.Size = new Size(58, 23);
         rbLandscape.TabIndex = 1;
         rbLandscape.TabStop = true;
-        rbLandscape.Text = "Querformat";
+        rbLandscape.Text = "Quer";
         rbLandscape.UseVisualStyleBackColor = true;
         // 
         // rbPortrait
@@ -230,9 +269,9 @@ partial class FrmPrintSetting
         rbPortrait.AutoSize = true;
         rbPortrait.Location = new Point(6, 24);
         rbPortrait.Name = "rbPortrait";
-        rbPortrait.Size = new Size(100, 23);
+        rbPortrait.Size = new Size(59, 23);
         rbPortrait.TabIndex = 0;
-        rbPortrait.Text = "Hochformat";
+        rbPortrait.Text = "Hoch";
         rbPortrait.UseVisualStyleBackColor = true;
         rbPortrait.CheckedChanged += RbPortrait_CheckedChanged;
         // 
@@ -583,6 +622,9 @@ partial class FrmPrintSetting
         // 
         // recipientPage
         // 
+        recipientPage.Controls.Add(btnLandGapReset);
+        recipientPage.Controls.Add(btnZipGapReset);
+        recipientPage.Controls.Add(btnLineHeightReset);
         recipientPage.Controls.Add(ckbPrintRecipient);
         recipientPage.Controls.Add(lblLineFactor);
         recipientPage.Controls.Add(lblLineHeight);
@@ -603,6 +645,36 @@ partial class FrmPrintSetting
         recipientPage.TabIndex = 4;
         recipientPage.Text = "Empfänger";
         recipientPage.UseVisualStyleBackColor = true;
+        // 
+        // btnLandGapReset
+        // 
+        btnLandGapReset.Image = Properties.Resources.arrow_restore16;
+        btnLandGapReset.Location = new Point(287, 117);
+        btnLandGapReset.Name = "btnLandGapReset";
+        btnLandGapReset.Size = new Size(24, 25);
+        btnLandGapReset.TabIndex = 34;
+        btnLandGapReset.UseVisualStyleBackColor = true;
+        btnLandGapReset.Click += BtnLandGapReset_Click;
+        // 
+        // btnZipGapReset
+        // 
+        btnZipGapReset.Image = Properties.Resources.arrow_restore16;
+        btnZipGapReset.Location = new Point(287, 88);
+        btnZipGapReset.Name = "btnZipGapReset";
+        btnZipGapReset.Size = new Size(24, 25);
+        btnZipGapReset.TabIndex = 33;
+        btnZipGapReset.UseVisualStyleBackColor = true;
+        btnZipGapReset.Click += BtnZipGapReset_Click;
+        // 
+        // btnLineHeightReset
+        // 
+        btnLineHeightReset.Image = Properties.Resources.arrow_restore16;
+        btnLineHeightReset.Location = new Point(287, 59);
+        btnLineHeightReset.Name = "btnLineHeightReset";
+        btnLineHeightReset.Size = new Size(24, 25);
+        btnLineHeightReset.TabIndex = 32;
+        btnLineHeightReset.UseVisualStyleBackColor = true;
+        btnLineHeightReset.Click += BtnLineHeightReset_Click;
         // 
         // ckbPrintRecipient
         // 
@@ -639,7 +711,7 @@ partial class FrmPrintSetting
         // 
         nudLineHeightFactor.DecimalPlaces = 2;
         nudLineHeightFactor.Increment = new decimal(new int[] { 5, 0, 0, 131072 });
-        nudLineHeightFactor.Location = new Point(178, 59);
+        nudLineHeightFactor.Location = new Point(177, 59);
         nudLineHeightFactor.Maximum = new decimal(new int[] { 30, 0, 0, 65536 });
         nudLineHeightFactor.Minimum = new decimal(new int[] { 5, 0, 0, 65536 });
         nudLineHeightFactor.Name = "nudLineHeightFactor";
@@ -648,6 +720,7 @@ partial class FrmPrintSetting
         nudLineHeightFactor.TextAlign = HorizontalAlignment.Center;
         nudLineHeightFactor.Value = new decimal(new int[] { 15, 0, 0, 65536 });
         nudLineHeightFactor.ValueChanged += GenericControl_ValueChanged;
+        nudLineHeightFactor.KeyUp += NumericUpDown_KeyUp;
         // 
         // lblLandRows
         // 
@@ -671,7 +744,7 @@ partial class FrmPrintSetting
         // 
         nudLandGapFactor.DecimalPlaces = 2;
         nudLandGapFactor.Increment = new decimal(new int[] { 5, 0, 0, 131072 });
-        nudLandGapFactor.Location = new Point(178, 117);
+        nudLandGapFactor.Location = new Point(177, 117);
         nudLandGapFactor.Maximum = new decimal(new int[] { 2, 0, 0, 0 });
         nudLandGapFactor.Name = "nudLandGapFactor";
         nudLandGapFactor.Size = new Size(55, 25);
@@ -679,6 +752,7 @@ partial class FrmPrintSetting
         nudLandGapFactor.TextAlign = HorizontalAlignment.Center;
         nudLandGapFactor.Value = new decimal(new int[] { 3, 0, 0, 65536 });
         nudLandGapFactor.ValueChanged += GenericControl_ValueChanged;
+        nudLandGapFactor.KeyUp += NumericUpDown_KeyUp;
         // 
         // lblZipRows
         // 
@@ -702,7 +776,7 @@ partial class FrmPrintSetting
         // 
         nudZipGapFactor.DecimalPlaces = 2;
         nudZipGapFactor.Increment = new decimal(new int[] { 5, 0, 0, 131072 });
-        nudZipGapFactor.Location = new Point(178, 88);
+        nudZipGapFactor.Location = new Point(177, 88);
         nudZipGapFactor.Maximum = new decimal(new int[] { 2, 0, 0, 0 });
         nudZipGapFactor.Name = "nudZipGapFactor";
         nudZipGapFactor.Size = new Size(55, 25);
@@ -710,13 +784,14 @@ partial class FrmPrintSetting
         nudZipGapFactor.TextAlign = HorizontalAlignment.Center;
         nudZipGapFactor.Value = new decimal(new int[] { 3, 0, 0, 65536 });
         nudZipGapFactor.ValueChanged += GenericControl_ValueChanged;
+        nudZipGapFactor.KeyUp += NumericUpDown_KeyUp;
         // 
         // ckbLandGROSS
         // 
         ckbLandGROSS.AutoSize = true;
         ckbLandGROSS.Checked = true;
         ckbLandGROSS.CheckState = CheckState.Checked;
-        ckbLandGROSS.Location = new Point(178, 32);
+        ckbLandGROSS.Location = new Point(177, 32);
         ckbLandGROSS.Name = "ckbLandGROSS";
         ckbLandGROSS.Size = new Size(130, 23);
         ckbLandGROSS.TabIndex = 21;
@@ -728,7 +803,7 @@ partial class FrmPrintSetting
         // 
         ckbAnredeOberhalb.AutoSize = true;
         ckbAnredeOberhalb.Enabled = false;
-        ckbAnredeOberhalb.Location = new Point(178, 6);
+        ckbAnredeOberhalb.Location = new Point(177, 6);
         ckbAnredeOberhalb.Name = "ckbAnredeOberhalb";
         ckbAnredeOberhalb.Size = new Size(82, 23);
         ckbAnredeOberhalb.TabIndex = 20;
@@ -777,9 +852,9 @@ partial class FrmPrintSetting
         tuningPage.Controls.Add(lblRecipOffsetX);
         tuningPage.Controls.Add(lblAddressOffset);
         tuningPage.Controls.Add(nudRecipOffsetX);
-        tuningPage.Location = new Point(4, 24);
+        tuningPage.Location = new Point(4, 26);
         tuningPage.Name = "tuningPage";
-        tuningPage.Size = new Size(316, 173);
+        tuningPage.Size = new Size(316, 171);
         tuningPage.TabIndex = 2;
         tuningPage.Text = "Tuning";
         // 
@@ -794,7 +869,7 @@ partial class FrmPrintSetting
         // ckbBoldSender
         // 
         ckbBoldSender.AutoSize = true;
-        ckbBoldSender.Location = new Point(227, 136);
+        ckbBoldSender.Location = new Point(225, 137);
         ckbBoldSender.Name = "ckbBoldSender";
         ckbBoldSender.Size = new Size(86, 23);
         ckbBoldSender.TabIndex = 12;
@@ -805,7 +880,7 @@ partial class FrmPrintSetting
         // ckbBoldRecipient
         // 
         ckbBoldRecipient.AutoSize = true;
-        ckbBoldRecipient.Location = new Point(132, 136);
+        ckbBoldRecipient.Location = new Point(128, 137);
         ckbBoldRecipient.Name = "ckbBoldRecipient";
         ckbBoldRecipient.Size = new Size(94, 23);
         ckbBoldRecipient.TabIndex = 11;
@@ -831,6 +906,7 @@ partial class FrmPrintSetting
         nudSenderOffsetY.TabIndex = 9;
         nudSenderOffsetY.TextAlign = HorizontalAlignment.Center;
         nudSenderOffsetY.ValueChanged += GenericControl_ValueChanged;
+        nudSenderOffsetY.KeyUp += NumericUpDown_KeyUp;
         // 
         // label1
         // 
@@ -868,6 +944,7 @@ partial class FrmPrintSetting
         nudSenderOffsetX.TabIndex = 5;
         nudSenderOffsetX.TextAlign = HorizontalAlignment.Center;
         nudSenderOffsetX.ValueChanged += GenericControl_ValueChanged;
+        nudSenderOffsetX.KeyUp += NumericUpDown_KeyUp;
         // 
         // nudRecipOffsetY
         // 
@@ -879,6 +956,7 @@ partial class FrmPrintSetting
         nudRecipOffsetY.TabIndex = 4;
         nudRecipOffsetY.TextAlign = HorizontalAlignment.Center;
         nudRecipOffsetY.ValueChanged += GenericControl_ValueChanged;
+        nudRecipOffsetY.KeyUp += NumericUpDown_KeyUp;
         // 
         // lblRecipOffsetY
         // 
@@ -917,11 +995,11 @@ partial class FrmPrintSetting
         nudRecipOffsetX.TabIndex = 0;
         nudRecipOffsetX.TextAlign = HorizontalAlignment.Center;
         nudRecipOffsetX.ValueChanged += GenericControl_ValueChanged;
+        nudRecipOffsetX.KeyUp += NumericUpDown_KeyUp;
         // 
         // btnSave
         // 
         btnSave.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-        btnSave.DialogResult = DialogResult.OK;
         btnSave.Image = Properties.Resources.printer24;
         btnSave.Location = new Point(6, 206);
         btnSave.Name = "btnSave";
@@ -1066,6 +1144,9 @@ partial class FrmPrintSetting
         Layout += FrmPrintSetting_Layout;
         tabControl.ResumeLayout(false);
         printerPage.ResumeLayout(false);
+        gbCopies.ResumeLayout(false);
+        gbCopies.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)nudCopies).EndInit();
         gbOrientation.ResumeLayout(false);
         gbOrientation.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)picLandscape).EndInit();
@@ -1191,4 +1272,10 @@ partial class FrmPrintSetting
     private PaddedTextBox tbSender4;
     private PaddedTextBox tbSender5;
     private PaddedTextBox tbSender6;
+    private GroupBox gbCopies;
+    private Label lblCopies;
+    private NumericUpDown nudCopies;
+    private Button btnLineHeightReset;
+    private Button btnLandGapReset;
+    private Button btnZipGapReset;
 }

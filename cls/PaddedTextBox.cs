@@ -64,40 +64,52 @@ public class PaddedTextBox : TextBox
 
     protected override void WndProc(ref Message m)
     {
-        // 1. Dpppelklick separat behandeln
+        // 1. Doppelklick separat behandeln
         if (m.Msg == NativeMethods.WM_LBUTTONDBLCLK)
         {
             HandleCustomDoubleClick(m.LParam);
             return;
         }
+
         // 2. Basis IMMER ausführen
         base.WndProc(ref m);
+
         // 3. Nach dem Setzen des Fonts zwingen wir unsere Margins auf
         if (m.Msg == NativeMethods.WM_SETFONT) { ApplyMargins(); }
+
         // 4. Custom Placeholder zeichnen NACHDEM das Control fertig gezeichnet ist
         if (m.Msg == NativeMethods.WM_PAINT && TextLength == 0 && !Focused && !string.IsNullOrEmpty(_customPlaceholder))
         {
-            if (ClientSize.Width <= 0 || ClientSize.Height <= 0) { return; }
-            using var gScreen = Graphics.FromHwnd(Handle);
-            var editRect = new NativeMethods.RECT();
-            NativeMethods.SendMessage(Handle, NativeMethods.EM_GETRECT, IntPtr.Zero, ref editRect);
-            var targetLeft = Math.Max(editRect.Left, LeftInnerMargin + 1);
-            var targetRight = Math.Min(editRect.Right, ClientSize.Width - RightInnerMargin);
-            var rect = new Rectangle(targetLeft, editRect.Top, Math.Max(0, targetRight - targetLeft), editRect.Bottom - editRect.Top);
+            // SICHERHEITSCHECK: Verhindert den Crash beim Schließen des Fensters
+            if (!IsHandleCreated || IsDisposed || Disposing || ClientSize.Width <= 0 || ClientSize.Height <= 0) { return; }
 
-            gScreen.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-            using var brush = new SolidBrush(Color.LightGray); // Ideal wäre SystemColors.GrayText
-
-            using var format = new StringFormat(StringFormat.GenericTypographic)
+            try
             {
-                LineAlignment = Multiline ? StringAlignment.Near : StringAlignment.Center,
-                FormatFlags = StringFormatFlags.NoWrap,
-                Trimming = StringTrimming.EllipsisCharacter
-            };
+                using var gScreen = Graphics.FromHwnd(Handle);
+                var editRect = new NativeMethods.RECT();
+                NativeMethods.SendMessage(Handle, NativeMethods.EM_GETRECT, IntPtr.Zero, ref editRect);
+                var targetLeft = Math.Max(editRect.Left, LeftInnerMargin + 1);
+                var targetRight = Math.Min(editRect.Right, ClientSize.Width - RightInnerMargin);
+                var rect = new Rectangle(targetLeft, editRect.Top, Math.Max(0, targetRight - targetLeft), editRect.Bottom - editRect.Top);
 
-            rect.X += 1;
-            gScreen.DrawString(_customPlaceholder, Font, brush, rect, format);
-            // KEIN RETURN HIER! Die Event-Kette ist beendet und Windows räumt sauber auf.
+                gScreen.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                using var brush = new SolidBrush(Color.LightGray); // Ideal wäre SystemColors.GrayText
+
+                using var format = new StringFormat(StringFormat.GenericTypographic)
+                {
+                    LineAlignment = Multiline ? StringAlignment.Near : StringAlignment.Center,
+                    FormatFlags = StringFormatFlags.NoWrap,
+                    Trimming = StringTrimming.EllipsisCharacter
+                };
+
+                rect.X += 1;
+                gScreen.DrawString(_customPlaceholder, Font, brush, rect, format);
+            }
+            catch (ArgumentException)
+            {
+                // Das Handle wurde durch das Schließen des Fensters in exakt diesem Moment ungültig.
+                // Wir fangen das ab und tun nichts, da das Control ohnehin zerstört wird.
+            }
         }
     }
 
@@ -217,53 +229,54 @@ public class PaddedMaskedTextBox : MaskedTextBox
 
     protected override void WndProc(ref Message m)
     {
-        // 1. Doppelklick separat behandeln
-        if (m.Msg == NativeMethods.WM_LBUTTONDBLCLK)
+        if (m.Msg == NativeMethods.WM_PASTE)
+        {
+            if (Mask != null && Mask.Replace(@"\", "") == "00.00.0000" && Clipboard.ContainsText())
+            {
+                var clipboardText = Clipboard.GetText().Trim();
+                if (DateOnly.TryParse(clipboardText, out var parsedDate))
+                {
+                    Text = parsedDate.ToString("dd.MM.yyyy");
+                    return; // WICHTIG: Beendet die Methode hier, damit die Basisklasse nicht versucht, den unformatierten Text in die Maske zu quetschen
+                }
+            }
+        }
+        if (m.Msg == NativeMethods.WM_LBUTTONDBLCLK)   // Doppelklick separat behandeln
         {
             HandleCustomDoubleClick(m.LParam);
             return;
         }
-
-        // 2. Basis IMMER ausführen, damit das Control (und die Maske) gezeichnet wird
-        base.WndProc(ref m);
-
-        // 3. Nach dem Setzen des Fonts zwingen wir unsere Margins auf
-        if (m.Msg == NativeMethods.WM_SETFONT) { ApplyMargins(); }
-
-        // 4. Custom Placeholder zeichnen NACHDEM das Control fertig gezeichnet ist
-        if (m.Msg == NativeMethods.WM_PAINT && !Focused && !string.IsNullOrEmpty(_customPlaceholder))
+        base.WndProc(ref m);  // Basis IMMER ausführen, damit das Control (und die Maske) gezeichnet wird
+        if (m.Msg == NativeMethods.WM_SETFONT) { ApplyMargins(); }  // Nach dem Setzen des Fonts zwingen wir unsere Margins auf
+        if (m.Msg == NativeMethods.WM_PAINT && !Focused && !string.IsNullOrEmpty(_customPlaceholder))  // Custom Placeholder zeichnen NACHDEM das Control fertig gezeichnet ist
         {
-            // Bei MaskedTextBox prüfen wir, ob tatsächliche Eingaben vorliegen, nicht nur die Maske
-            var isEmpty = MaskedTextProvider == null ? TextLength == 0 : MaskedTextProvider.AssignedEditPositionCount == 0;
-
+            var isEmpty = MaskedTextProvider == null ? TextLength == 0 : MaskedTextProvider.AssignedEditPositionCount == 0;  // Bei MaskedTextBox prüfen wir, ob tatsächliche Eingaben vorliegen, nicht nur die Maske
             if (isEmpty)
             {
-                if (ClientSize.Width <= 0 || ClientSize.Height <= 0) { return; }
-
-                using var gScreen = Graphics.FromHwnd(Handle);
-                var editRect = new NativeMethods.RECT();
-                NativeMethods.SendMessage(Handle, NativeMethods.EM_GETRECT, IntPtr.Zero, ref editRect);
-
-                // WICHTIG: Die von der Basisklasse gezeichnete leere Maske mit der Hintergrundfarbe "radieren"
-                using var bgBrush = new SolidBrush(BackColor);
-                gScreen.FillRectangle(bgBrush, editRect.Left, editRect.Top, editRect.Right - editRect.Left, editRect.Bottom - editRect.Top);
-
-                var targetLeft = Math.Max(editRect.Left, LeftInnerMargin + 1);
-                var targetRight = Math.Min(editRect.Right, ClientSize.Width - RightInnerMargin);
-                var rect = new Rectangle(targetLeft, editRect.Top, Math.Max(0, targetRight - targetLeft), editRect.Bottom - editRect.Top);
-                if (rect.Width <= 0 || rect.Height <= 0) { return; }
-                gScreen.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-                using var brush = new SolidBrush(Color.LightGray); // SystemColors.GrayText ist ebenfalls eine gute Wahl
-
-                using var format = new StringFormat(StringFormat.GenericTypographic)
+                if (!IsHandleCreated || IsDisposed || Disposing || ClientSize.Width <= 0 || ClientSize.Height <= 0) { return; }  // SICHERHEITSCHECK: Verhindert den Crash beim Schließen des Fensters
+                try
                 {
-                    LineAlignment = Multiline ? StringAlignment.Near : StringAlignment.Center,
-                    FormatFlags = StringFormatFlags.NoWrap,
-                    Trimming = StringTrimming.EllipsisCharacter
-                };
-
-                rect.X += 1;
-                gScreen.DrawString(_customPlaceholder, Font, brush, rect, format);
+                    using var gScreen = Graphics.FromHwnd(Handle);
+                    var editRect = new NativeMethods.RECT();
+                    NativeMethods.SendMessage(Handle, NativeMethods.EM_GETRECT, IntPtr.Zero, ref editRect);
+                    using var bgBrush = new SolidBrush(BackColor);  // WICHTIG: Die von der Basisklasse gezeichnete leere Maske mit der Hintergrundfarbe "radieren"
+                    gScreen.FillRectangle(bgBrush, editRect.Left, editRect.Top, editRect.Right - editRect.Left, editRect.Bottom - editRect.Top);
+                    var targetLeft = Math.Max(editRect.Left, LeftInnerMargin + 1);
+                    var targetRight = Math.Min(editRect.Right, ClientSize.Width - RightInnerMargin);
+                    var rect = new Rectangle(targetLeft, editRect.Top, Math.Max(0, targetRight - targetLeft), editRect.Bottom - editRect.Top);
+                    if (rect.Width <= 0 || rect.Height <= 0) { return; }
+                    gScreen.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                    using var brush = new SolidBrush(Color.LightGray); // SystemColors.GrayText ist ebenfalls eine gute Wahl
+                    using var format = new StringFormat(StringFormat.GenericTypographic)
+                    {
+                        LineAlignment = Multiline ? StringAlignment.Near : StringAlignment.Center,
+                        FormatFlags = StringFormatFlags.NoWrap,
+                        Trimming = StringTrimming.EllipsisCharacter
+                    };
+                    rect.X += 1;
+                    gScreen.DrawString(_customPlaceholder, Font, brush, rect, format);
+                }
+                catch (ArgumentException) { }  // Wird ignoriert, da das Control zerstört wird.
             }
         }
     }

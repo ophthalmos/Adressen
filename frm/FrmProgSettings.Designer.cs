@@ -38,7 +38,50 @@ partial class FrmProgSettings
     private void InitializeComponent()
     {
         var resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmProgSettings));
-        tabControl = new TabControl();
+        btnCancel = new Button();
+        folderBrowserDialog = new FolderBrowserDialog();
+        openFileDialog = new OpenFileDialog();
+        btnOK = new Button();
+        tpSicherung = new TabPage();
+        btnZipArchive = new Button();
+        lblZipArchive = new Label();
+        lblZipText = new Label();
+        lblHorizLine = new Label();
+        ckbZipArchive = new CheckBox();
+        tbZipArchive = new TextBox();
+        tbBackupFolder = new TextBox();
+        lblBackupFolder = new Label();
+        btnExplorer = new Button();
+        lblBackup = new Label();
+        ckbBackup = new CheckBox();
+        btnBackupFolder = new Button();
+        tpAskBefore = new TabPage();
+        gbxAskEnvelope = new GroupBox();
+        ckbAskPrintEnvelope = new CheckBox();
+        gbxAskLocal = new GroupBox();
+        ckbAskBeforeDelete = new CheckBox();
+        ckbAskBeforeSaveSQLExpander = new CheckBox();
+        ckbAskBeforeSaveSQL = new CheckBox();
+        tpWatchFolder = new TabPage();
+        lblWatcherInfo = new Label();
+        lblWatchFolder = new Label();
+        ckbWatchFolder = new CheckBox();
+        btnWatchFolder = new Button();
+        tbWatchFolder = new TextBox();
+        tpKontakte = new TabPage();
+        gbxContactsAutoload = new GroupBox();
+        ckbContactsAutoload = new CheckBox();
+        tpAdressen = new TabPage();
+        lblToggleDatabase = new Label();
+        groupBox = new GroupBox();
+        btnStandardFile = new Button();
+        tbStandard = new TextBox();
+        rbStandard = new RadioButton();
+        rbRecent = new RadioButton();
+        rbEmpty = new RadioButton();
+        gbDatabaseFolder = new GroupBox();
+        btnDatabaseFolder = new Button();
+        tbDatabaseFolder = new TextBox();
         tpAllgemein = new TabPage();
         gbxFontSize = new GroupBox();
         btnFontReset = new Button();
@@ -53,79 +96,478 @@ partial class FrmProgSettings
         rbtnDark = new RadioButton();
         rbtnBlue = new RadioButton();
         rbtnGrey = new RadioButton();
-        tpAdressen = new TabPage();
-        ckbAskBeforeSaveSQLExpander = new CheckBox();
-        ckbAskBeforeDelete = new CheckBox();
-        ckbAskBeforeSaveSQL = new CheckBox();
-        groupBox = new GroupBox();
-        btnStandardFile = new Button();
-        tbStandard = new TextBox();
-        rbStandard = new RadioButton();
-        rbRecent = new RadioButton();
-        rbEmpty = new RadioButton();
-        gbDatabaseFolder = new GroupBox();
-        btnDatabaseFolder = new Button();
-        tbDatabaseFolder = new TextBox();
-        tpKontakte = new TabPage();
-        gbxContactsAutoload = new GroupBox();
-        ckbContactsAutoload = new CheckBox();
-        tpWatchFolder = new TabPage();
-        lblWatcherInfo = new Label();
-        lblWatchFolder = new Label();
-        ckbWatchFolder = new CheckBox();
-        btnWatchFolder = new Button();
-        tbWatchFolder = new TextBox();
-        tpSicherung = new TabPage();
-        btnZipArchive = new Button();
-        lblZipArchive = new Label();
-        lblZipText = new Label();
-        lblHorizLine = new Label();
-        ckbZipArchive = new CheckBox();
-        tbZipArchive = new TextBox();
-        lblBackupFolder = new Label();
-        btnExplorer = new Button();
-        lblBackup = new Label();
-        ckbBackup = new CheckBox();
-        btnBackupFolder = new Button();
-        tbBackupFolder = new TextBox();
-        btnCancel = new Button();
-        btnOK = new Button();
-        folderBrowserDialog = new FolderBrowserDialog();
-        openFileDialog = new OpenFileDialog();
-        tabControl.SuspendLayout();
+        tabControl = new TabControl();
+        tpSicherung.SuspendLayout();
+        tpAskBefore.SuspendLayout();
+        gbxAskEnvelope.SuspendLayout();
+        gbxAskLocal.SuspendLayout();
+        tpWatchFolder.SuspendLayout();
+        tpKontakte.SuspendLayout();
+        gbxContactsAutoload.SuspendLayout();
+        tpAdressen.SuspendLayout();
+        groupBox.SuspendLayout();
+        gbDatabaseFolder.SuspendLayout();
         tpAllgemein.SuspendLayout();
         gbxFontSize.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)nudFontSize).BeginInit();
         gbTextProcessing.SuspendLayout();
         gbxColorScheme.SuspendLayout();
-        tpAdressen.SuspendLayout();
-        groupBox.SuspendLayout();
-        gbDatabaseFolder.SuspendLayout();
-        tpKontakte.SuspendLayout();
-        gbxContactsAutoload.SuspendLayout();
-        tpWatchFolder.SuspendLayout();
-        tpSicherung.SuspendLayout();
+        tabControl.SuspendLayout();
         SuspendLayout();
         // 
-        // tabControl
+        // btnCancel
         // 
-        tabControl.Alignment = TabAlignment.Left;
-        tabControl.Controls.Add(tpAllgemein);
-        tabControl.Controls.Add(tpAdressen);
-        tabControl.Controls.Add(tpKontakte);
-        tabControl.Controls.Add(tpWatchFolder);
-        tabControl.Controls.Add(tpSicherung);
-        tabControl.Dock = DockStyle.Top;
-        tabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
-        tabControl.ItemSize = new Size(30, 110);
-        tabControl.Location = new Point(0, 0);
-        tabControl.Multiline = true;
-        tabControl.Name = "tabControl";
-        tabControl.SelectedIndex = 0;
-        tabControl.Size = new Size(389, 312);
-        tabControl.SizeMode = TabSizeMode.Fixed;
-        tabControl.TabIndex = 0;
-        tabControl.DrawItem += TabControl_DrawItem;
+        btnCancel.DialogResult = DialogResult.Cancel;
+        btnCancel.Location = new Point(287, 318);
+        btnCancel.Name = "btnCancel";
+        btnCancel.Size = new Size(98, 26);
+        btnCancel.TabIndex = 1;
+        btnCancel.Text = "Abbrechen";
+        btnCancel.UseVisualStyleBackColor = true;
+        // 
+        // folderBrowserDialog
+        // 
+        folderBrowserDialog.RootFolder = Environment.SpecialFolder.MyComputer;
+        folderBrowserDialog.UseDescriptionForTitle = true;
+        // 
+        // openFileDialog
+        // 
+        openFileDialog.DefaultExt = "adb";
+        openFileDialog.Filter = "Adressen-Datenbank (*.adb)|*.adb|Alle Dateien (*.*)|*.*";
+        // 
+        // btnOK
+        // 
+        btnOK.DialogResult = DialogResult.OK;
+        btnOK.Location = new Point(114, 318);
+        btnOK.Name = "btnOK";
+        btnOK.Size = new Size(167, 26);
+        btnOK.TabIndex = 2;
+        btnOK.Text = "Einstellungen speichern";
+        btnOK.UseVisualStyleBackColor = true;
+        // 
+        // tpSicherung
+        // 
+        tpSicherung.BackColor = SystemColors.ControlLightLight;
+        tpSicherung.BorderStyle = BorderStyle.FixedSingle;
+        tpSicherung.Controls.Add(btnZipArchive);
+        tpSicherung.Controls.Add(lblZipArchive);
+        tpSicherung.Controls.Add(lblZipText);
+        tpSicherung.Controls.Add(lblHorizLine);
+        tpSicherung.Controls.Add(ckbZipArchive);
+        tpSicherung.Controls.Add(tbZipArchive);
+        tpSicherung.Controls.Add(tbBackupFolder);
+        tpSicherung.Controls.Add(lblBackupFolder);
+        tpSicherung.Controls.Add(btnExplorer);
+        tpSicherung.Controls.Add(lblBackup);
+        tpSicherung.Controls.Add(ckbBackup);
+        tpSicherung.Controls.Add(btnBackupFolder);
+        tpSicherung.Location = new Point(114, 4);
+        tpSicherung.Name = "tpSicherung";
+        tpSicherung.Size = new Size(271, 304);
+        tpSicherung.TabIndex = 2;
+        tpSicherung.Text = " Sicherung";
+        // 
+        // btnZipArchive
+        // 
+        btnZipArchive.Location = new Point(220, 223);
+        btnZipArchive.Name = "btnZipArchive";
+        btnZipArchive.Size = new Size(36, 25);
+        btnZipArchive.TabIndex = 16;
+        btnZipArchive.Text = "⚙";
+        btnZipArchive.UseVisualStyleBackColor = true;
+        btnZipArchive.Click += BtnZipArchive_Click;
+        // 
+        // lblZipArchive
+        // 
+        lblZipArchive.AutoSize = true;
+        lblZipArchive.Location = new Point(12, 201);
+        lblZipArchive.Name = "lblZipArchive";
+        lblZipArchive.Size = new Size(69, 19);
+        lblZipArchive.TabIndex = 15;
+        lblZipArchive.Text = "Zip-Datei:";
+        // 
+        // lblZipText
+        // 
+        lblZipText.Location = new Point(12, 251);
+        lblZipText.Name = "lblZipText";
+        lblZipText.Size = new Size(250, 41);
+        lblZipText.TabIndex = 14;
+        lblZipText.Text = "Tipp: auf iCloud Drive speichern, für das Öffnen mit iPhone-App 'SQLed'.";
+        // 
+        // lblHorizLine
+        // 
+        lblHorizLine.BorderStyle = BorderStyle.Fixed3D;
+        lblHorizLine.Location = new Point(12, 162);
+        lblHorizLine.Name = "lblHorizLine";
+        lblHorizLine.Size = new Size(244, 2);
+        lblHorizLine.TabIndex = 13;
+        // 
+        // ckbZipArchive
+        // 
+        ckbZipArchive.AutoSize = true;
+        ckbZipArchive.Location = new Point(12, 175);
+        ckbZipArchive.Name = "ckbZipArchive";
+        ckbZipArchive.Size = new Size(233, 23);
+        ckbZipArchive.TabIndex = 11;
+        ckbZipArchive.Text = "Datenbanken in Zip-Datei sichern";
+        ckbZipArchive.UseVisualStyleBackColor = true;
+        ckbZipArchive.CheckedChanged += CkbZipArchive_CheckedChanged;
+        // 
+        // tbZipArchive
+        // 
+        tbZipArchive.Location = new Point(12, 223);
+        tbZipArchive.Name = "tbZipArchive";
+        tbZipArchive.Size = new Size(202, 25);
+        tbZipArchive.TabIndex = 9;
+        tbZipArchive.TextChanged += TbZipArchive_TextChanged;
+        tbZipArchive.Validating += TbZipArchive_Validating;
+        // 
+        // tbBackupFolder
+        // 
+        tbBackupFolder.Location = new Point(12, 56);
+        tbBackupFolder.Name = "tbBackupFolder";
+        tbBackupFolder.Size = new Size(202, 25);
+        tbBackupFolder.TabIndex = 0;
+        tbBackupFolder.TextChanged += TbBackupFolder_TextChanged;
+        // 
+        // lblBackupFolder
+        // 
+        lblBackupFolder.AutoSize = true;
+        lblBackupFolder.Location = new Point(12, 34);
+        lblBackupFolder.Name = "lblBackupFolder";
+        lblBackupFolder.Size = new Size(119, 19);
+        lblBackupFolder.TabIndex = 8;
+        lblBackupFolder.Text = "Sicherungsordner:";
+        // 
+        // btnExplorer
+        // 
+        btnExplorer.Location = new Point(12, 128);
+        btnExplorer.Name = "btnExplorer";
+        btnExplorer.Size = new Size(244, 26);
+        btnExplorer.TabIndex = 7;
+        btnExplorer.Text = "Sicherungsordner anzeigen";
+        btnExplorer.UseVisualStyleBackColor = true;
+        btnExplorer.Click += BtnExplorer_Click;
+        // 
+        // lblBackup
+        // 
+        lblBackup.Location = new Point(12, 84);
+        lblBackup.Name = "lblBackup";
+        lblBackup.Size = new Size(250, 41);
+        lblBackup.TabIndex = 6;
+        lblBackup.Text = "Das Backup erfolgt in wochentäglichen Unterordnern mit jeweils einer Kopie.";
+        // 
+        // ckbBackup
+        // 
+        ckbBackup.AutoSize = true;
+        ckbBackup.Location = new Point(12, 8);
+        ckbBackup.Name = "ckbBackup";
+        ckbBackup.Size = new Size(235, 23);
+        ckbBackup.TabIndex = 2;
+        ckbBackup.Text = "Daten täglich automatisch sichern";
+        ckbBackup.UseVisualStyleBackColor = true;
+        ckbBackup.CheckedChanged += CkbBackup_CheckedChanged;
+        // 
+        // btnBackupFolder
+        // 
+        btnBackupFolder.Location = new Point(220, 56);
+        btnBackupFolder.Name = "btnBackupFolder";
+        btnBackupFolder.Size = new Size(36, 25);
+        btnBackupFolder.TabIndex = 1;
+        btnBackupFolder.Text = "⚙";
+        btnBackupFolder.UseVisualStyleBackColor = true;
+        btnBackupFolder.Click += BtnBackupFolder_Click;
+        // 
+        // tpAskBefore
+        // 
+        tpAskBefore.BackColor = SystemColors.ControlLightLight;
+        tpAskBefore.BorderStyle = BorderStyle.FixedSingle;
+        tpAskBefore.Controls.Add(gbxAskEnvelope);
+        tpAskBefore.Controls.Add(gbxAskLocal);
+        tpAskBefore.Location = new Point(114, 4);
+        tpAskBefore.Name = "tpAskBefore";
+        tpAskBefore.Size = new Size(271, 304);
+        tpAskBefore.TabIndex = 5;
+        tpAskBefore.Text = " Abfragen";
+        // 
+        // gbxAskEnvelope
+        // 
+        gbxAskEnvelope.Controls.Add(ckbAskPrintEnvelope);
+        gbxAskEnvelope.Location = new Point(6, 120);
+        gbxAskEnvelope.Name = "gbxAskEnvelope";
+        gbxAskEnvelope.Size = new Size(257, 50);
+        gbxAskEnvelope.TabIndex = 11;
+        gbxAskEnvelope.TabStop = false;
+        gbxAskEnvelope.Text = "Briefumschläge";
+        // 
+        // ckbAskPrintEnvelope
+        // 
+        ckbAskPrintEnvelope.AutoSize = true;
+        ckbAskPrintEnvelope.Checked = true;
+        ckbAskPrintEnvelope.CheckState = CheckState.Checked;
+        ckbAskPrintEnvelope.Location = new Point(6, 24);
+        ckbAskPrintEnvelope.Name = "ckbAskPrintEnvelope";
+        ckbAskPrintEnvelope.Size = new Size(244, 23);
+        ckbAskPrintEnvelope.TabIndex = 6;
+        ckbAskPrintEnvelope.Text = "Abfrage vor dem Umschlagdrucken";
+        ckbAskPrintEnvelope.UseVisualStyleBackColor = true;
+        // 
+        // gbxAskLocal
+        // 
+        gbxAskLocal.Controls.Add(ckbAskBeforeDelete);
+        gbxAskLocal.Controls.Add(ckbAskBeforeSaveSQLExpander);
+        gbxAskLocal.Controls.Add(ckbAskBeforeSaveSQL);
+        gbxAskLocal.Location = new Point(6, 6);
+        gbxAskLocal.Name = "gbxAskLocal";
+        gbxAskLocal.Size = new Size(257, 108);
+        gbxAskLocal.TabIndex = 10;
+        gbxAskLocal.TabStop = false;
+        gbxAskLocal.Text = "Lokale Adressen";
+        // 
+        // ckbAskBeforeDelete
+        // 
+        ckbAskBeforeDelete.AutoSize = true;
+        ckbAskBeforeDelete.Checked = true;
+        ckbAskBeforeDelete.CheckState = CheckState.Checked;
+        ckbAskBeforeDelete.Location = new Point(6, 24);
+        ckbAskBeforeDelete.Name = "ckbAskBeforeDelete";
+        ckbAskBeforeDelete.Size = new Size(248, 23);
+        ckbAskBeforeDelete.TabIndex = 8;
+        ckbAskBeforeDelete.Text = "Sicherheitsabfrage vor dem Löschen";
+        ckbAskBeforeDelete.UseVisualStyleBackColor = true;
+        // 
+        // ckbAskBeforeSaveSQLExpander
+        // 
+        ckbAskBeforeSaveSQLExpander.AutoSize = true;
+        ckbAskBeforeSaveSQLExpander.Location = new Point(6, 82);
+        ckbAskBeforeSaveSQLExpander.Name = "ckbAskBeforeSaveSQLExpander";
+        ckbAskBeforeSaveSQLExpander.Size = new Size(247, 23);
+        ckbAskBeforeSaveSQLExpander.TabIndex = 9;
+        ckbAskBeforeSaveSQLExpander.Text = "Änderungdetailanzeige ermöglichen";
+        ckbAskBeforeSaveSQLExpander.UseVisualStyleBackColor = true;
+        ckbAskBeforeSaveSQLExpander.CheckedChanged += CkbAskBeforeSaveSQLExpander_CheckedChanged;
+        // 
+        // ckbAskBeforeSaveSQL
+        // 
+        ckbAskBeforeSaveSQL.AutoSize = true;
+        ckbAskBeforeSaveSQL.Location = new Point(6, 53);
+        ckbAskBeforeSaveSQL.Name = "ckbAskBeforeSaveSQL";
+        ckbAskBeforeSaveSQL.Size = new Size(249, 23);
+        ckbAskBeforeSaveSQL.TabIndex = 7;
+        ckbAskBeforeSaveSQL.Text = "Abfrage vor Datenbankspeicherung ";
+        ckbAskBeforeSaveSQL.UseVisualStyleBackColor = true;
+        ckbAskBeforeSaveSQL.CheckedChanged += CkbAskBeforeSaveSQL_CheckedChanged;
+        // 
+        // tpWatchFolder
+        // 
+        tpWatchFolder.BackColor = SystemColors.ControlLightLight;
+        tpWatchFolder.BorderStyle = BorderStyle.FixedSingle;
+        tpWatchFolder.Controls.Add(lblWatcherInfo);
+        tpWatchFolder.Controls.Add(lblWatchFolder);
+        tpWatchFolder.Controls.Add(ckbWatchFolder);
+        tpWatchFolder.Controls.Add(btnWatchFolder);
+        tpWatchFolder.Controls.Add(tbWatchFolder);
+        tpWatchFolder.Location = new Point(114, 4);
+        tpWatchFolder.Name = "tpWatchFolder";
+        tpWatchFolder.Size = new Size(271, 304);
+        tpWatchFolder.TabIndex = 4;
+        tpWatchFolder.Text = " Dokumente";
+        // 
+        // lblWatcherInfo
+        // 
+        lblWatcherInfo.Location = new Point(12, 87);
+        lblWatcherInfo.Name = "lblWatcherInfo";
+        lblWatcherInfo.Size = new Size(250, 211);
+        lblWatcherInfo.TabIndex = 13;
+        lblWatcherInfo.Text = resources.GetString("lblWatcherInfo.Text");
+        // 
+        // lblWatchFolder
+        // 
+        lblWatchFolder.AutoSize = true;
+        lblWatchFolder.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+        lblWatchFolder.Location = new Point(12, 7);
+        lblWatchFolder.Name = "lblWatchFolder";
+        lblWatchFolder.Size = new Size(140, 19);
+        lblWatchFolder.TabIndex = 12;
+        lblWatchFolder.Text = "Dokumentenordner";
+        // 
+        // ckbWatchFolder
+        // 
+        ckbWatchFolder.AutoSize = true;
+        ckbWatchFolder.Location = new Point(16, 29);
+        ckbWatchFolder.Name = "ckbWatchFolder";
+        ckbWatchFolder.Size = new Size(225, 23);
+        ckbWatchFolder.TabIndex = 11;
+        ckbWatchFolder.Text = "Auf Veränderungen überwachen";
+        ckbWatchFolder.UseVisualStyleBackColor = true;
+        ckbWatchFolder.CheckedChanged += CkbWatchFolder_CheckedChanged;
+        // 
+        // btnWatchFolder
+        // 
+        btnWatchFolder.Location = new Point(220, 58);
+        btnWatchFolder.Name = "btnWatchFolder";
+        btnWatchFolder.Size = new Size(36, 25);
+        btnWatchFolder.TabIndex = 10;
+        btnWatchFolder.Text = "⚙";
+        btnWatchFolder.UseVisualStyleBackColor = true;
+        btnWatchFolder.Click += BtnWatchFolder_Click;
+        // 
+        // tbWatchFolder
+        // 
+        tbWatchFolder.Location = new Point(12, 58);
+        tbWatchFolder.Name = "tbWatchFolder";
+        tbWatchFolder.Size = new Size(202, 25);
+        tbWatchFolder.TabIndex = 9;
+        // 
+        // tpKontakte
+        // 
+        tpKontakte.BackColor = SystemColors.ControlLightLight;
+        tpKontakte.BorderStyle = BorderStyle.FixedSingle;
+        tpKontakte.Controls.Add(gbxContactsAutoload);
+        tpKontakte.Location = new Point(114, 4);
+        tpKontakte.Name = "tpKontakte";
+        tpKontakte.Padding = new Padding(3);
+        tpKontakte.Size = new Size(271, 304);
+        tpKontakte.TabIndex = 1;
+        tpKontakte.Text = " Google Kontakte";
+        // 
+        // gbxContactsAutoload
+        // 
+        gbxContactsAutoload.Controls.Add(ckbContactsAutoload);
+        gbxContactsAutoload.Location = new Point(6, 7);
+        gbxContactsAutoload.Name = "gbxContactsAutoload";
+        gbxContactsAutoload.Size = new Size(257, 55);
+        gbxContactsAutoload.TabIndex = 6;
+        gbxContactsAutoload.TabStop = false;
+        gbxContactsAutoload.Text = "Autostart";
+        // 
+        // ckbContactsAutoload
+        // 
+        ckbContactsAutoload.AutoSize = true;
+        ckbContactsAutoload.Location = new Point(6, 24);
+        ckbContactsAutoload.Name = "ckbContactsAutoload";
+        ckbContactsAutoload.Size = new Size(239, 23);
+        ckbContactsAutoload.TabIndex = 2;
+        ckbContactsAutoload.Text = "Kontakte bei Programmstart laden";
+        ckbContactsAutoload.UseVisualStyleBackColor = true;
+        // 
+        // tpAdressen
+        // 
+        tpAdressen.BackColor = SystemColors.ControlLightLight;
+        tpAdressen.BorderStyle = BorderStyle.FixedSingle;
+        tpAdressen.Controls.Add(lblToggleDatabase);
+        tpAdressen.Controls.Add(groupBox);
+        tpAdressen.Controls.Add(gbDatabaseFolder);
+        tpAdressen.Location = new Point(114, 4);
+        tpAdressen.Name = "tpAdressen";
+        tpAdressen.Padding = new Padding(3);
+        tpAdressen.Size = new Size(271, 304);
+        tpAdressen.TabIndex = 0;
+        tpAdressen.Text = " Lokale Adressen";
+        // 
+        // lblToggleDatabase
+        // 
+        lblToggleDatabase.Location = new Point(12, 227);
+        lblToggleDatabase.Name = "lblToggleDatabase";
+        lblToggleDatabase.Size = new Size(245, 63);
+        lblToggleDatabase.TabIndex = 3;
+        lblToggleDatabase.Text = "Mit der F12-Taste lässt sich zwischen\r\nzwei lokalen Datenbanken wechseln.\r\nSiehe Menü Datei > Zuletzt geöffnet";
+        // 
+        // groupBox
+        // 
+        groupBox.Controls.Add(btnStandardFile);
+        groupBox.Controls.Add(tbStandard);
+        groupBox.Controls.Add(rbStandard);
+        groupBox.Controls.Add(rbRecent);
+        groupBox.Controls.Add(rbEmpty);
+        groupBox.Location = new Point(6, 6);
+        groupBox.Name = "groupBox";
+        groupBox.Size = new Size(257, 137);
+        groupBox.TabIndex = 2;
+        groupBox.TabStop = false;
+        groupBox.Text = "Lade bei Start des Programms";
+        // 
+        // btnStandardFile
+        // 
+        btnStandardFile.Enabled = false;
+        btnStandardFile.Location = new Point(215, 101);
+        btnStandardFile.Name = "btnStandardFile";
+        btnStandardFile.Size = new Size(36, 25);
+        btnStandardFile.TabIndex = 4;
+        btnStandardFile.Text = "⚙";
+        btnStandardFile.UseVisualStyleBackColor = true;
+        btnStandardFile.Click += BtnStandardFile_Click;
+        // 
+        // tbStandard
+        // 
+        tbStandard.Enabled = false;
+        tbStandard.Location = new Point(6, 102);
+        tbStandard.Name = "tbStandard";
+        tbStandard.Size = new Size(203, 25);
+        tbStandard.TabIndex = 3;
+        tbStandard.Validating += TbStandard_Validating;
+        // 
+        // rbStandard
+        // 
+        rbStandard.AutoSize = true;
+        rbStandard.Location = new Point(10, 76);
+        rbStandard.Name = "rbStandard";
+        rbStandard.Size = new Size(206, 23);
+        rbStandard.TabIndex = 2;
+        rbStandard.TabStop = true;
+        rbStandard.Text = "die folgende Datenbankdatei:";
+        rbStandard.UseVisualStyleBackColor = true;
+        rbStandard.CheckedChanged += RbStandard_CheckedChanged;
+        // 
+        // rbRecent
+        // 
+        rbRecent.AutoSize = true;
+        rbRecent.Location = new Point(10, 50);
+        rbRecent.Name = "rbRecent";
+        rbRecent.Size = new Size(235, 23);
+        rbRecent.TabIndex = 1;
+        rbRecent.TabStop = true;
+        rbRecent.Text = "die zuletzt verwendete Datenbank";
+        rbRecent.UseVisualStyleBackColor = true;
+        // 
+        // rbEmpty
+        // 
+        rbEmpty.AutoSize = true;
+        rbEmpty.Location = new Point(10, 24);
+        rbEmpty.Name = "rbEmpty";
+        rbEmpty.Size = new Size(149, 23);
+        rbEmpty.TabIndex = 0;
+        rbEmpty.TabStop = true;
+        rbEmpty.Text = "keine Adressendatei";
+        rbEmpty.UseVisualStyleBackColor = true;
+        // 
+        // gbDatabaseFolder
+        // 
+        gbDatabaseFolder.Controls.Add(btnDatabaseFolder);
+        gbDatabaseFolder.Controls.Add(tbDatabaseFolder);
+        gbDatabaseFolder.Location = new Point(6, 149);
+        gbDatabaseFolder.Name = "gbDatabaseFolder";
+        gbDatabaseFolder.Size = new Size(257, 56);
+        gbDatabaseFolder.TabIndex = 0;
+        gbDatabaseFolder.TabStop = false;
+        gbDatabaseFolder.Text = "Standard-Datenbankordner";
+        // 
+        // btnDatabaseFolder
+        // 
+        btnDatabaseFolder.Location = new Point(215, 21);
+        btnDatabaseFolder.Name = "btnDatabaseFolder";
+        btnDatabaseFolder.Size = new Size(36, 25);
+        btnDatabaseFolder.TabIndex = 1;
+        btnDatabaseFolder.Text = "⚙";
+        btnDatabaseFolder.UseVisualStyleBackColor = true;
+        btnDatabaseFolder.Click += BtnDatabaseFolder_Click;
+        // 
+        // tbDatabaseFolder
+        // 
+        tbDatabaseFolder.Location = new Point(6, 21);
+        tbDatabaseFolder.Name = "tbDatabaseFolder";
+        tbDatabaseFolder.Size = new Size(203, 25);
+        tbDatabaseFolder.TabIndex = 0;
         // 
         // tpAllgemein
         // 
@@ -164,12 +606,13 @@ partial class FrmProgSettings
         // 
         // nudFontSize
         // 
-        nudFontSize.Location = new Point(217, 25);
+        nudFontSize.Location = new Point(202, 25);
         nudFontSize.Maximum = new decimal(new int[] { 12, 0, 0, 0 });
         nudFontSize.Minimum = new decimal(new int[] { 9, 0, 0, 0 });
         nudFontSize.Name = "nudFontSize";
-        nudFontSize.Size = new Size(40, 25);
+        nudFontSize.Size = new Size(55, 25);
         nudFontSize.TabIndex = 1;
+        nudFontSize.TextAlign = HorizontalAlignment.Center;
         nudFontSize.Value = new decimal(new int[] { 10, 0, 0, 0 });
         nudFontSize.ValueChanged += NudFontSize_ValueChanged;
         // 
@@ -181,7 +624,7 @@ partial class FrmProgSettings
         cbxFontName.ItemHeight = 20;
         cbxFontName.Location = new Point(6, 24);
         cbxFontName.Name = "cbxFontName";
-        cbxFontName.Size = new Size(205, 26);
+        cbxFontName.Size = new Size(190, 26);
         cbxFontName.TabIndex = 0;
         cbxFontName.DrawItem += CbxFontName_DrawItem;
         cbxFontName.SelectedIndexChanged += CbxFontName_SelectedIndexChanged;
@@ -288,406 +731,26 @@ partial class FrmProgSettings
         rbtnGrey.Text = "Grau";
         rbtnGrey.UseVisualStyleBackColor = true;
         // 
-        // tpAdressen
-        // 
-        tpAdressen.BackColor = SystemColors.ControlLightLight;
-        tpAdressen.BorderStyle = BorderStyle.FixedSingle;
-        tpAdressen.Controls.Add(ckbAskBeforeSaveSQLExpander);
-        tpAdressen.Controls.Add(ckbAskBeforeDelete);
-        tpAdressen.Controls.Add(ckbAskBeforeSaveSQL);
-        tpAdressen.Controls.Add(groupBox);
-        tpAdressen.Controls.Add(gbDatabaseFolder);
-        tpAdressen.Location = new Point(114, 4);
-        tpAdressen.Name = "tpAdressen";
-        tpAdressen.Padding = new Padding(3);
-        tpAdressen.Size = new Size(271, 304);
-        tpAdressen.TabIndex = 0;
-        tpAdressen.Text = " Lokale Adressen";
-        // 
-        // ckbAskBeforeSaveSQLExpander
-        // 
-        ckbAskBeforeSaveSQLExpander.AutoSize = true;
-        ckbAskBeforeSaveSQLExpander.Location = new Point(6, 273);
-        ckbAskBeforeSaveSQLExpander.Name = "ckbAskBeforeSaveSQLExpander";
-        ckbAskBeforeSaveSQLExpander.Size = new Size(247, 23);
-        ckbAskBeforeSaveSQLExpander.TabIndex = 6;
-        ckbAskBeforeSaveSQLExpander.Text = "Änderungdetailanzeige ermöglichen";
-        ckbAskBeforeSaveSQLExpander.UseVisualStyleBackColor = true;
-        // 
-        // ckbAskBeforeDelete
-        // 
-        ckbAskBeforeDelete.AutoSize = true;
-        ckbAskBeforeDelete.Checked = true;
-        ckbAskBeforeDelete.CheckState = CheckState.Checked;
-        ckbAskBeforeDelete.Location = new Point(6, 215);
-        ckbAskBeforeDelete.Name = "ckbAskBeforeDelete";
-        ckbAskBeforeDelete.Size = new Size(248, 23);
-        ckbAskBeforeDelete.TabIndex = 5;
-        ckbAskBeforeDelete.Text = "Sicherheitsabfrage vor dem Löschen";
-        ckbAskBeforeDelete.UseVisualStyleBackColor = true;
-        // 
-        // ckbAskBeforeSaveSQL
-        // 
-        ckbAskBeforeSaveSQL.AutoSize = true;
-        ckbAskBeforeSaveSQL.Location = new Point(6, 244);
-        ckbAskBeforeSaveSQL.Name = "ckbAskBeforeSaveSQL";
-        ckbAskBeforeSaveSQL.Size = new Size(249, 23);
-        ckbAskBeforeSaveSQL.TabIndex = 4;
-        ckbAskBeforeSaveSQL.Text = "Abfrage vor Datenbankspeicherung ";
-        ckbAskBeforeSaveSQL.UseVisualStyleBackColor = true;
-        ckbAskBeforeSaveSQL.CheckedChanged += CkbAskBeforeSaveSQL_CheckedChanged;
-        // 
-        // groupBox
-        // 
-        groupBox.Controls.Add(btnStandardFile);
-        groupBox.Controls.Add(tbStandard);
-        groupBox.Controls.Add(rbStandard);
-        groupBox.Controls.Add(rbRecent);
-        groupBox.Controls.Add(rbEmpty);
-        groupBox.Location = new Point(6, 6);
-        groupBox.Name = "groupBox";
-        groupBox.Size = new Size(257, 137);
-        groupBox.TabIndex = 2;
-        groupBox.TabStop = false;
-        groupBox.Text = "Lade bei Start des Programms";
-        // 
-        // btnStandardFile
-        // 
-        btnStandardFile.Enabled = false;
-        btnStandardFile.Location = new Point(215, 101);
-        btnStandardFile.Name = "btnStandardFile";
-        btnStandardFile.Size = new Size(36, 25);
-        btnStandardFile.TabIndex = 4;
-        btnStandardFile.Text = "⚙";
-        btnStandardFile.UseVisualStyleBackColor = true;
-        btnStandardFile.Click += BtnStandardFile_Click;
-        // 
-        // tbStandard
-        // 
-        tbStandard.Enabled = false;
-        tbStandard.Location = new Point(6, 102);
-        tbStandard.Name = "tbStandard";
-        tbStandard.Size = new Size(203, 25);
-        tbStandard.TabIndex = 3;
-        tbStandard.Validating += TbStandard_Validating;
-        // 
-        // rbStandard
-        // 
-        rbStandard.AutoSize = true;
-        rbStandard.Location = new Point(10, 76);
-        rbStandard.Name = "rbStandard";
-        rbStandard.Size = new Size(206, 23);
-        rbStandard.TabIndex = 2;
-        rbStandard.TabStop = true;
-        rbStandard.Text = "die folgende Datenbankdatei:";
-        rbStandard.UseVisualStyleBackColor = true;
-        rbStandard.CheckedChanged += RbStandard_CheckedChanged;
-        // 
-        // rbRecent
-        // 
-        rbRecent.AutoSize = true;
-        rbRecent.Location = new Point(10, 50);
-        rbRecent.Name = "rbRecent";
-        rbRecent.Size = new Size(235, 23);
-        rbRecent.TabIndex = 1;
-        rbRecent.TabStop = true;
-        rbRecent.Text = "die zuletzt verwendete Datenbank";
-        rbRecent.UseVisualStyleBackColor = true;
-        // 
-        // rbEmpty
-        // 
-        rbEmpty.AutoSize = true;
-        rbEmpty.Location = new Point(10, 24);
-        rbEmpty.Name = "rbEmpty";
-        rbEmpty.Size = new Size(149, 23);
-        rbEmpty.TabIndex = 0;
-        rbEmpty.TabStop = true;
-        rbEmpty.Text = "keine Adressendatei";
-        rbEmpty.UseVisualStyleBackColor = true;
-        // 
-        // gbDatabaseFolder
-        // 
-        gbDatabaseFolder.Controls.Add(btnDatabaseFolder);
-        gbDatabaseFolder.Controls.Add(tbDatabaseFolder);
-        gbDatabaseFolder.Location = new Point(6, 149);
-        gbDatabaseFolder.Name = "gbDatabaseFolder";
-        gbDatabaseFolder.Size = new Size(257, 56);
-        gbDatabaseFolder.TabIndex = 0;
-        gbDatabaseFolder.TabStop = false;
-        gbDatabaseFolder.Text = "Standard-Datenbankordner";
-        // 
-        // btnDatabaseFolder
-        // 
-        btnDatabaseFolder.Location = new Point(215, 21);
-        btnDatabaseFolder.Name = "btnDatabaseFolder";
-        btnDatabaseFolder.Size = new Size(36, 25);
-        btnDatabaseFolder.TabIndex = 1;
-        btnDatabaseFolder.Text = "⚙";
-        btnDatabaseFolder.UseVisualStyleBackColor = true;
-        btnDatabaseFolder.Click += BtnDatabaseFolder_Click;
-        // 
-        // tbDatabaseFolder
-        // 
-        tbDatabaseFolder.Location = new Point(6, 21);
-        tbDatabaseFolder.Name = "tbDatabaseFolder";
-        tbDatabaseFolder.Size = new Size(203, 25);
-        tbDatabaseFolder.TabIndex = 0;
-        // 
-        // tpKontakte
-        // 
-        tpKontakte.BackColor = SystemColors.ControlLightLight;
-        tpKontakte.BorderStyle = BorderStyle.FixedSingle;
-        tpKontakte.Controls.Add(gbxContactsAutoload);
-        tpKontakte.Location = new Point(114, 4);
-        tpKontakte.Name = "tpKontakte";
-        tpKontakte.Padding = new Padding(3);
-        tpKontakte.Size = new Size(271, 304);
-        tpKontakte.TabIndex = 1;
-        tpKontakte.Text = " Google Kontakte";
-        // 
-        // gbxContactsAutoload
-        // 
-        gbxContactsAutoload.Controls.Add(ckbContactsAutoload);
-        gbxContactsAutoload.Location = new Point(6, 7);
-        gbxContactsAutoload.Name = "gbxContactsAutoload";
-        gbxContactsAutoload.Size = new Size(257, 55);
-        gbxContactsAutoload.TabIndex = 6;
-        gbxContactsAutoload.TabStop = false;
-        gbxContactsAutoload.Text = "Autostart";
-        // 
-        // ckbContactsAutoload
-        // 
-        ckbContactsAutoload.AutoSize = true;
-        ckbContactsAutoload.Location = new Point(6, 24);
-        ckbContactsAutoload.Name = "ckbContactsAutoload";
-        ckbContactsAutoload.Size = new Size(239, 23);
-        ckbContactsAutoload.TabIndex = 2;
-        ckbContactsAutoload.Text = "Kontakte bei Programmstart laden";
-        ckbContactsAutoload.UseVisualStyleBackColor = true;
-        // 
-        // tpWatchFolder
-        // 
-        tpWatchFolder.BackColor = SystemColors.ControlLightLight;
-        tpWatchFolder.BorderStyle = BorderStyle.FixedSingle;
-        tpWatchFolder.Controls.Add(lblWatcherInfo);
-        tpWatchFolder.Controls.Add(lblWatchFolder);
-        tpWatchFolder.Controls.Add(ckbWatchFolder);
-        tpWatchFolder.Controls.Add(btnWatchFolder);
-        tpWatchFolder.Controls.Add(tbWatchFolder);
-        tpWatchFolder.Location = new Point(114, 4);
-        tpWatchFolder.Name = "tpWatchFolder";
-        tpWatchFolder.Size = new Size(271, 304);
-        tpWatchFolder.TabIndex = 4;
-        tpWatchFolder.Text = "Dokumente";
-        // 
-        // lblWatcherInfo
-        // 
-        lblWatcherInfo.Location = new Point(12, 87);
-        lblWatcherInfo.Name = "lblWatcherInfo";
-        lblWatcherInfo.Size = new Size(250, 211);
-        lblWatcherInfo.TabIndex = 13;
-        lblWatcherInfo.Text = resources.GetString("lblWatcherInfo.Text");
-        // 
-        // lblWatchFolder
-        // 
-        lblWatchFolder.AutoSize = true;
-        lblWatchFolder.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-        lblWatchFolder.Location = new Point(12, 7);
-        lblWatchFolder.Name = "lblWatchFolder";
-        lblWatchFolder.Size = new Size(140, 19);
-        lblWatchFolder.TabIndex = 12;
-        lblWatchFolder.Text = "Dokumentenordner";
-        // 
-        // ckbWatchFolder
-        // 
-        ckbWatchFolder.AutoSize = true;
-        ckbWatchFolder.Location = new Point(16, 29);
-        ckbWatchFolder.Name = "ckbWatchFolder";
-        ckbWatchFolder.Size = new Size(225, 23);
-        ckbWatchFolder.TabIndex = 11;
-        ckbWatchFolder.Text = "Auf Veränderungen überwachen";
-        ckbWatchFolder.UseVisualStyleBackColor = true;
-        ckbWatchFolder.CheckedChanged += CkbWatchFolder_CheckedChanged;
-        // 
-        // btnWatchFolder
-        // 
-        btnWatchFolder.Location = new Point(220, 58);
-        btnWatchFolder.Name = "btnWatchFolder";
-        btnWatchFolder.Size = new Size(36, 25);
-        btnWatchFolder.TabIndex = 10;
-        btnWatchFolder.Text = "⚙";
-        btnWatchFolder.UseVisualStyleBackColor = true;
-        btnWatchFolder.Click += BtnWatchFolder_Click;
-        // 
-        // tbWatchFolder
-        // 
-        tbWatchFolder.Location = new Point(12, 58);
-        tbWatchFolder.Name = "tbWatchFolder";
-        tbWatchFolder.Size = new Size(202, 25);
-        tbWatchFolder.TabIndex = 9;
-        // 
-        // tpSicherung
-        // 
-        tpSicherung.BackColor = SystemColors.ControlLightLight;
-        tpSicherung.BorderStyle = BorderStyle.FixedSingle;
-        tpSicherung.Controls.Add(btnZipArchive);
-        tpSicherung.Controls.Add(lblZipArchive);
-        tpSicherung.Controls.Add(lblZipText);
-        tpSicherung.Controls.Add(lblHorizLine);
-        tpSicherung.Controls.Add(ckbZipArchive);
-        tpSicherung.Controls.Add(tbZipArchive);
-        tpSicherung.Controls.Add(lblBackupFolder);
-        tpSicherung.Controls.Add(btnExplorer);
-        tpSicherung.Controls.Add(lblBackup);
-        tpSicherung.Controls.Add(ckbBackup);
-        tpSicherung.Controls.Add(btnBackupFolder);
-        tpSicherung.Controls.Add(tbBackupFolder);
-        tpSicherung.Location = new Point(114, 4);
-        tpSicherung.Name = "tpSicherung";
-        tpSicherung.Size = new Size(271, 304);
-        tpSicherung.TabIndex = 2;
-        tpSicherung.Text = " Sicherung";
-        // 
-        // btnZipArchive
-        // 
-        btnZipArchive.Location = new Point(220, 223);
-        btnZipArchive.Name = "btnZipArchive";
-        btnZipArchive.Size = new Size(36, 25);
-        btnZipArchive.TabIndex = 16;
-        btnZipArchive.Text = "⚙";
-        btnZipArchive.UseVisualStyleBackColor = true;
-        btnZipArchive.Click += BtnZipArchive_Click;
-        // 
-        // lblZipArchive
-        // 
-        lblZipArchive.AutoSize = true;
-        lblZipArchive.Location = new Point(12, 201);
-        lblZipArchive.Name = "lblZipArchive";
-        lblZipArchive.Size = new Size(69, 19);
-        lblZipArchive.TabIndex = 15;
-        lblZipArchive.Text = "Zip-Datei:";
-        // 
-        // lblZipText
-        // 
-        lblZipText.Location = new Point(12, 251);
-        lblZipText.Name = "lblZipText";
-        lblZipText.Size = new Size(250, 41);
-        lblZipText.TabIndex = 14;
-        lblZipText.Text = "Tipp: auf iCloud Drive speichern, für das Öffnen mit iPhone-App 'SQLed'.";
-        // 
-        // lblHorizLine
-        // 
-        lblHorizLine.BorderStyle = BorderStyle.Fixed3D;
-        lblHorizLine.Location = new Point(12, 162);
-        lblHorizLine.Name = "lblHorizLine";
-        lblHorizLine.Size = new Size(244, 2);
-        lblHorizLine.TabIndex = 13;
-        // 
-        // ckbZipArchive
-        // 
-        ckbZipArchive.AutoSize = true;
-        ckbZipArchive.Location = new Point(12, 175);
-        ckbZipArchive.Name = "ckbZipArchive";
-        ckbZipArchive.Size = new Size(233, 23);
-        ckbZipArchive.TabIndex = 11;
-        ckbZipArchive.Text = "Datenbanken in Zip-Datei sichern";
-        ckbZipArchive.UseVisualStyleBackColor = true;
-        ckbZipArchive.CheckedChanged += CkbZipArchive_CheckedChanged;
-        // 
-        // tbZipArchive
-        // 
-        tbZipArchive.Location = new Point(12, 223);
-        tbZipArchive.Name = "tbZipArchive";
-        tbZipArchive.Size = new Size(202, 25);
-        tbZipArchive.TabIndex = 9;
-        tbZipArchive.TextChanged += TbZipArchive_TextChanged;
-        tbZipArchive.Validating += TbZipArchive_Validating;
-        // 
-        // lblBackupFolder
-        // 
-        lblBackupFolder.AutoSize = true;
-        lblBackupFolder.Location = new Point(12, 34);
-        lblBackupFolder.Name = "lblBackupFolder";
-        lblBackupFolder.Size = new Size(119, 19);
-        lblBackupFolder.TabIndex = 8;
-        lblBackupFolder.Text = "Sicherungsordner:";
-        // 
-        // btnExplorer
-        // 
-        btnExplorer.Location = new Point(12, 128);
-        btnExplorer.Name = "btnExplorer";
-        btnExplorer.Size = new Size(244, 26);
-        btnExplorer.TabIndex = 7;
-        btnExplorer.Text = "Sicherungsordner anzeigen";
-        btnExplorer.UseVisualStyleBackColor = true;
-        btnExplorer.Click += BtnExplorer_Click;
-        // 
-        // lblBackup
-        // 
-        lblBackup.Location = new Point(12, 84);
-        lblBackup.Name = "lblBackup";
-        lblBackup.Size = new Size(250, 41);
-        lblBackup.TabIndex = 6;
-        lblBackup.Text = "Das Backup erfolgt in wochentäglichen Unterordnern mit jeweils einer Kopie.";
-        // 
-        // ckbBackup
-        // 
-        ckbBackup.AutoSize = true;
-        ckbBackup.Location = new Point(12, 8);
-        ckbBackup.Name = "ckbBackup";
-        ckbBackup.Size = new Size(235, 23);
-        ckbBackup.TabIndex = 2;
-        ckbBackup.Text = "Daten täglich automatisch sichern";
-        ckbBackup.UseVisualStyleBackColor = true;
-        ckbBackup.CheckedChanged += CkbBackup_CheckedChanged;
-        // 
-        // btnBackupFolder
-        // 
-        btnBackupFolder.Location = new Point(220, 56);
-        btnBackupFolder.Name = "btnBackupFolder";
-        btnBackupFolder.Size = new Size(36, 25);
-        btnBackupFolder.TabIndex = 1;
-        btnBackupFolder.Text = "⚙";
-        btnBackupFolder.UseVisualStyleBackColor = true;
-        btnBackupFolder.Click += BtnBackupFolder_Click;
-        // 
-        // tbBackupFolder
-        // 
-        tbBackupFolder.Location = new Point(12, 56);
-        tbBackupFolder.Name = "tbBackupFolder";
-        tbBackupFolder.Size = new Size(202, 25);
-        tbBackupFolder.TabIndex = 0;
-        tbBackupFolder.TextChanged += TbBackupFolder_TextChanged;
-        // 
-        // btnCancel
-        // 
-        btnCancel.DialogResult = DialogResult.Cancel;
-        btnCancel.Location = new Point(287, 318);
-        btnCancel.Name = "btnCancel";
-        btnCancel.Size = new Size(98, 26);
-        btnCancel.TabIndex = 1;
-        btnCancel.Text = "Abbrechen";
-        btnCancel.UseVisualStyleBackColor = true;
-        // 
-        // btnOK
-        // 
-        btnOK.DialogResult = DialogResult.OK;
-        btnOK.Location = new Point(114, 318);
-        btnOK.Name = "btnOK";
-        btnOK.Size = new Size(167, 26);
-        btnOK.TabIndex = 2;
-        btnOK.Text = "Einstellungen speichern";
-        btnOK.UseVisualStyleBackColor = true;
-        // 
-        // folderBrowserDialog
-        // 
-        folderBrowserDialog.RootFolder = Environment.SpecialFolder.MyComputer;
-        folderBrowserDialog.UseDescriptionForTitle = true;
-        // 
-        // openFileDialog
-        // 
-        openFileDialog.DefaultExt = "adb";
-        openFileDialog.Filter = "Adressen-Datenbank (*.adb)|*.adb|Alle Dateien (*.*)|*.*";
+        // tabControl
+        // 
+        tabControl.Alignment = TabAlignment.Left;
+        tabControl.Controls.Add(tpAllgemein);
+        tabControl.Controls.Add(tpAdressen);
+        tabControl.Controls.Add(tpKontakte);
+        tabControl.Controls.Add(tpWatchFolder);
+        tabControl.Controls.Add(tpAskBefore);
+        tabControl.Controls.Add(tpSicherung);
+        tabControl.Dock = DockStyle.Top;
+        tabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
+        tabControl.ItemSize = new Size(30, 110);
+        tabControl.Location = new Point(0, 0);
+        tabControl.Multiline = true;
+        tabControl.Name = "tabControl";
+        tabControl.SelectedIndex = 0;
+        tabControl.Size = new Size(389, 312);
+        tabControl.SizeMode = TabSizeMode.Fixed;
+        tabControl.TabIndex = 0;
+        tabControl.DrawItem += TabControl_DrawItem;
         // 
         // FrmProgSettings
         // 
@@ -706,7 +769,23 @@ partial class FrmProgSettings
         StartPosition = FormStartPosition.CenterParent;
         Text = "Programmeinstellungen";
         FormClosing += FrmProgSettings_FormClosing;
-        tabControl.ResumeLayout(false);
+        tpSicherung.ResumeLayout(false);
+        tpSicherung.PerformLayout();
+        tpAskBefore.ResumeLayout(false);
+        gbxAskEnvelope.ResumeLayout(false);
+        gbxAskEnvelope.PerformLayout();
+        gbxAskLocal.ResumeLayout(false);
+        gbxAskLocal.PerformLayout();
+        tpWatchFolder.ResumeLayout(false);
+        tpWatchFolder.PerformLayout();
+        tpKontakte.ResumeLayout(false);
+        gbxContactsAutoload.ResumeLayout(false);
+        gbxContactsAutoload.PerformLayout();
+        tpAdressen.ResumeLayout(false);
+        groupBox.ResumeLayout(false);
+        groupBox.PerformLayout();
+        gbDatabaseFolder.ResumeLayout(false);
+        gbDatabaseFolder.PerformLayout();
         tpAllgemein.ResumeLayout(false);
         gbxFontSize.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)nudFontSize).EndInit();
@@ -714,76 +793,68 @@ partial class FrmProgSettings
         gbTextProcessing.PerformLayout();
         gbxColorScheme.ResumeLayout(false);
         gbxColorScheme.PerformLayout();
-        tpAdressen.ResumeLayout(false);
-        tpAdressen.PerformLayout();
-        groupBox.ResumeLayout(false);
-        groupBox.PerformLayout();
-        gbDatabaseFolder.ResumeLayout(false);
-        gbDatabaseFolder.PerformLayout();
-        tpKontakte.ResumeLayout(false);
-        gbxContactsAutoload.ResumeLayout(false);
-        gbxContactsAutoload.PerformLayout();
-        tpWatchFolder.ResumeLayout(false);
-        tpWatchFolder.PerformLayout();
-        tpSicherung.ResumeLayout(false);
-        tpSicherung.PerformLayout();
+        tabControl.ResumeLayout(false);
         ResumeLayout(false);
     }
 
     #endregion
-
-    private TabControl tabControl;
-    private TabPage tpAdressen;
-    private TabPage tpKontakte;
     private Button btnCancel;
-    private Button btnOK;
-    private GroupBox gbDatabaseFolder;
-    private Button btnDatabaseFolder;
-    private TextBox tbDatabaseFolder;
-    private TabPage tpSicherung;
     private FolderBrowserDialog folderBrowserDialog;
-    private Button btnBackupFolder;
+    private OpenFileDialog openFileDialog;
+    private Button btnOK;
+    private TabPage tpSicherung;
+    private Button btnZipArchive;
+    private Label lblZipArchive;
+    private Label lblZipText;
+    private Label lblHorizLine;
+    private CheckBox ckbZipArchive;
+    private TextBox tbZipArchive;
     private TextBox tbBackupFolder;
-    private CheckBox ckbContactsAutoload;
-    private TabPage tpAllgemein;
+    private Label lblBackupFolder;
+    private Button btnExplorer;
+    private Label lblBackup;
     private CheckBox ckbBackup;
+    private Button btnBackupFolder;
+    private TabPage tpAskBefore;
+    private CheckBox ckbAskBeforeSaveSQLExpander;
+    private CheckBox ckbAskBeforeDelete;
+    private CheckBox ckbAskBeforeSaveSQL;
+    private CheckBox ckbAskPrintEnvelope;
+    private TabPage tpWatchFolder;
+    private Label lblWatcherInfo;
+    private Label lblWatchFolder;
+    private CheckBox ckbWatchFolder;
+    private Button btnWatchFolder;
+    private TextBox tbWatchFolder;
+    private TabPage tpKontakte;
+    private GroupBox gbxContactsAutoload;
+    private CheckBox ckbContactsAutoload;
+    private TabPage tpAdressen;
+    private Label lblToggleDatabase;
     private GroupBox groupBox;
     private Button btnStandardFile;
     private TextBox tbStandard;
     private RadioButton rbStandard;
     private RadioButton rbRecent;
     private RadioButton rbEmpty;
-    private OpenFileDialog openFileDialog;
-    private Label lblBackup;
-    private Button btnExplorer;
-    private Label lblBackupFolder;
-    private GroupBox gbxColorScheme;
-    private RadioButton rbtnDark;
-    private RadioButton rbtnBlue;
-    private RadioButton rbtnGrey;
-    private RadioButton rbtnPale;
+    private GroupBox gbDatabaseFolder;
+    private Button btnDatabaseFolder;
+    private TextBox tbDatabaseFolder;
+    private TabPage tpAllgemein;
+    private GroupBox gbxFontSize;
+    private Button btnFontReset;
+    private NumericUpDown nudFontSize;
+    private ComboBox cbxFontName;
     private GroupBox gbTextProcessing;
     private RadioButton rbManualSelect;
     private RadioButton rbLibreOffice;
     private RadioButton rbMSWord;
-    private GroupBox gbxContactsAutoload;
-    private CheckBox ckbAskBeforeSaveSQL;
-    private CheckBox ckbAskBeforeDelete;
-    private TabPage tpWatchFolder;
-    private Label lblWatchFolder;
-    private CheckBox ckbWatchFolder;
-    private Button btnWatchFolder;
-    private TextBox tbWatchFolder;
-    private Label lblWatcherInfo;
-    private Label lblHorizLine;
-    private CheckBox ckbZipArchive;
-    private TextBox tbZipArchive;
-    private Label lblZipText;
-    private Label lblZipArchive;
-    private Button btnZipArchive;
-    private GroupBox gbxFontSize;
-    private ComboBox cbxFontName;
-    private NumericUpDown nudFontSize;
-    private Button btnFontReset;
-    private CheckBox ckbAskBeforeSaveSQLExpander;
+    private GroupBox gbxColorScheme;
+    private RadioButton rbtnPale;
+    private RadioButton rbtnDark;
+    private RadioButton rbtnBlue;
+    private RadioButton rbtnGrey;
+    private TabControl tabControl;
+    private GroupBox gbxAskLocal;
+    private GroupBox gbxAskEnvelope;
 }

@@ -1,5 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using Adressen.Properties; // Für Resources
 using Word = Microsoft.Office.Interop.Word;
 
 namespace Adressen.cls;
@@ -122,8 +121,7 @@ internal class WordManager
                     "Möchtest du die vorhandene Vorlage löschen und neu erstellen?",
                     downloadPath,
                     "Ja, löschen und neu erstellen",
-                    "Nein, nur öffnen",
-                    true);
+                    "Nein, nur öffnen");
 
                 if (isNo)
                 {
@@ -158,12 +156,12 @@ internal class WordManager
             AddParagraph(wordDoc, "Strasse", 12f, 6f, true);
             AddParagraph(wordDoc, "PLZ_Ort", 12f, 12f, true);
 
-            AddParagraph(wordDoc, "Probiere nun das Einfügen einer Adresse aus, indem du im Adressen-Programm auf »In Brief einfügen« klickst.", 11f);
+            AddParagraph(wordDoc, "Klicke nun im Adressen & Kontakte-Programm auf »In Brief einfügen«.", 11f, 0f, false, false, "In Brief einfügen", isRed: true);
             AddParagraph(wordDoc, "Liste der möglichen Textmarkierungen:", 11f, 0f, false, true);
 
             var listPara = wordDoc.Paragraphs.Add();
             listPara.Range.Font.Name = "Courier New";
-            listPara.Range.Text = string.Join("\v", allKeys.OrderBy(k => k).ToArray());
+            listPara.Range.Text = string.Join("\v", allKeys);   //.OrderBy(k => k).ToArray());
 
             wordDoc.SaveAs2(downloadPath, Word.WdSaveFormat.wdFormatXMLTemplate);
             wordApp.Activate();
@@ -172,28 +170,34 @@ internal class WordManager
         finally { ReleaseWordObjects(ref wordDoc, ref wordApp); }
     }
 
-    private static void AddParagraph(Word.Document doc, string text, float fontSize, float spaceAfter = 0f, bool asBookmark = false, bool bold = false)
+    private static void AddParagraph(Word.Document doc, string text, float fontSize, float spaceAfter = 0f, bool asBookmark = false, bool bold = false, string? boldSubstring = null, bool isRed = false)
     {
         var p = doc.Paragraphs.Add();
+        p.Range.Font.Color = isRed ? Word.WdColor.wdColorRed : Word.WdColor.wdColorBlack;
+        p.Range.Font.Bold = bold ? 1 : 0;  // Ganze Zeile fett, wenn bold=true
         p.Range.Font.Size = fontSize;
-        p.Range.Font.Bold = bold ? 1 : 0;
         p.Range.Text = text;
+        if (!string.IsNullOrEmpty(boldSubstring))
+        {
+            var findRange = p.Range;
+            if (findRange.Find.Execute(FindText: boldSubstring)) { findRange.Font.Bold = 1; }
+        }
         if (asBookmark) { doc.Bookmarks.Add(text, p.Range); }
         if (spaceAfter > 0f) { p.Format.SpaceAfter = spaceAfter; }
         p.Range.InsertParagraphAfter();
     }
 
+
     internal static void ShowWordBookmarksInfoDialog(nint ownerHandle, string[] allKeys)
     {
         if (allKeys == null || allKeys.Length == 0) { return; }
-        var sortedKeys = allKeys.OrderBy(k => k).ToArray();  // Die Keys alphabetisch sortieren, damit der Nutzer sie schneller findet
         var btnCreateDoc = new TaskDialogButton("&Beispieldokument erstellen");
         var btnClose = TaskDialogButton.Close;
-        btnCreateDoc.Click += (s, e) => { CreateTemplateDocument(sortedKeys, ownerHandle); };
+        btnCreateDoc.Click += (s, e) => { CreateTemplateDocument(allKeys, ownerHandle); };
         var expander = new TaskDialogExpander
         {
             Text = $"Folgende Textmarken stehen zur Verfügung:\n\n" +
-                   $"{string.Join(", ", sortedKeys)}\n\n" +
+                   $"{string.Join(Environment.NewLine, allKeys)}\n\n" +
                    "(Die Namen wurden soeben in die Zwischenablage kopiert!)",
             CollapsedButtonText = "Verfügbare Textmarken anzeigen",
             ExpandedButtonText = "Verfügbare Textmarken ausblenden",
@@ -201,16 +205,17 @@ internal class WordManager
         };
         expander.ExpandedChanged += (s, e) =>
         {
-            if (expander.Expanded) { Clipboard.SetText(string.Join(Environment.NewLine, sortedKeys)); }
+            if (expander.Expanded) { Clipboard.SetText(string.Join(Environment.NewLine, allKeys)); }
         };
         var page = new TaskDialogPage()
         {
             Caption = Application.ProductName,
             Heading = "Kein aktives Word-Dokument gefunden",
             Text = "Es wurde kein offenes Dokument gefunden, in das Daten eingefügt werden könnten.",
-            Icon = new TaskDialogIcon(Resources.word32),
+            Icon = new TaskDialogIcon(Properties.Resources.Word32),
             Footnote = "Tipp: Öffne ein Dokument oder erstelle eine Vorlage.",
             AllowCancel = true,
+            SizeToContent = true,
             Buttons = { btnCreateDoc, btnClose },
             Expander = expander
         };

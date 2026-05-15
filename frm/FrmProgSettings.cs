@@ -14,21 +14,16 @@ public partial class FrmProgSettings : Form
     {
         InitializeComponent();
         _settings = settings;
-        //LoadFontsIntoComboBox(); // Zuerst die gefilterten Schriften laden
-
-        // Schriften direkt aus dem Manager abrufen (geht in ms)
         cbxFontName.BeginUpdate();
         cbxFontName.Items.Clear();
-        cbxFontName.Items.AddRange([.. FontManager.GetValidFonts()]);
+        cbxFontName.Items.AddRange([.. FontManager.GetValidFonts()]);  // Schriften direkt aus dem Manager abrufen (geht in ms)
         Utils.AdjustComboBoxDropDownWidth(cbxFontName);
         cbxFontName.EndUpdate();
-
-        MapSettingsToUi();       // Dann die gespeicherte Schriftart auswählen
+        MapSettingsToUi();  // Dann die gespeicherte Schriftart auswählen
         UpdateUiState();
     }
 
-    // --- MAPPING LOGIK (Manuell statt DataBinding) ---
-    private void MapSettingsToUi()
+    private void MapSettingsToUi()  // Mapping statt DataBinding, da wir hier auch Logik für die RadioButtons haben und die Schriftart-Auswahl…
     {
         // CheckBoxen
         ckbAskBeforeDelete.Checked = _settings.AskBeforeDelete;
@@ -38,6 +33,7 @@ public partial class FrmProgSettings : Form
         ckbWatchFolder.Checked = _settings.WatchFolder;
         ckbAskBeforeSaveSQL.Checked = _settings.AskBeforeSaveSQL;
         ckbAskBeforeSaveSQLExpander.Checked = _settings.AskBeforeSaveSQLExpander;
+        ckbAskPrintEnvelope.Checked = _settings.AskPrintEnvelope;
 
         // TextBoxen
         tbStandard.Text = _settings.StandardFile;
@@ -47,18 +43,9 @@ public partial class FrmProgSettings : Form
         tbWatchFolder.Text = _settings.DocumentFolder;
 
         // RadioButtons: Start-Verhalten
-        if (_settings.ReloadRecent)
-        {
-            rbRecent.Checked = true;
-        }
-        else if (_settings.NoAutoload)
-        {
-            rbEmpty.Checked = true;
-        }
-        else
-        {
-            rbStandard.Checked = true;
-        }
+        if (_settings.ReloadRecent) { rbRecent.Checked = true; }
+        else if (_settings.NoAutoload) { rbEmpty.Checked = true; }
+        else { rbStandard.Checked = true; }
 
         // RadioButtons: Farbschema
         switch (_settings.ColorScheme)
@@ -94,6 +81,7 @@ public partial class FrmProgSettings : Form
         _settings.WatchFolder = ckbWatchFolder.Checked;
         _settings.AskBeforeSaveSQL = ckbAskBeforeSaveSQL.Checked;
         _settings.AskBeforeSaveSQLExpander = ckbAskBeforeSaveSQLExpander.Checked;
+        _settings.AskPrintEnvelope = ckbAskPrintEnvelope.Checked;
 
         // TextBoxen
         _settings.StandardFile = Utils.CorrectUNC(tbStandard.Text.Trim());
@@ -258,13 +246,17 @@ public partial class FrmProgSettings : Form
     {
         tbStandard.Enabled = btnStandardFile.Enabled = rbStandard.Checked;
         ckbAskBeforeSaveSQLExpander.Enabled = ckbAskBeforeSaveSQL.Checked;
-
+        ckbAskBeforeSaveSQLExpander.Enabled = ckbAskBeforeSaveSQL.Checked;
+        if (ckbAskBeforeSaveSQLExpander.Checked)
+        {
+            ckbAskBeforeSaveSQL.Checked = true;
+            ckbAskBeforeSaveSQL.Enabled = false;
+        }
+        else { ckbAskBeforeSaveSQL.Enabled = true; }
         var backupActive = ckbBackup.Checked;
         tbBackupFolder.Enabled = btnBackupFolder.Enabled = backupActive;
         btnExplorer.Enabled = backupActive && !string.IsNullOrEmpty(tbBackupFolder.Text);
-
         tbZipArchive.Enabled = btnZipArchive.Enabled = ckbZipArchive.Checked;
-
         var watchActive = ckbWatchFolder.Checked;
         tbWatchFolder.Enabled = btnWatchFolder.Enabled = lblWatchFolder.Enabled = watchActive;
     }
@@ -276,6 +268,8 @@ public partial class FrmProgSettings : Form
     private void CkbWatchFolder_CheckedChanged(object sender, EventArgs e) => UpdateUiState();
     private void CkbZipArchive_CheckedChanged(object sender, EventArgs e) => UpdateUiState();
     private void TbZipArchive_TextChanged(object sender, EventArgs e) => UpdateUiState();
+    private void CkbAskBeforeSaveSQL_CheckedChanged(object sender, EventArgs e) => UpdateUiState();
+    private void CkbAskBeforeSaveSQLExpander_CheckedChanged(object sender, EventArgs e) => UpdateUiState();
 
     // --- File Dialog Buttons ---
 
@@ -421,6 +415,4 @@ public partial class FrmProgSettings : Form
 
     private void CbxFontName_SelectedIndexChanged(object sender, EventArgs e) => UpdateFontResetButtonState();
     private void NudFontSize_ValueChanged(object sender, EventArgs e) => UpdateFontResetButtonState();
-
-    private void CkbAskBeforeSaveSQL_CheckedChanged(object sender, EventArgs e) => UpdateUiState();
 }

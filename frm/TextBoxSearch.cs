@@ -14,7 +14,7 @@ public partial class TextBoxSearch : Form
         checkCase.Checked = caseChecked;
         cbxSearch.Items.Clear();
         cbxSearch.Text = searchString;
-        if (Utils.SearchHistory.Count > 0) { cbxSearch.Items.AddRange([.. Utils.SearchHistory]); }
+        if (TextBoxSearchManager.SearchHistory.Count > 0) { cbxSearch.Items.AddRange([.. TextBoxSearchManager.SearchHistory]); }
     }
 
     private void BtnSearch_Click(object sender, EventArgs e)
