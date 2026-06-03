@@ -7139,7 +7139,7 @@ public partial class FrmAdressen : Form
         notifyIcon.Visible = true;
         Hide(); // Versteckt das Fenster komplett
         ShowInTaskbar = false; // Entfernt es aus der Taskleiste
-        if (_firstTimeNotify)
+        if (_firstTimeNotify && !_startMinToTray)
         {
             notifyIcon.ShowBalloonTip(3000, "Adressen & Kontakte", "Das Programm läuft im Hintergrund weiter.", ToolTipIcon.Info);
             _firstTimeNotify = false;
