@@ -2,12 +2,12 @@
 
 namespace Adressen;
 
-public partial class TextBoxSearch : Form
+public partial class FrmTextBoxSearch : Form
 {
     public string SearchText => cbxSearch.Text;
     public bool MatchCase => checkCase.Checked;
 
-    public TextBoxSearch(string searchString, bool caseChecked)
+    public FrmTextBoxSearch(string searchString, bool caseChecked)
     {
         InitializeComponent();
 

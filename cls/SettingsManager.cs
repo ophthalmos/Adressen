@@ -8,7 +8,7 @@ public class AppSettings
 {
     public const int DatabaseSchemaVersion = 5; // v5: zuletzt "LastModified" hinzugefügt
     public const int MaxRecentFiles = 10;   // Wird für JSON-Speicherung nicht verwendet, da es sich um eine Konstante handelt      
-    public const int TextBoxPadding = 3;  // kein JsonIgnore erforderlich
+    public const char TextBoxPaddingChar = ' '; // schmales Leerzeichen // '\u200B'; ' '; kein JsonIgnore erforderlich
 
     [JsonIgnore]
     public static readonly int[] DefaultColumnWidths =
@@ -31,6 +31,7 @@ public class AppSettings
     // Initialisierung direkt mit Klonen der Standardwerte!
     public bool[] HideColumnArr { get; set; } = (bool[])DefaultHideColumns.Clone();
     public int[] ColumnWidths { get; set; } = (int[])DefaultColumnWidths.Clone();
+
 
     // --- Sonstige Einstellungen ---
     public string PrintDevice { get; set; } = string.Empty;
@@ -100,6 +101,7 @@ public class AppSettings
     public decimal LandGapFactor { get; set; } = 0.3m;
     public bool AskPrintEnvelope { get; set; } = true;
 
+    public bool ShowPlaceholderText { get; set; } = true;
     public bool AskBeforeDelete { get; set; } = true;
     public string ColorScheme { get; set; } = "blue";
     public bool ContactsAutoload { get; set; } = false;
@@ -119,15 +121,20 @@ public class AppSettings
     public string DocumentFolder { get; set; } = string.Empty;
     public string DatabaseFolder { get; set; } = string.Empty;
 
+    public bool FritzMonitorEnabled { get; set; } = false;
+    public string FritzBoxHost { get; set; } = "192.168.178.1";
+    public bool FritzContactsFirst { get; set; } = true;
+    public bool FritzMonitorPlaySound { get; set; } = true;
+
     public int CopyPatternIndex { get; set; } = 0;
-    public string[] CopyPattern1 { get; set; } = ["Anrede", "Praefix_Vorname_Zwischenname_Nachname", "Strasse", "PLZ_Ort"];
-    public string[] CopyPattern2 { get; set; } = ["Telefon1", "Telefon2", "Mobil", "Fax"];
-    public string[] CopyPattern3 { get; set; } = ["Mail1", "Mail2", "Internet"];
-    public string[] CopyPattern4 { get; set; } = [];
+    public string[] CopyPattern1 { get; set; } = ["[Praefix_Vorname_Nachname], [Ort]"];
+    public string[] CopyPattern2 { get; set; } = ["[Anrede]", "[Praefix_Vorname_Zwischenname_Nachname]", "[Strasse]", "[PLZ_Ort]"];
+    public string[] CopyPattern3 { get; set; } = ["Tel. 1:\t[Telefon1]", "Tel. 2.:\t[Telefon2]", "Mobil:\t[Mobil]", "Fax:\t[Fax]"];
+    public string[] CopyPattern4 { get; set; } = ["[Mail1]", "[Mail2]", "[Internet]"]; 
     public string[] CopyPattern5 { get; set; } = [];
     public string[] CopyPattern6 { get; set; } = [];
 
-    public int SplitterPosition { get; set; } = 249;
+    public int SplitterPosition { get; set; } = 500;
     public bool WindowMaximized { get; set; } = false;
 
     public int BirthdayRemindLimit { get; set; } = 14;

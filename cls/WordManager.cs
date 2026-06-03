@@ -115,7 +115,7 @@ internal class WordManager
 
             if (File.Exists(downloadPath))
             {
-                var (isYes, isNo, _) = Utils.YesNo_TaskDialog(
+                var (isYes, isCancelled) = Utils.YesNo_TaskDialog(
                     owner,
                     "Datei existiert bereits",
                     "Möchtest du die vorhandene Vorlage löschen und neu erstellen?",
@@ -123,13 +123,12 @@ internal class WordManager
                     "Ja, löschen und neu erstellen",
                     "Nein, nur öffnen");
 
-                if (isNo)
+                if (isCancelled) { return; }  // Abbrechen
+                else if (!isYes)  // isNo: Datei nur öffnen, nicht löschen
                 {
                     Utils.StartFile(ownerHandle, downloadPath);  // Nur öffnen
                     return;
                 }
-                else if (!isYes) { return; }  // Abbrechen
-
                 try { File.Delete(downloadPath); }
                 catch (Exception ex)
                 {

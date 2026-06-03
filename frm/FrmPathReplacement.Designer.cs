@@ -1,6 +1,6 @@
 ﻿namespace Adressen.frm;
 
-partial class PathReplacement
+partial class FrmPathReplacement
 {
     /// <summary>
     /// Required designer variable.
@@ -29,7 +29,7 @@ partial class PathReplacement
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
-        var resources = new System.ComponentModel.ComponentResourceManager(typeof(PathReplacement));
+        var resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmPathReplacement));
         labelSearch = new Label();
         labelReplace = new Label();
         tbReplace = new TextBox();

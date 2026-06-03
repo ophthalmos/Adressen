@@ -2,7 +2,7 @@
 
 namespace Adressen.frm;
 
-public partial class PathReplacement : Form
+public partial class FrmPathReplacement : Form
 {
     [Browsable(false)] // Versteckt die Eigenschaft im Eigenschaften-Fenster des Designers
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)] // Verhindert die Serialisierung
@@ -16,7 +16,7 @@ public partial class PathReplacement : Form
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public string ReplaceText => tbReplace.Text;
 
-    public PathReplacement()
+    public FrmPathReplacement()
     {
         InitializeComponent();
     }

@@ -44,8 +44,9 @@ partial class FrmAdressen
         openToolStripMenuItem = new ToolStripMenuItem();
         recentToolStripMenuItem = new ToolStripMenuItem();
         googleToolStripMenuItem = new ToolStripMenuItem();
-        toolStripSeparator8 = new ToolStripSeparator();
         importToolStripMenuItem = new ToolStripMenuItem();
+        toolStripSeparator8 = new ToolStripSeparator();
+        saveSelectionToolStripMenuItem = new ToolStripMenuItem();
         exportToolStripMenuItem = new ToolStripMenuItem();
         printToolStripMenuItem = new ToolStripMenuItem();
         googlebackupToolStripMenuItem = new ToolStripMenuItem();
@@ -63,10 +64,14 @@ partial class FrmAdressen
         toolStripSeparator16 = new ToolStripSeparator();
         globalSearchToolStripMenuItem = new ToolStripMenuItem();
         rejectChangesToolStripMenuItem = new ToolStripMenuItem();
+        vcardTSSeparator = new ToolStripSeparator();
+        vcardImportToolStripMenuItem = new ToolStripMenuItem();
+        vcardExportToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator1 = new ToolStripSeparator();
         wordToolStripMenuItem = new ToolStripMenuItem();
         envelopeToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator21 = new ToolStripSeparator();
+        mailWriteToolStripMenuItem = new ToolStripMenuItem();
         printSingleToolStripMenuItem = new ToolStripMenuItem();
         viewToolStripMenuItem = new ToolStripMenuItem();
         columnSelectToolStripMenuItem = new ToolStripMenuItem();
@@ -92,9 +97,25 @@ partial class FrmAdressen
         toolStripSeparator24 = new ToolStripSeparator();
         mobilePlusFilterToolStripMenuItem = new ToolStripMenuItem();
         mobileMinusFilterToolStripMenuItem = new ToolStripMenuItem();
+        faxTSSeparator = new ToolStripSeparator();
+        faxPlusFilterToolStripMenuItem = new ToolStripMenuItem();
+        faxMinusFilterToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator25 = new ToolStripSeparator();
+        internetPlusToolStripMenuItem = new ToolStripMenuItem();
+        internetMinusToolStripMenuItem = new ToolStripMenuItem();
+        internetTSSeparator = new ToolStripSeparator();
+        companyPlusFilterToolStripMenuItem = new ToolStripMenuItem();
+        companyMinusFilterToolStripMenuItem = new ToolStripMenuItem();
+        companyTSSeparator = new ToolStripSeparator();
         datePlusFilterMenuItem = new ToolStripMenuItem();
         dateMinusFilterMenuItem = new ToolStripMenuItem();
+        toolStripSeparator26 = new ToolStripSeparator();
+        addressCompletePlusToolStripMenuItem = new ToolStripMenuItem();
+        addressCompleteMinusToolStripMenuItem = new ToolStripMenuItem();
+        addressCompleteTSSeparator = new ToolStripSeparator();
+        todayModifiedToolStripMenuItem = new ToolStripMenuItem();
+        modifiedLast7DaysToolStripMenuItem = new ToolStripMenuItem();
+        modifiedLast30DaysToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator18 = new ToolStripSeparator();
         orphanedDocumentsToolStripMenuItem = new ToolStripMenuItem();
         findDuplicatesToolStripMenuItem = new ToolStripMenuItem();
@@ -147,6 +168,7 @@ partial class FrmAdressen
         toolStripStatusLabel = new ToolStripStatusLabel();
         toolStripProgressBar = new ToolStripProgressBar();
         springSpacer = new ToolStripStatusLabel();
+        tsBtnFritzMonitor = new ToolStripButton();
         btnUpdateAvailable = new ToolStripButton();
         splitContainer = new SplitContainer();
         tabControl = new TabControl();
@@ -169,6 +191,7 @@ partial class FrmAdressen
         tbMenuSeparator2 = new ToolStripSeparator();
         searchTextBoxMenuItem = new ToolStripMenuItem();
         furtherTextBoxMenuItem = new ToolStripMenuItem();
+        specialCharactersToolStripMenuItem = new ToolStripMenuItem();
         tbMenuSeparator3 = new ToolStripSeparator();
         selectAllTextBoxMenuItem = new ToolStripMenuItem();
         tbPosition = new PaddedTextBox();
@@ -184,11 +207,11 @@ partial class FrmAdressen
         tbSuffix = new PaddedTextBox();
         firmaLabel = new Label();
         tbFirma = new PaddedTextBox();
-        plzortLabel = new Label();
         strasseLabel = new Label();
+        plzortLabel = new Label();
+        tbStraße = new PaddedTextBox();
         cbPLZ = new PaddedTextBox();
         cbOrt = new PaddedTextBox();
-        tbStraße = new PaddedTextBox();
         landLabel = new Label();
         cbLand = new PaddedTextBox();
         labelBetreff = new Label();
@@ -257,7 +280,6 @@ partial class FrmAdressen
         copyCellToolStripMenuItem = new ToolStripMenuItem();
         copy2OtherDGVSeparator = new ToolStripSeparator();
         copy2OtherDGVMenuItem = new ToolStripMenuItem();
-        move2OtherDGVToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator15 = new ToolStripSeparator();
         wordTSMenuItem = new ToolStripMenuItem();
         envelopeTSMenuItem = new ToolStripMenuItem();
@@ -323,7 +345,7 @@ partial class FrmAdressen
         // 
         // fileToolStripMenuItem
         // 
-        fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newDBToolStripMenuItem, toolStripSeparator10, openToolStripMenuItem, recentToolStripMenuItem, googleToolStripMenuItem, toolStripSeparator8, importToolStripMenuItem, exportToolStripMenuItem, printToolStripMenuItem, googlebackupToolStripMenuItem, toolStripSeparator6, exitToolStripMenuItem });
+        fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newDBToolStripMenuItem, toolStripSeparator10, openToolStripMenuItem, recentToolStripMenuItem, googleToolStripMenuItem, importToolStripMenuItem, toolStripSeparator8, saveSelectionToolStripMenuItem, exportToolStripMenuItem, printToolStripMenuItem, googlebackupToolStripMenuItem, toolStripSeparator6, exitToolStripMenuItem });
         fileToolStripMenuItem.Name = "fileToolStripMenuItem";
         fileToolStripMenuItem.Size = new Size(46, 20);
         fileToolStripMenuItem.Text = "Datei";
@@ -363,17 +385,24 @@ partial class FrmAdressen
         googleToolStripMenuItem.Text = "&Google-Kontakte laden";
         googleToolStripMenuItem.Click += GoogleToolStripMenuItem_ClickAsync;
         // 
-        // toolStripSeparator8
-        // 
-        toolStripSeparator8.Name = "toolStripSeparator8";
-        toolStripSeparator8.Size = new Size(226, 6);
-        // 
         // importToolStripMenuItem
         // 
         importToolStripMenuItem.Name = "importToolStripMenuItem";
         importToolStripMenuItem.Size = new Size(229, 22);
         importToolStripMenuItem.Text = "&CSV-Datei lokal importieren…";
         importToolStripMenuItem.Click += ImportToolStripMenuItem_Click;
+        // 
+        // toolStripSeparator8
+        // 
+        toolStripSeparator8.Name = "toolStripSeparator8";
+        toolStripSeparator8.Size = new Size(226, 6);
+        // 
+        // saveSelectionToolStripMenuItem
+        // 
+        saveSelectionToolStripMenuItem.Name = "saveSelectionToolStripMenuItem";
+        saveSelectionToolStripMenuItem.Size = new Size(229, 22);
+        saveSelectionToolStripMenuItem.Text = "Auswahl lokal speichern…";
+        saveSelectionToolStripMenuItem.Click += SaveSelectionToolStripMenuItem_Click;
         // 
         // exportToolStripMenuItem
         // 
@@ -411,7 +440,7 @@ partial class FrmAdressen
         // 
         // editToolStripMenuItem
         // 
-        editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { clipboardTSMenuItem, toolStripSeparator14, newToolStripMenuItem, duplicateToolStripMenuItem, toolStripSeparator7, deleteToolStripMenuItem, toolStripSeparator13, copyToOtherDGVTSMenuItem, toolStripSeparator16, globalSearchToolStripMenuItem, rejectChangesToolStripMenuItem, toolStripSeparator1, wordToolStripMenuItem, envelopeToolStripMenuItem, toolStripSeparator21, printSingleToolStripMenuItem });
+        editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { clipboardTSMenuItem, toolStripSeparator14, newToolStripMenuItem, duplicateToolStripMenuItem, toolStripSeparator7, deleteToolStripMenuItem, toolStripSeparator13, copyToOtherDGVTSMenuItem, toolStripSeparator16, globalSearchToolStripMenuItem, rejectChangesToolStripMenuItem, vcardTSSeparator, vcardImportToolStripMenuItem, vcardExportToolStripMenuItem, toolStripSeparator1, wordToolStripMenuItem, envelopeToolStripMenuItem, toolStripSeparator21, mailWriteToolStripMenuItem, printSingleToolStripMenuItem });
         editToolStripMenuItem.Name = "editToolStripMenuItem";
         editToolStripMenuItem.Size = new Size(75, 20);
         editToolStripMenuItem.Text = "Bearbeiten";
@@ -499,6 +528,25 @@ partial class FrmAdressen
         rejectChangesToolStripMenuItem.Text = "&Änderungen verwerfen";
         rejectChangesToolStripMenuItem.Click += RejectChangesToolStripMenuItem_Click;
         // 
+        // vcardTSSeparator
+        // 
+        vcardTSSeparator.Name = "vcardTSSeparator";
+        vcardTSSeparator.Size = new Size(279, 6);
+        // 
+        // vcardImportToolStripMenuItem
+        // 
+        vcardImportToolStripMenuItem.Name = "vcardImportToolStripMenuItem";
+        vcardImportToolStripMenuItem.Size = new Size(282, 22);
+        vcardImportToolStripMenuItem.Text = "Übernahme aus &vCard-Datei…";
+        vcardImportToolStripMenuItem.Click += VcardImportToolStripMenuItem_Click;
+        // 
+        // vcardExportToolStripMenuItem
+        // 
+        vcardExportToolStripMenuItem.Name = "vcardExportToolStripMenuItem";
+        vcardExportToolStripMenuItem.Size = new Size(282, 22);
+        vcardExportToolStripMenuItem.Text = "Als vCard-Datei &speichern…";
+        vcardExportToolStripMenuItem.Click += VcardExportToolStripMenuItem_Click;
+        // 
         // toolStripSeparator1
         // 
         toolStripSeparator1.Name = "toolStripSeparator1";
@@ -524,6 +572,14 @@ partial class FrmAdressen
         // 
         toolStripSeparator21.Name = "toolStripSeparator21";
         toolStripSeparator21.Size = new Size(279, 6);
+        // 
+        // mailWriteToolStripMenuItem
+        // 
+        mailWriteToolStripMenuItem.Name = "mailWriteToolStripMenuItem";
+        mailWriteToolStripMenuItem.ShortcutKeyDisplayString = "Strg+M";
+        mailWriteToolStripMenuItem.Size = new Size(282, 22);
+        mailWriteToolStripMenuItem.Text = "E-Mail schreiben…";
+        mailWriteToolStripMenuItem.Click += MailWriteToolStripMenuItem_Click;
         // 
         // printSingleToolStripMenuItem
         // 
@@ -579,7 +635,7 @@ partial class FrmAdressen
         // 
         // filterlToolStripMenuItem
         // 
-        filterlToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { groupFilterToolStripMenuItem, manageGroupsToolStripMenuItem, toolStripSeparator9, adressenMitBriefToolStripMenuItem, adressenOhneBriefToolStripMenuItem, toolStripSeparator20, photoPlusFilterToolStripMenuItem, photoMinusFilterToolStripMenuItem, toolStripSeparator22, mailPlusFilterToolStripMenuItem, mailMinusFilterToolStripMenuItem, toolStripSeparator23, telephonePlusFilterToolStripMenuItem, telephoneMinusFilterToolStripMenuItem, toolStripSeparator24, mobilePlusFilterToolStripMenuItem, mobileMinusFilterToolStripMenuItem, toolStripSeparator25, datePlusFilterMenuItem, dateMinusFilterMenuItem, toolStripSeparator18, orphanedDocumentsToolStripMenuItem, findDuplicatesToolStripMenuItem });
+        filterlToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { groupFilterToolStripMenuItem, manageGroupsToolStripMenuItem, toolStripSeparator9, adressenMitBriefToolStripMenuItem, adressenOhneBriefToolStripMenuItem, toolStripSeparator20, photoPlusFilterToolStripMenuItem, photoMinusFilterToolStripMenuItem, toolStripSeparator22, mailPlusFilterToolStripMenuItem, mailMinusFilterToolStripMenuItem, toolStripSeparator23, telephonePlusFilterToolStripMenuItem, telephoneMinusFilterToolStripMenuItem, toolStripSeparator24, mobilePlusFilterToolStripMenuItem, mobileMinusFilterToolStripMenuItem, faxTSSeparator, faxPlusFilterToolStripMenuItem, faxMinusFilterToolStripMenuItem, toolStripSeparator25, internetPlusToolStripMenuItem, internetMinusToolStripMenuItem, internetTSSeparator, companyPlusFilterToolStripMenuItem, companyMinusFilterToolStripMenuItem, companyTSSeparator, datePlusFilterMenuItem, dateMinusFilterMenuItem, toolStripSeparator26, addressCompletePlusToolStripMenuItem, addressCompleteMinusToolStripMenuItem, addressCompleteTSSeparator, todayModifiedToolStripMenuItem, modifiedLast7DaysToolStripMenuItem, modifiedLast30DaysToolStripMenuItem, toolStripSeparator18, orphanedDocumentsToolStripMenuItem, findDuplicatesToolStripMenuItem });
         filterlToolStripMenuItem.Name = "filterlToolStripMenuItem";
         filterlToolStripMenuItem.Size = new Size(45, 20);
         filterlToolStripMenuItem.Text = "Filter";
@@ -697,10 +753,67 @@ partial class FrmAdressen
         mobileMinusFilterToolStripMenuItem.Text = "Alle ohne Mobiltelefonnummer";
         mobileMinusFilterToolStripMenuItem.Click += MobileMinusFilterToolStripMenuItem_Click;
         // 
+        // faxTSSeparator
+        // 
+        faxTSSeparator.Name = "faxTSSeparator";
+        faxTSSeparator.Size = new Size(248, 6);
+        // 
+        // faxPlusFilterToolStripMenuItem
+        // 
+        faxPlusFilterToolStripMenuItem.Name = "faxPlusFilterToolStripMenuItem";
+        faxPlusFilterToolStripMenuItem.Size = new Size(251, 22);
+        faxPlusFilterToolStripMenuItem.Text = "Alle mit Faxnummer";
+        faxPlusFilterToolStripMenuItem.Click += FaxPlusFilterToolStripMenuItem_Click;
+        // 
+        // faxMinusFilterToolStripMenuItem
+        // 
+        faxMinusFilterToolStripMenuItem.Name = "faxMinusFilterToolStripMenuItem";
+        faxMinusFilterToolStripMenuItem.Size = new Size(251, 22);
+        faxMinusFilterToolStripMenuItem.Text = "Alle ohne Faxnummer";
+        faxMinusFilterToolStripMenuItem.Click += FaxMinusFilterToolStripMenuItem_Click;
+        // 
         // toolStripSeparator25
         // 
         toolStripSeparator25.Name = "toolStripSeparator25";
         toolStripSeparator25.Size = new Size(248, 6);
+        // 
+        // internetPlusToolStripMenuItem
+        // 
+        internetPlusToolStripMenuItem.Name = "internetPlusToolStripMenuItem";
+        internetPlusToolStripMenuItem.Size = new Size(251, 22);
+        internetPlusToolStripMenuItem.Text = "Alle mit Internetadresse";
+        internetPlusToolStripMenuItem.Click += InternetPlusToolStripMenuItem_Click;
+        // 
+        // internetMinusToolStripMenuItem
+        // 
+        internetMinusToolStripMenuItem.Name = "internetMinusToolStripMenuItem";
+        internetMinusToolStripMenuItem.Size = new Size(251, 22);
+        internetMinusToolStripMenuItem.Text = "Alle ohne Internetadresse";
+        internetMinusToolStripMenuItem.Click += InternetMinusToolStripMenuItem_Click;
+        // 
+        // internetTSSeparator
+        // 
+        internetTSSeparator.Name = "internetTSSeparator";
+        internetTSSeparator.Size = new Size(248, 6);
+        // 
+        // companyPlusFilterToolStripMenuItem
+        // 
+        companyPlusFilterToolStripMenuItem.Name = "companyPlusFilterToolStripMenuItem";
+        companyPlusFilterToolStripMenuItem.Size = new Size(251, 22);
+        companyPlusFilterToolStripMenuItem.Text = "Alle mit Unternehmensangabe";
+        companyPlusFilterToolStripMenuItem.Click += CompanyPlusFilterToolStripMenuItem_Click;
+        // 
+        // companyMinusFilterToolStripMenuItem
+        // 
+        companyMinusFilterToolStripMenuItem.Name = "companyMinusFilterToolStripMenuItem";
+        companyMinusFilterToolStripMenuItem.Size = new Size(251, 22);
+        companyMinusFilterToolStripMenuItem.Text = "Alle ohne Unternehmensangabe";
+        companyMinusFilterToolStripMenuItem.Click += CompanyMinusFilterToolStripMenuItem_Click;
+        // 
+        // companyTSSeparator
+        // 
+        companyTSSeparator.Name = "companyTSSeparator";
+        companyTSSeparator.Size = new Size(248, 6);
         // 
         // datePlusFilterMenuItem
         // 
@@ -716,6 +829,51 @@ partial class FrmAdressen
         dateMinusFilterMenuItem.Size = new Size(251, 22);
         dateMinusFilterMenuItem.Text = "Alle ohne Geburtsdatum";
         dateMinusFilterMenuItem.Click += DateMinusFilterMenuItem_Click;
+        // 
+        // toolStripSeparator26
+        // 
+        toolStripSeparator26.Name = "toolStripSeparator26";
+        toolStripSeparator26.Size = new Size(248, 6);
+        // 
+        // addressCompletePlusToolStripMenuItem
+        // 
+        addressCompletePlusToolStripMenuItem.Name = "addressCompletePlusToolStripMenuItem";
+        addressCompletePlusToolStripMenuItem.Size = new Size(251, 22);
+        addressCompletePlusToolStripMenuItem.Text = "Alle mit kompletter Anschrift";
+        addressCompletePlusToolStripMenuItem.Click += AddressCompletePlusToolStripMenuItem_Click;
+        // 
+        // addressCompleteMinusToolStripMenuItem
+        // 
+        addressCompleteMinusToolStripMenuItem.Name = "addressCompleteMinusToolStripMenuItem";
+        addressCompleteMinusToolStripMenuItem.Size = new Size(251, 22);
+        addressCompleteMinusToolStripMenuItem.Text = "Alle mit unvollständiger Anschrift";
+        addressCompleteMinusToolStripMenuItem.Click += AddressCompleteMinusToolStripMenuItem_Click;
+        // 
+        // addressCompleteTSSeparator
+        // 
+        addressCompleteTSSeparator.Name = "addressCompleteTSSeparator";
+        addressCompleteTSSeparator.Size = new Size(248, 6);
+        // 
+        // todayModifiedToolStripMenuItem
+        // 
+        todayModifiedToolStripMenuItem.Name = "todayModifiedToolStripMenuItem";
+        todayModifiedToolStripMenuItem.Size = new Size(251, 22);
+        todayModifiedToolStripMenuItem.Text = "Alle heute bearbeiteten";
+        todayModifiedToolStripMenuItem.Click += TodayModifiedToolStripMenuItem_Click;
+        // 
+        // modifiedLast7DaysToolStripMenuItem
+        // 
+        modifiedLast7DaysToolStripMenuItem.Name = "modifiedLast7DaysToolStripMenuItem";
+        modifiedLast7DaysToolStripMenuItem.Size = new Size(251, 22);
+        modifiedLast7DaysToolStripMenuItem.Text = "Alle der letzten 7 Tage";
+        modifiedLast7DaysToolStripMenuItem.Click += ModifiedLast7DaysToolStripMenuItem_Click;
+        // 
+        // modifiedLast30DaysToolStripMenuItem
+        // 
+        modifiedLast30DaysToolStripMenuItem.Name = "modifiedLast30DaysToolStripMenuItem";
+        modifiedLast30DaysToolStripMenuItem.Size = new Size(251, 22);
+        modifiedLast30DaysToolStripMenuItem.Text = "Alle der letzten 30 Tage";
+        modifiedLast30DaysToolStripMenuItem.Click += ModifiedLast30DaysToolStripMenuItem_Click;
         // 
         // toolStripSeparator18
         // 
@@ -762,8 +920,9 @@ partial class FrmAdressen
         // optionsToolStripMenuItem
         // 
         optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
+        optionsToolStripMenuItem.ShortcutKeyDisplayString = "Strg+T";
         optionsToolStripMenuItem.Size = new Size(263, 22);
-        optionsToolStripMenuItem.Text = "&Einstellungen…";
+        optionsToolStripMenuItem.Text = "Eins&tellungen…";
         optionsToolStripMenuItem.Click += OptionsToolStripMenuItem_Click;
         // 
         // toolStripSeparator3
@@ -1018,7 +1177,7 @@ partial class FrmAdressen
         wordTSButton.Name = "wordTSButton";
         wordTSButton.Size = new Size(98, 22);
         wordTSButton.Text = "In Brief einfügen";
-        wordTSButton.ToolTipText = "Adressdaten nach Microsoft Word übernehmen (Strg+T)";
+        wordTSButton.ToolTipText = "Adressdaten nach Microsoft Word übernehmen (Strg+W)";
         wordTSButton.Click += WordTSButton_Click;
         // 
         // envelopeTSButton
@@ -1086,7 +1245,7 @@ partial class FrmAdressen
         // 
         // statusStrip
         // 
-        statusStrip.Items.AddRange(new ToolStripItem[] { sepTSStatusLabel, toolStripStatusLabel, toolStripProgressBar, springSpacer, btnUpdateAvailable });
+        statusStrip.Items.AddRange(new ToolStripItem[] { sepTSStatusLabel, toolStripStatusLabel, toolStripProgressBar, springSpacer, tsBtnFritzMonitor, btnUpdateAvailable });
         statusStrip.LayoutStyle = ToolStripLayoutStyle.HorizontalStackWithOverflow;
         statusStrip.Location = new Point(0, 794);
         statusStrip.Name = "statusStrip";
@@ -1121,6 +1280,17 @@ partial class FrmAdressen
         springSpacer.Name = "springSpacer";
         springSpacer.Size = new Size(0, 17);
         springSpacer.Spring = true;
+        // 
+        // tsBtnFritzMonitor
+        // 
+        tsBtnFritzMonitor.Alignment = ToolStripItemAlignment.Right;
+        tsBtnFritzMonitor.ImageTransparentColor = Color.Magenta;
+        tsBtnFritzMonitor.Name = "tsBtnFritzMonitor";
+        tsBtnFritzMonitor.Size = new Size(169, 20);
+        tsBtnFritzMonitor.Text = "FRITZ!Box-Anrufmonitor aktiv";
+        tsBtnFritzMonitor.ToolTipText = "FritzBox-Monitor aktiv";
+        tsBtnFritzMonitor.Visible = false;
+        tsBtnFritzMonitor.Click += TsBtnFritzMonitor_Click;
         // 
         // btnUpdateAvailable
         // 
@@ -1185,7 +1355,7 @@ partial class FrmAdressen
         addressTabPage.Size = new Size(646, 705);
         addressTabPage.TabIndex = 0;
         addressTabPage.Text = " Lokale Adressen";
-        addressTabPage.ToolTipText = "F5 oder Shift+Tab";
+        addressTabPage.ToolTipText = "F5 oder Strg+Enter";
         // 
         // addressDGV
         // 
@@ -1260,7 +1430,7 @@ partial class FrmAdressen
         contactTabPage.Size = new Size(646, 705);
         contactTabPage.TabIndex = 1;
         contactTabPage.Text = " Google Kontakte";
-        contactTabPage.ToolTipText = "F6 oder Shift+Tab";
+        contactTabPage.ToolTipText = "F6 oder Strg+Enter";
         // 
         // contactDGV
         // 
@@ -1384,11 +1554,11 @@ partial class FrmAdressen
         tableLayoutPanel.Controls.Add(tbSuffix, 5, 2);
         tableLayoutPanel.Controls.Add(firmaLabel, 0, 3);
         tableLayoutPanel.Controls.Add(tbFirma, 2, 3);
-        tableLayoutPanel.Controls.Add(plzortLabel, 0, 4);
-        tableLayoutPanel.Controls.Add(strasseLabel, 0, 5);
-        tableLayoutPanel.Controls.Add(cbPLZ, 2, 4);
-        tableLayoutPanel.Controls.Add(cbOrt, 3, 4);
-        tableLayoutPanel.Controls.Add(tbStraße, 2, 5);
+        tableLayoutPanel.Controls.Add(strasseLabel, 0, 4);
+        tableLayoutPanel.Controls.Add(plzortLabel, 0, 5);
+        tableLayoutPanel.Controls.Add(tbStraße, 2, 4);
+        tableLayoutPanel.Controls.Add(cbPLZ, 2, 5);
+        tableLayoutPanel.Controls.Add(cbOrt, 3, 5);
         tableLayoutPanel.Controls.Add(landLabel, 0, 6);
         tableLayoutPanel.Controls.Add(cbLand, 3, 6);
         tableLayoutPanel.Controls.Add(labelBetreff, 0, 7);
@@ -1452,7 +1622,6 @@ partial class FrmAdressen
         tbPostfach.Dock = DockStyle.Fill;
         tbPostfach.Location = new Point(104, 201);
         tbPostfach.Name = "tbPostfach";
-        tbPostfach.PlaceholderText = "Postfach";
         tbPostfach.Size = new Size(106, 25);
         tbPostfach.TabIndex = 13;
         tbPostfach.TextChanged += TextBox_TextChanged;
@@ -1462,10 +1631,10 @@ partial class FrmAdressen
         // 
         // contextTextBox
         // 
-        contextTextBox.Items.AddRange(new ToolStripItem[] { undoTextBoxMenuItem, tbMenuSeparator1, cutTextBoxMenuItem, copyTextBoxMenuItem, pasteTextBoxMenuItem, deleteTextBoxMenuItem, tbMenuSeparator2, searchTextBoxMenuItem, furtherTextBoxMenuItem, tbMenuSeparator3, selectAllTextBoxMenuItem });
+        contextTextBox.Items.AddRange(new ToolStripItem[] { undoTextBoxMenuItem, tbMenuSeparator1, cutTextBoxMenuItem, copyTextBoxMenuItem, pasteTextBoxMenuItem, deleteTextBoxMenuItem, tbMenuSeparator2, searchTextBoxMenuItem, furtherTextBoxMenuItem, specialCharactersToolStripMenuItem, tbMenuSeparator3, selectAllTextBoxMenuItem });
         contextTextBox.Name = "contextTextBox";
         contextTextBox.ShowImageMargin = false;
-        contextTextBox.Size = new Size(178, 198);
+        contextTextBox.Size = new Size(178, 220);
         contextTextBox.Opening += ContextTextBox_Opening;
         // 
         // undoTextBoxMenuItem
@@ -1534,6 +1703,12 @@ partial class FrmAdressen
         furtherTextBoxMenuItem.Text = "&Weitersuchen";
         furtherTextBoxMenuItem.Click += FurtherTextBoxMenuItem_Click;
         // 
+        // specialCharactersToolStripMenuItem
+        // 
+        specialCharactersToolStripMenuItem.Name = "specialCharactersToolStripMenuItem";
+        specialCharactersToolStripMenuItem.Size = new Size(177, 22);
+        specialCharactersToolStripMenuItem.Text = "Sonderzeichen einfügen";
+        // 
         // tbMenuSeparator3
         // 
         tbMenuSeparator3.Name = "tbMenuSeparator3";
@@ -1555,7 +1730,6 @@ partial class FrmAdressen
         tbPosition.Dock = DockStyle.Fill;
         tbPosition.Location = new Point(328, 105);
         tbPosition.Name = "tbPosition";
-        tbPosition.PlaceholderText = "Position";
         tbPosition.Size = new Size(219, 25);
         tbPosition.TabIndex = 9;
         tbPosition.TextChanged += TextBox_TextChanged;
@@ -1570,7 +1744,6 @@ partial class FrmAdressen
         tbNickname.Dock = DockStyle.Fill;
         tbNickname.Location = new Point(448, 41);
         tbNickname.Name = "tbNickname";
-        tbNickname.PlaceholderText = "Nickname";
         tbNickname.Size = new Size(99, 25);
         tbNickname.TabIndex = 5;
         tbNickname.TextChanged += TextBox_TextChanged;
@@ -1586,7 +1759,6 @@ partial class FrmAdressen
         tbZwischenname.Dock = DockStyle.Fill;
         tbZwischenname.Location = new Point(328, 41);
         tbZwischenname.Name = "tbZwischenname";
-        tbZwischenname.PlaceholderText = "Zwischenname";
         tbZwischenname.Size = new Size(114, 25);
         tbZwischenname.TabIndex = 4;
         tbZwischenname.TextChanged += TextBox_TextChanged;
@@ -1616,7 +1788,6 @@ partial class FrmAdressen
         cbAnrede.Dock = DockStyle.Fill;
         cbAnrede.Location = new Point(104, 9);
         cbAnrede.Name = "cbAnrede";
-        cbAnrede.PlaceholderText = "Anrede";
         cbAnrede.Size = new Size(218, 25);
         cbAnrede.TabIndex = 1;
         cbAnrede.TextChanged += TextBox_TextChanged;
@@ -1634,7 +1805,6 @@ partial class FrmAdressen
         cbPraefix.Dock = DockStyle.Fill;
         cbPraefix.Location = new Point(328, 9);
         cbPraefix.Name = "cbPraefix";
-        cbPraefix.PlaceholderText = "Titel";
         cbPraefix.Size = new Size(219, 25);
         cbPraefix.TabIndex = 2;
         cbPraefix.TextChanged += TextBox_TextChanged;
@@ -1662,7 +1832,6 @@ partial class FrmAdressen
         tbVorname.Dock = DockStyle.Fill;
         tbVorname.Location = new Point(104, 41);
         tbVorname.Name = "tbVorname";
-        tbVorname.PlaceholderText = "Vorname";
         tbVorname.Size = new Size(218, 25);
         tbVorname.TabIndex = 3;
         tbVorname.TextChanged += TextBox_TextChanged;
@@ -1690,7 +1859,6 @@ partial class FrmAdressen
         tbNachname.Dock = DockStyle.Fill;
         tbNachname.Location = new Point(104, 73);
         tbNachname.Name = "tbNachname";
-        tbNachname.PlaceholderText = "Nachname";
         tbNachname.Size = new Size(298, 25);
         tbNachname.TabIndex = 6;
         tbNachname.TextChanged += TextBox_TextChanged;
@@ -1706,7 +1874,6 @@ partial class FrmAdressen
         tbSuffix.Dock = DockStyle.Fill;
         tbSuffix.Location = new Point(408, 73);
         tbSuffix.Name = "tbSuffix";
-        tbSuffix.PlaceholderText = "Suffix";
         tbSuffix.Size = new Size(139, 25);
         tbSuffix.TabIndex = 7;
         tbSuffix.TextChanged += TextBox_TextChanged;
@@ -1734,7 +1901,6 @@ partial class FrmAdressen
         tbFirma.Dock = DockStyle.Fill;
         tbFirma.Location = new Point(104, 105);
         tbFirma.Name = "tbFirma";
-        tbFirma.PlaceholderText = "Unternehmen";
         tbFirma.Size = new Size(218, 25);
         tbFirma.TabIndex = 8;
         tbFirma.TextChanged += TextBox_TextChanged;
@@ -1742,11 +1908,23 @@ partial class FrmAdressen
         tbFirma.KeyDown += TextBox_KeyDown;
         tbFirma.Leave += TextBox_Leave;
         // 
+        // strasseLabel
+        // 
+        tableLayoutPanel.SetColumnSpan(strasseLabel, 2);
+        strasseLabel.Dock = DockStyle.Fill;
+        strasseLabel.Location = new Point(3, 134);
+        strasseLabel.Name = "strasseLabel";
+        strasseLabel.Padding = new Padding(0, 0, 0, 3);
+        strasseLabel.Size = new Size(95, 32);
+        strasseLabel.TabIndex = 8;
+        strasseLabel.Text = "Straße, Nr.:";
+        strasseLabel.TextAlign = ContentAlignment.MiddleRight;
+        // 
         // plzortLabel
         // 
         tableLayoutPanel.SetColumnSpan(plzortLabel, 2);
         plzortLabel.Dock = DockStyle.Fill;
-        plzortLabel.Location = new Point(3, 134);
+        plzortLabel.Location = new Point(3, 166);
         plzortLabel.Name = "plzortLabel";
         plzortLabel.Padding = new Padding(0, 0, 0, 3);
         plzortLabel.Size = new Size(95, 32);
@@ -1754,17 +1932,22 @@ partial class FrmAdressen
         plzortLabel.Text = "PLZ/Ort:";
         plzortLabel.TextAlign = ContentAlignment.MiddleRight;
         // 
-        // strasseLabel
+        // tbStraße
         // 
-        tableLayoutPanel.SetColumnSpan(strasseLabel, 2);
-        strasseLabel.Dock = DockStyle.Fill;
-        strasseLabel.Location = new Point(3, 166);
-        strasseLabel.Name = "strasseLabel";
-        strasseLabel.Padding = new Padding(0, 0, 0, 3);
-        strasseLabel.Size = new Size(95, 32);
-        strasseLabel.TabIndex = 8;
-        strasseLabel.Text = "Straße, Nr.:";
-        strasseLabel.TextAlign = ContentAlignment.MiddleRight;
+        tbStraße.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+        tbStraße.AutoCompleteSource = AutoCompleteSource.CustomSource;
+        tbStraße.BorderStyle = BorderStyle.FixedSingle;
+        tableLayoutPanel.SetColumnSpan(tbStraße, 5);
+        tbStraße.ContextMenuStrip = contextTextBox;
+        tbStraße.Dock = DockStyle.Fill;
+        tbStraße.Location = new Point(104, 137);
+        tbStraße.Name = "tbStraße";
+        tbStraße.Size = new Size(443, 25);
+        tbStraße.TabIndex = 10;
+        tbStraße.TextChanged += TextBox_TextChanged;
+        tbStraße.Enter += TextBox_Enter;
+        tbStraße.KeyDown += TextBox_KeyDown;
+        tbStraße.Leave += TextBox_Leave;
         // 
         // cbPLZ
         // 
@@ -1773,11 +1956,10 @@ partial class FrmAdressen
         cbPLZ.BorderStyle = BorderStyle.FixedSingle;
         cbPLZ.ContextMenuStrip = contextTextBox;
         cbPLZ.Dock = DockStyle.Fill;
-        cbPLZ.Location = new Point(104, 137);
+        cbPLZ.Location = new Point(104, 169);
         cbPLZ.Name = "cbPLZ";
-        cbPLZ.PlaceholderText = "Zuerst PLZ oder";
         cbPLZ.Size = new Size(106, 25);
-        cbPLZ.TabIndex = 10;
+        cbPLZ.TabIndex = 11;
         cbPLZ.TextChanged += TextBox_TextChanged;
         cbPLZ.Enter += TextBox_Enter;
         cbPLZ.KeyDown += TextBox_KeyDown;
@@ -1791,33 +1973,14 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(cbOrt, 4);
         cbOrt.ContextMenuStrip = contextTextBox;
         cbOrt.Dock = DockStyle.Fill;
-        cbOrt.Location = new Point(216, 137);
+        cbOrt.Location = new Point(216, 169);
         cbOrt.Name = "cbOrt";
-        cbOrt.PlaceholderText = "Ort eingeben, um Straßensuche zu nutzen";
         cbOrt.Size = new Size(331, 25);
-        cbOrt.TabIndex = 11;
+        cbOrt.TabIndex = 12;
         cbOrt.TextChanged += TextBox_TextChanged;
         cbOrt.Enter += TextBox_Enter;
         cbOrt.KeyDown += TextBox_KeyDown;
         cbOrt.Leave += TextBox_Leave;
-        // 
-        // tbStraße
-        // 
-        tbStraße.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
-        tbStraße.AutoCompleteSource = AutoCompleteSource.CustomSource;
-        tbStraße.BorderStyle = BorderStyle.FixedSingle;
-        tableLayoutPanel.SetColumnSpan(tbStraße, 5);
-        tbStraße.ContextMenuStrip = contextTextBox;
-        tbStraße.Dock = DockStyle.Fill;
-        tbStraße.Location = new Point(104, 169);
-        tbStraße.Name = "tbStraße";
-        tbStraße.PlaceholderText = "Straße Hausnummer";
-        tbStraße.Size = new Size(443, 25);
-        tbStraße.TabIndex = 12;
-        tbStraße.TextChanged += TextBox_TextChanged;
-        tbStraße.Enter += TextBox_Enter;
-        tbStraße.KeyDown += TextBox_KeyDown;
-        tbStraße.Leave += TextBox_Leave;
         // 
         // landLabel
         // 
@@ -1841,7 +2004,6 @@ partial class FrmAdressen
         cbLand.Dock = DockStyle.Fill;
         cbLand.Location = new Point(216, 201);
         cbLand.Name = "cbLand";
-        cbLand.PlaceholderText = "Land";
         cbLand.Size = new Size(331, 25);
         cbLand.TabIndex = 14;
         cbLand.TextChanged += TextBox_TextChanged;
@@ -1869,7 +2031,6 @@ partial class FrmAdressen
         tbBetreff.Dock = DockStyle.Fill;
         tbBetreff.Location = new Point(104, 233);
         tbBetreff.Name = "tbBetreff";
-        tbBetreff.PlaceholderText = "Betreff";
         tbBetreff.Size = new Size(443, 25);
         tbBetreff.TabIndex = 15;
         tbBetreff.TextChanged += TextBox_TextChanged;
@@ -1899,7 +2060,6 @@ partial class FrmAdressen
         cbGrussformel.Dock = DockStyle.Fill;
         cbGrussformel.Location = new Point(104, 265);
         cbGrussformel.Name = "cbGrussformel";
-        cbGrussformel.PlaceholderText = "Grußformel";
         cbGrussformel.Size = new Size(443, 25);
         cbGrussformel.TabIndex = 16;
         cbGrussformel.TextChanged += TextBox_TextChanged;
@@ -1928,7 +2088,6 @@ partial class FrmAdressen
         cbSchlussformel.Dock = DockStyle.Fill;
         cbSchlussformel.Location = new Point(104, 297);
         cbSchlussformel.Name = "cbSchlussformel";
-        cbSchlussformel.PlaceholderText = "Schlussformel";
         cbSchlussformel.Size = new Size(443, 25);
         cbSchlussformel.TabIndex = 17;
         cbSchlussformel.TextChanged += TextBox_TextChanged;
@@ -1988,7 +2147,6 @@ partial class FrmAdressen
         tbMail1.Dock = DockStyle.Fill;
         tbMail1.Location = new Point(104, 361);
         tbMail1.Name = "tbMail1";
-        tbMail1.PlaceholderText = "E-Mail-Adresse";
         tbMail1.Size = new Size(218, 25);
         tbMail1.TabIndex = 20;
         tbMail1.TextChanged += TextBox_TextChanged;
@@ -2004,7 +2162,6 @@ partial class FrmAdressen
         tbMail2.Dock = DockStyle.Fill;
         tbMail2.Location = new Point(328, 361);
         tbMail2.Name = "tbMail2";
-        tbMail2.PlaceholderText = "E-Mail-Adresse";
         tbMail2.Size = new Size(219, 25);
         tbMail2.TabIndex = 21;
         tbMail2.TextChanged += TextBox_TextChanged;
@@ -2052,7 +2209,6 @@ partial class FrmAdressen
         tbTelefon1.Dock = DockStyle.Fill;
         tbTelefon1.Location = new Point(104, 393);
         tbTelefon1.Name = "tbTelefon1";
-        tbTelefon1.PlaceholderText = "Telefonnummer";
         tbTelefon1.Size = new Size(218, 25);
         tbTelefon1.TabIndex = 22;
         tbTelefon1.TextChanged += TextBox_TextChanged;
@@ -2068,7 +2224,6 @@ partial class FrmAdressen
         tbTelefon2.Dock = DockStyle.Fill;
         tbTelefon2.Location = new Point(328, 393);
         tbTelefon2.Name = "tbTelefon2";
-        tbTelefon2.PlaceholderText = "Telefonnummer";
         tbTelefon2.Size = new Size(219, 25);
         tbTelefon2.TabIndex = 23;
         tbTelefon2.TextChanged += TextBox_TextChanged;
@@ -2111,7 +2266,6 @@ partial class FrmAdressen
         tbMobil.Dock = DockStyle.Fill;
         tbMobil.Location = new Point(104, 425);
         tbMobil.Name = "tbMobil";
-        tbMobil.PlaceholderText = "Mobilfunknummer";
         tbMobil.Size = new Size(218, 25);
         tbMobil.TabIndex = 24;
         tbMobil.TextChanged += TextBox_TextChanged;
@@ -2127,7 +2281,6 @@ partial class FrmAdressen
         tbFax.Dock = DockStyle.Fill;
         tbFax.Location = new Point(328, 425);
         tbFax.Name = "tbFax";
-        tbFax.PlaceholderText = "Faxnummer";
         tbFax.Size = new Size(219, 25);
         tbFax.TabIndex = 25;
         tbFax.TextChanged += TextBox_TextChanged;
@@ -2176,7 +2329,6 @@ partial class FrmAdressen
         tbInternet.Dock = DockStyle.Fill;
         tbInternet.Location = new Point(104, 457);
         tbInternet.Name = "tbInternet";
-        tbInternet.PlaceholderText = "Webseite";
         tbInternet.Size = new Size(443, 25);
         tbInternet.TabIndex = 26;
         tbInternet.TextChanged += TextBox_TextChanged;
@@ -2381,7 +2533,6 @@ partial class FrmAdressen
         tbNotizen.Location = new Point(0, 0);
         tbNotizen.Multiline = true;
         tbNotizen.Name = "tbNotizen";
-        tbNotizen.PlaceholderText = "Notizen";
         tbNotizen.ScrollBars = ScrollBars.Vertical;
         tbNotizen.Size = new Size(441, 138);
         tbNotizen.TabIndex = 30;
@@ -2578,7 +2729,6 @@ partial class FrmAdressen
         searchTextBox.Cursor = Cursors.IBeam;
         searchTextBox.Location = new Point(0, 9);
         searchTextBox.Name = "searchTextBox";
-        searchTextBox.PlaceholderText = "Suche";
         searchTextBox.Size = new Size(538, 18);
         searchTextBox.TabIndex = 2;
         searchTextBox.TextChanged += SearchTextBox_TextChanged;
@@ -2594,88 +2744,81 @@ partial class FrmAdressen
         // 
         // contextDgvMenu
         // 
-        contextDgvMenu.Items.AddRange(new ToolStripItem[] { newTSMenuItem, dupTSMenuItem, delTSMenuItem, addressTSSeparator, clipTSMenuItem, copyCellToolStripMenuItem, copy2OtherDGVSeparator, copy2OtherDGVMenuItem, move2OtherDGVToolStripMenuItem, toolStripSeparator15, wordTSMenuItem, envelopeTSMenuItem });
+        contextDgvMenu.Items.AddRange(new ToolStripItem[] { newTSMenuItem, dupTSMenuItem, delTSMenuItem, addressTSSeparator, clipTSMenuItem, copyCellToolStripMenuItem, copy2OtherDGVSeparator, copy2OtherDGVMenuItem, toolStripSeparator15, wordTSMenuItem, envelopeTSMenuItem });
         contextDgvMenu.Name = "contextMenuStrip";
-        contextDgvMenu.Size = new Size(257, 220);
+        contextDgvMenu.Size = new Size(240, 198);
         contextDgvMenu.Opening += ContextMenu_Opening;
         // 
         // newTSMenuItem
         // 
         newTSMenuItem.Name = "newTSMenuItem";
-        newTSMenuItem.Size = new Size(256, 22);
+        newTSMenuItem.Size = new Size(239, 22);
         newTSMenuItem.Text = "Adresse hinzufügen";
         newTSMenuItem.Click += NewTSMenuItem_Click;
         // 
         // dupTSMenuItem
         // 
         dupTSMenuItem.Name = "dupTSMenuItem";
-        dupTSMenuItem.Size = new Size(256, 22);
+        dupTSMenuItem.Size = new Size(239, 22);
         dupTSMenuItem.Text = "Adresse duplizieren";
         dupTSMenuItem.Click += DupTSMenuItem_Click;
         // 
         // delTSMenuItem
         // 
         delTSMenuItem.Name = "delTSMenuItem";
-        delTSMenuItem.Size = new Size(256, 22);
+        delTSMenuItem.Size = new Size(239, 22);
         delTSMenuItem.Text = "Adresse löschen";
         delTSMenuItem.Click += DelTSMenuItem_Click;
         // 
         // addressTSSeparator
         // 
         addressTSSeparator.Name = "addressTSSeparator";
-        addressTSSeparator.Size = new Size(253, 6);
+        addressTSSeparator.Size = new Size(236, 6);
         // 
         // clipTSMenuItem
         // 
         clipTSMenuItem.Name = "clipTSMenuItem";
-        clipTSMenuItem.Size = new Size(256, 22);
+        clipTSMenuItem.Size = new Size(239, 22);
         clipTSMenuItem.Text = "In Zwischenablage kopieren…";
         clipTSMenuItem.Click += ClipTSMenuItem_Click;
         // 
         // copyCellToolStripMenuItem
         // 
         copyCellToolStripMenuItem.Name = "copyCellToolStripMenuItem";
-        copyCellToolStripMenuItem.Size = new Size(256, 22);
+        copyCellToolStripMenuItem.Size = new Size(239, 22);
         copyCellToolStripMenuItem.Text = "Kopiere Zelle unter Mauszeiger";
         copyCellToolStripMenuItem.Click += CopyCellToolStripMenuItem_Click;
         // 
         // copy2OtherDGVSeparator
         // 
         copy2OtherDGVSeparator.Name = "copy2OtherDGVSeparator";
-        copy2OtherDGVSeparator.Size = new Size(253, 6);
+        copy2OtherDGVSeparator.Size = new Size(236, 6);
         copy2OtherDGVSeparator.Visible = false;
         // 
         // copy2OtherDGVMenuItem
         // 
         copy2OtherDGVMenuItem.Name = "copy2OtherDGVMenuItem";
-        copy2OtherDGVMenuItem.Size = new Size(256, 22);
+        copy2OtherDGVMenuItem.Size = new Size(239, 22);
         copy2OtherDGVMenuItem.Text = "Nach Lokale Adressen kopieren";
         copy2OtherDGVMenuItem.Visible = false;
         copy2OtherDGVMenuItem.Click += Copy2OtherDGVMenuItem_Click;
         // 
-        // move2OtherDGVToolStripMenuItem
-        // 
-        move2OtherDGVToolStripMenuItem.Name = "move2OtherDGVToolStripMenuItem";
-        move2OtherDGVToolStripMenuItem.Size = new Size(256, 22);
-        move2OtherDGVToolStripMenuItem.Text = "Nach Lokale Adressen verschieben";
-        move2OtherDGVToolStripMenuItem.Visible = false;
-        // 
         // toolStripSeparator15
         // 
         toolStripSeparator15.Name = "toolStripSeparator15";
-        toolStripSeparator15.Size = new Size(253, 6);
+        toolStripSeparator15.Size = new Size(236, 6);
         // 
         // wordTSMenuItem
         // 
         wordTSMenuItem.Name = "wordTSMenuItem";
-        wordTSMenuItem.Size = new Size(256, 22);
+        wordTSMenuItem.Size = new Size(239, 22);
         wordTSMenuItem.Text = "In Word-Dokument einfügen";
         wordTSMenuItem.Click += WordTSMenuItem_Click;
         // 
         // envelopeTSMenuItem
         // 
         envelopeTSMenuItem.Name = "envelopeTSMenuItem";
-        envelopeTSMenuItem.Size = new Size(256, 22);
+        envelopeTSMenuItem.Size = new Size(239, 22);
         envelopeTSMenuItem.Text = "Briefumschlag adressieren…";
         envelopeTSMenuItem.Click += EnvelopeTSMenuItem_Click;
         // 
@@ -3008,7 +3151,6 @@ partial class FrmAdressen
     private ToolStripMenuItem updateCheckToolStripMenuItem;
     private ToolStripStatusLabel springSpacer;
     private ToolStripButton btnUpdateAvailable;
-    private ToolStripMenuItem move2OtherDGVToolStripMenuItem;
     private cls.PaddedTextBox tbStraße;
     private cls.PaddedTextBox tbFirma;
     private cls.PaddedTextBox tbNachname;
@@ -3070,4 +3212,27 @@ partial class FrmAdressen
     private ToolStripMenuItem printSingleToolStripMenuItem;
     private ToolStripSeparator toolStripSeparator21;
     private Label labelLastMod;
+    private ToolStripSeparator vcardTSSeparator;
+    private ToolStripMenuItem vcardImportToolStripMenuItem;
+    private ToolStripMenuItem vcardExportToolStripMenuItem;
+    private ToolStripSeparator toolStripSeparator26;
+    private ToolStripMenuItem todayModifiedToolStripMenuItem;
+    private ToolStripMenuItem modifiedLast7DaysToolStripMenuItem;
+    private ToolStripMenuItem companyPlusFilterToolStripMenuItem;
+    private ToolStripMenuItem companyMinusFilterToolStripMenuItem;
+    private ToolStripSeparator companyTSSeparator;
+    private ToolStripMenuItem addressCompletePlusToolStripMenuItem;
+    private ToolStripMenuItem addressCompleteMinusToolStripMenuItem;
+    private ToolStripSeparator addressCompleteTSSeparator;
+    private ToolStripMenuItem internetPlusToolStripMenuItem;
+    private ToolStripSeparator internetTSSeparator;
+    private ToolStripMenuItem internetMinusToolStripMenuItem;
+    private ToolStripMenuItem modifiedLast30DaysToolStripMenuItem;
+    private ToolStripMenuItem mailWriteToolStripMenuItem;
+    private ToolStripMenuItem saveSelectionToolStripMenuItem;
+    private ToolStripMenuItem specialCharactersToolStripMenuItem;
+    private ToolStripMenuItem faxPlusFilterToolStripMenuItem;
+    private ToolStripMenuItem faxMinusFilterToolStripMenuItem;
+    private ToolStripSeparator faxTSSeparator;
+    private ToolStripButton tsBtnFritzMonitor;
 }

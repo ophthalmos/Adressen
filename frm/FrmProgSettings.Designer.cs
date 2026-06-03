@@ -68,7 +68,11 @@ partial class FrmProgSettings
         ckbWatchFolder = new CheckBox();
         btnWatchFolder = new Button();
         tbWatchFolder = new TextBox();
-        tpKontakte = new TabPage();
+        tpAutostart = new TabPage();
+        lblAutostart = new Label();
+        groupBox1 = new GroupBox();
+        ckbMin2Tray = new CheckBox();
+        ckbAutostart = new CheckBox();
         gbxContactsAutoload = new GroupBox();
         ckbContactsAutoload = new CheckBox();
         tpAdressen = new TabPage();
@@ -84,6 +88,7 @@ partial class FrmProgSettings
         tbDatabaseFolder = new TextBox();
         tpAllgemein = new TabPage();
         gbxFontSize = new GroupBox();
+        ckbPlaceholderText = new CheckBox();
         btnFontReset = new Button();
         nudFontSize = new NumericUpDown();
         cbxFontName = new ComboBox();
@@ -97,12 +102,22 @@ partial class FrmProgSettings
         rbtnBlue = new RadioButton();
         rbtnGrey = new RadioButton();
         tabControl = new TabControl();
+        tpAnrufMon = new TabPage();
+        lblFRITZBoxMonitor = new Label();
+        gbxIPAddress = new GroupBox();
+        ckbFritzPlaySound = new CheckBox();
+        ckbMonitorContactsFirst = new CheckBox();
+        lblFritzBoxHost = new Label();
+        ckbFritzMonitorEnabled = new CheckBox();
+        iPv4AddressControl = new Adressen.cls.IPv4AddressControl();
+        labelAutoAdressen = new Label();
         tpSicherung.SuspendLayout();
         tpAskBefore.SuspendLayout();
         gbxAskEnvelope.SuspendLayout();
         gbxAskLocal.SuspendLayout();
         tpWatchFolder.SuspendLayout();
-        tpKontakte.SuspendLayout();
+        tpAutostart.SuspendLayout();
+        groupBox1.SuspendLayout();
         gbxContactsAutoload.SuspendLayout();
         tpAdressen.SuspendLayout();
         groupBox.SuspendLayout();
@@ -113,6 +128,8 @@ partial class FrmProgSettings
         gbTextProcessing.SuspendLayout();
         gbxColorScheme.SuspendLayout();
         tabControl.SuspendLayout();
+        tpAnrufMon.SuspendLayout();
+        gbxIPAddress.SuspendLayout();
         SuspendLayout();
         // 
         // btnCancel
@@ -419,27 +436,72 @@ partial class FrmProgSettings
         tbWatchFolder.Size = new Size(202, 25);
         tbWatchFolder.TabIndex = 9;
         // 
-        // tpKontakte
+        // tpAutostart
         // 
-        tpKontakte.BackColor = SystemColors.ControlLightLight;
-        tpKontakte.BorderStyle = BorderStyle.FixedSingle;
-        tpKontakte.Controls.Add(gbxContactsAutoload);
-        tpKontakte.Location = new Point(114, 4);
-        tpKontakte.Name = "tpKontakte";
-        tpKontakte.Padding = new Padding(3);
-        tpKontakte.Size = new Size(271, 304);
-        tpKontakte.TabIndex = 1;
-        tpKontakte.Text = " Google Kontakte";
+        tpAutostart.BackColor = SystemColors.ControlLightLight;
+        tpAutostart.BorderStyle = BorderStyle.FixedSingle;
+        tpAutostart.Controls.Add(labelAutoAdressen);
+        tpAutostart.Controls.Add(lblAutostart);
+        tpAutostart.Controls.Add(groupBox1);
+        tpAutostart.Controls.Add(gbxContactsAutoload);
+        tpAutostart.Location = new Point(114, 4);
+        tpAutostart.Name = "tpAutostart";
+        tpAutostart.Padding = new Padding(3);
+        tpAutostart.Size = new Size(271, 304);
+        tpAutostart.TabIndex = 1;
+        tpAutostart.Text = " Autostart";
+        // 
+        // lblAutostart
+        // 
+        lblAutostart.AutoSize = true;
+        lblAutostart.Location = new Point(6, 95);
+        lblAutostart.Name = "lblAutostart";
+        lblAutostart.Size = new Size(238, 57);
+        lblAutostart.TabIndex = 8;
+        lblAutostart.Text = "Der automatische Programmstart ist\r\nsinnvoll, wenn der Anrufmonitor oder\r\ndie Briefordnerüberwachung aktiv ist.";
+        // 
+        // groupBox1
+        // 
+        groupBox1.Controls.Add(ckbMin2Tray);
+        groupBox1.Controls.Add(ckbAutostart);
+        groupBox1.Location = new Point(6, 7);
+        groupBox1.Name = "groupBox1";
+        groupBox1.Size = new Size(257, 85);
+        groupBox1.TabIndex = 7;
+        groupBox1.TabStop = false;
+        groupBox1.Text = "Adressen && Kontakte (das Programm)";
+        // 
+        // ckbMin2Tray
+        // 
+        ckbMin2Tray.AutoSize = true;
+        ckbMin2Tray.Location = new Point(6, 53);
+        ckbMin2Tray.Name = "ckbMin2Tray";
+        ckbMin2Tray.Size = new Size(233, 23);
+        ckbMin2Tray.TabIndex = 3;
+        ckbMin2Tray.Text = "und sofort in das Tray minimieren";
+        ckbMin2Tray.UseVisualStyleBackColor = true;
+        ckbMin2Tray.CheckedChanged += CkbMin2Tray_CheckedChanged;
+        // 
+        // ckbAutostart
+        // 
+        ckbAutostart.AutoSize = true;
+        ckbAutostart.Location = new Point(6, 24);
+        ckbAutostart.Name = "ckbAutostart";
+        ckbAutostart.Size = new Size(238, 23);
+        ckbAutostart.TabIndex = 2;
+        ckbAutostart.Text = "Bei Benutzeranmeldung ausführen";
+        ckbAutostart.UseVisualStyleBackColor = true;
+        ckbAutostart.CheckedChanged += CkbAutostart_CheckedChanged;
         // 
         // gbxContactsAutoload
         // 
         gbxContactsAutoload.Controls.Add(ckbContactsAutoload);
-        gbxContactsAutoload.Location = new Point(6, 7);
+        gbxContactsAutoload.Location = new Point(6, 177);
         gbxContactsAutoload.Name = "gbxContactsAutoload";
         gbxContactsAutoload.Size = new Size(257, 55);
         gbxContactsAutoload.TabIndex = 6;
         gbxContactsAutoload.TabStop = false;
-        gbxContactsAutoload.Text = "Autostart";
+        gbxContactsAutoload.Text = "Google Kontakte";
         // 
         // ckbContactsAutoload
         // 
@@ -463,7 +525,7 @@ partial class FrmProgSettings
         tpAdressen.Padding = new Padding(3);
         tpAdressen.Size = new Size(271, 304);
         tpAdressen.TabIndex = 0;
-        tpAdressen.Text = " Lokale Adressen";
+        tpAdressen.Text = " Adressen";
         // 
         // lblToggleDatabase
         // 
@@ -584,15 +646,28 @@ partial class FrmProgSettings
         // 
         // gbxFontSize
         // 
+        gbxFontSize.Controls.Add(ckbPlaceholderText);
         gbxFontSize.Controls.Add(btnFontReset);
         gbxFontSize.Controls.Add(nudFontSize);
         gbxFontSize.Controls.Add(cbxFontName);
         gbxFontSize.Location = new Point(3, 67);
         gbxFontSize.Name = "gbxFontSize";
-        gbxFontSize.Size = new Size(263, 91);
+        gbxFontSize.Size = new Size(263, 118);
         gbxFontSize.TabIndex = 7;
         gbxFontSize.TabStop = false;
         gbxFontSize.Text = "Schriftart für Textfelder";
+        // 
+        // ckbPlaceholderText
+        // 
+        ckbPlaceholderText.AutoSize = true;
+        ckbPlaceholderText.Checked = true;
+        ckbPlaceholderText.CheckState = CheckState.Checked;
+        ckbPlaceholderText.Location = new Point(8, 89);
+        ckbPlaceholderText.Name = "ckbPlaceholderText";
+        ckbPlaceholderText.Size = new Size(245, 23);
+        ckbPlaceholderText.TabIndex = 6;
+        ckbPlaceholderText.Text = "Hinweise in leeren Feldern anzeigen";
+        ckbPlaceholderText.UseVisualStyleBackColor = true;
         // 
         // btnFontReset
         // 
@@ -634,9 +709,9 @@ partial class FrmProgSettings
         gbTextProcessing.Controls.Add(rbManualSelect);
         gbTextProcessing.Controls.Add(rbLibreOffice);
         gbTextProcessing.Controls.Add(rbMSWord);
-        gbTextProcessing.Location = new Point(3, 164);
+        gbTextProcessing.Location = new Point(3, 191);
         gbTextProcessing.Name = "gbTextProcessing";
-        gbTextProcessing.Size = new Size(263, 113);
+        gbTextProcessing.Size = new Size(263, 108);
         gbTextProcessing.TabIndex = 6;
         gbTextProcessing.TabStop = false;
         gbTextProcessing.Text = "Textverarbeitungsprogramm";
@@ -644,7 +719,7 @@ partial class FrmProgSettings
         // rbManualSelect
         // 
         rbManualSelect.AutoSize = true;
-        rbManualSelect.Location = new Point(30, 82);
+        rbManualSelect.Location = new Point(30, 76);
         rbManualSelect.Name = "rbManualSelect";
         rbManualSelect.Size = new Size(150, 23);
         rbManualSelect.TabIndex = 2;
@@ -654,7 +729,7 @@ partial class FrmProgSettings
         // rbLibreOffice
         // 
         rbLibreOffice.AutoSize = true;
-        rbLibreOffice.Location = new Point(30, 53);
+        rbLibreOffice.Location = new Point(30, 52);
         rbLibreOffice.Name = "rbLibreOffice";
         rbLibreOffice.Size = new Size(96, 23);
         rbLibreOffice.TabIndex = 1;
@@ -736,8 +811,9 @@ partial class FrmProgSettings
         tabControl.Alignment = TabAlignment.Left;
         tabControl.Controls.Add(tpAllgemein);
         tabControl.Controls.Add(tpAdressen);
-        tabControl.Controls.Add(tpKontakte);
+        tabControl.Controls.Add(tpAutostart);
         tabControl.Controls.Add(tpWatchFolder);
+        tabControl.Controls.Add(tpAnrufMon);
         tabControl.Controls.Add(tpAskBefore);
         tabControl.Controls.Add(tpSicherung);
         tabControl.Dock = DockStyle.Top;
@@ -751,6 +827,100 @@ partial class FrmProgSettings
         tabControl.SizeMode = TabSizeMode.Fixed;
         tabControl.TabIndex = 0;
         tabControl.DrawItem += TabControl_DrawItem;
+        // 
+        // tpAnrufMon
+        // 
+        tpAnrufMon.BackColor = SystemColors.ControlLightLight;
+        tpAnrufMon.BorderStyle = BorderStyle.FixedSingle;
+        tpAnrufMon.Controls.Add(lblFRITZBoxMonitor);
+        tpAnrufMon.Controls.Add(gbxIPAddress);
+        tpAnrufMon.Location = new Point(114, 4);
+        tpAnrufMon.Name = "tpAnrufMon";
+        tpAnrufMon.Size = new Size(271, 304);
+        tpAnrufMon.TabIndex = 6;
+        tpAnrufMon.Text = " Anrufmonitor";
+        // 
+        // lblFRITZBoxMonitor
+        // 
+        lblFRITZBoxMonitor.AutoSize = true;
+        lblFRITZBoxMonitor.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point, 0);
+        lblFRITZBoxMonitor.Location = new Point(3, 4);
+        lblFRITZBoxMonitor.Name = "lblFRITZBoxMonitor";
+        lblFRITZBoxMonitor.Size = new Size(249, 152);
+        lblFRITZBoxMonitor.TabIndex = 1;
+        lblFRITZBoxMonitor.Text = resources.GetString("lblFRITZBoxMonitor.Text");
+        // 
+        // gbxIPAddress
+        // 
+        gbxIPAddress.Controls.Add(ckbFritzPlaySound);
+        gbxIPAddress.Controls.Add(ckbMonitorContactsFirst);
+        gbxIPAddress.Controls.Add(lblFritzBoxHost);
+        gbxIPAddress.Controls.Add(ckbFritzMonitorEnabled);
+        gbxIPAddress.Controls.Add(iPv4AddressControl);
+        gbxIPAddress.Location = new Point(3, 160);
+        gbxIPAddress.Name = "gbxIPAddress";
+        gbxIPAddress.Size = new Size(263, 132);
+        gbxIPAddress.TabIndex = 0;
+        gbxIPAddress.TabStop = false;
+        // 
+        // ckbFritzPlaySound
+        // 
+        ckbFritzPlaySound.AutoSize = true;
+        ckbFritzPlaySound.Location = new Point(6, 75);
+        ckbFritzPlaySound.Name = "ckbFritzPlaySound";
+        ckbFritzPlaySound.Size = new Size(247, 23);
+        ckbFritzPlaySound.TabIndex = 15;
+        ckbFritzPlaySound.Text = "Bei Anruf eine Sounddatei abspielen";
+        ckbFritzPlaySound.UseVisualStyleBackColor = true;
+        // 
+        // ckbMonitorContactsFirst
+        // 
+        ckbMonitorContactsFirst.AutoSize = true;
+        ckbMonitorContactsFirst.Location = new Point(6, 104);
+        ckbMonitorContactsFirst.Name = "ckbMonitorContactsFirst";
+        ckbMonitorContactsFirst.Size = new Size(255, 23);
+        ckbMonitorContactsFirst.TabIndex = 14;
+        ckbMonitorContactsFirst.Text = "Erst Kontakte, dann Adressen suchen";
+        ckbMonitorContactsFirst.UseVisualStyleBackColor = true;
+        // 
+        // lblFritzBoxHost
+        // 
+        lblFritzBoxHost.AutoSize = true;
+        lblFritzBoxHost.Location = new Point(6, 48);
+        lblFritzBoxHost.Name = "lblFritzBoxHost";
+        lblFritzBoxHost.Size = new Size(78, 19);
+        lblFritzBoxHost.TabIndex = 13;
+        lblFritzBoxHost.Text = "IP-Adresse:";
+        // 
+        // ckbFritzMonitorEnabled
+        // 
+        ckbFritzMonitorEnabled.AutoSize = true;
+        ckbFritzMonitorEnabled.Location = new Point(6, 17);
+        ckbFritzMonitorEnabled.Name = "ckbFritzMonitorEnabled";
+        ckbFritzMonitorEnabled.Size = new Size(247, 23);
+        ckbFritzMonitorEnabled.TabIndex = 12;
+        ckbFritzMonitorEnabled.Text = "Auf eingehende Anrufe überwachen";
+        ckbFritzMonitorEnabled.UseVisualStyleBackColor = true;
+        ckbFritzMonitorEnabled.CheckedChanged += CkbFritzMonitorEnabled_CheckedChanged;
+        // 
+        // iPv4AddressControl
+        // 
+        iPv4AddressControl.BackColor = SystemColors.Window;
+        iPv4AddressControl.BorderStyle = BorderStyle.FixedSingle;
+        iPv4AddressControl.Font = new Font("Consolas", 10F);
+        iPv4AddressControl.Location = new Point(90, 46);
+        iPv4AddressControl.Name = "iPv4AddressControl";
+        iPv4AddressControl.Size = new Size(160, 23);
+        iPv4AddressControl.TabIndex = 0;
+        // 
+        // labelAutoAdressen
+        // 
+        labelAutoAdressen.AutoSize = true;
+        labelAutoAdressen.Location = new Point(6, 245);
+        labelAutoAdressen.Name = "labelAutoAdressen";
+        labelAutoAdressen.Size = new Size(252, 38);
+        labelAutoAdressen.TabIndex = 9;
+        labelAutoAdressen.Text = "Welche lokale Adressdatei automatisch\r\ngeladen wird, ergibt sich bei „Adressen“.";
         // 
         // FrmProgSettings
         // 
@@ -778,7 +948,10 @@ partial class FrmProgSettings
         gbxAskLocal.PerformLayout();
         tpWatchFolder.ResumeLayout(false);
         tpWatchFolder.PerformLayout();
-        tpKontakte.ResumeLayout(false);
+        tpAutostart.ResumeLayout(false);
+        tpAutostart.PerformLayout();
+        groupBox1.ResumeLayout(false);
+        groupBox1.PerformLayout();
         gbxContactsAutoload.ResumeLayout(false);
         gbxContactsAutoload.PerformLayout();
         tpAdressen.ResumeLayout(false);
@@ -788,12 +961,17 @@ partial class FrmProgSettings
         gbDatabaseFolder.PerformLayout();
         tpAllgemein.ResumeLayout(false);
         gbxFontSize.ResumeLayout(false);
+        gbxFontSize.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)nudFontSize).EndInit();
         gbTextProcessing.ResumeLayout(false);
         gbTextProcessing.PerformLayout();
         gbxColorScheme.ResumeLayout(false);
         gbxColorScheme.PerformLayout();
         tabControl.ResumeLayout(false);
+        tpAnrufMon.ResumeLayout(false);
+        tpAnrufMon.PerformLayout();
+        gbxIPAddress.ResumeLayout(false);
+        gbxIPAddress.PerformLayout();
         ResumeLayout(false);
     }
 
@@ -826,7 +1004,7 @@ partial class FrmProgSettings
     private CheckBox ckbWatchFolder;
     private Button btnWatchFolder;
     private TextBox tbWatchFolder;
-    private TabPage tpKontakte;
+    private TabPage tpAutostart;
     private GroupBox gbxContactsAutoload;
     private CheckBox ckbContactsAutoload;
     private TabPage tpAdressen;
@@ -857,4 +1035,18 @@ partial class FrmProgSettings
     private TabControl tabControl;
     private GroupBox gbxAskLocal;
     private GroupBox gbxAskEnvelope;
+    private CheckBox ckbPlaceholderText;
+    private TabPage tpAnrufMon;
+    private GroupBox gbxIPAddress;
+    private cls.IPv4AddressControl iPv4AddressControl;
+    private CheckBox ckbFritzMonitorEnabled;
+    private Label lblFritzBoxHost;
+    private Label lblFRITZBoxMonitor;
+    private CheckBox ckbMonitorContactsFirst;
+    private CheckBox ckbFritzPlaySound;
+    private GroupBox groupBox1;
+    private CheckBox ckbAutostart;
+    private CheckBox ckbMin2Tray;
+    private Label lblAutostart;
+    private Label labelAutoAdressen;
 }

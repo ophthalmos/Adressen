@@ -136,4 +136,14 @@ eine zusätzliche Schaltfläche, um die
 Anwendung platzsparend in das Sys-
 temTray minimieren zu können.</value>
   </data>
+  <data name="lblFRITZBoxMonitor.Text" xml:space="preserve">
+    <value>Wenn eine FRITZ!Box im Netzwerk vor-
+handen ist, können eingehende Anrufe
+anzeigt werden. Voraussetzung ist die
+Öffnung des TCP-Port 1012 durch die
+Wahl von #96*5* an einem DECT- oder
+Analogtelefon (Schließen mit #96*4*).
+Der Port wird ausschließlich im lokalen
+Netzwerk geöffnet (nicht ins Internet).</value>
+  </data>
 </root>

@@ -153,16 +153,6 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap arrow_previous16 {
-            get {
-                object obj = ResourceManager.GetObject("arrow_previous16", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
-        /// </summary>
         internal static System.Drawing.Bitmap arrow_restore16 {
             get {
                 object obj = ResourceManager.GetObject("arrow_restore16", resourceCulture);
@@ -183,9 +173,69 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap bank_minus16 {
+            get {
+                object obj = ResourceManager.GetObject("bank_minus16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap bank_plus16 {
+            get {
+                object obj = ResourceManager.GetObject("bank_plus16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap blueprintMinus {
+            get {
+                object obj = ResourceManager.GetObject("blueprintMinus", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap blueprintPlus {
+            get {
+                object obj = ResourceManager.GetObject("blueprintPlus", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap calendar_small16 {
             get {
                 object obj = ResourceManager.GetObject("calendar-small16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap calendarselectmonth16 {
+            get {
+                object obj = ResourceManager.GetObject("calendarselectmonth16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap calendarselectweek16 {
+            get {
+                object obj = ResourceManager.GetObject("calendarselectweek16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -483,6 +533,16 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap EditInformation16 {
+            get {
+                object obj = ResourceManager.GetObject("EditInformation16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap envelope16 {
             get {
                 object obj = ResourceManager.GetObject("envelope16", resourceCulture);
@@ -506,6 +566,16 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap exit16 {
             get {
                 object obj = ResourceManager.GetObject("exit16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Export_16x {
+            get {
+                object obj = ResourceManager.GetObject("Export_16x", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -553,9 +623,39 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap FritzBox32 {
+            get {
+                object obj = ResourceManager.GetObject("FritzBox32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap git_16 {
             get {
                 object obj = ResourceManager.GetObject("git_16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap globe_minus16 {
+            get {
+                object obj = ResourceManager.GetObject("globe_minus16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap globe_plus16 {
+            get {
+                object obj = ResourceManager.GetObject("globe_plus16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -636,6 +736,16 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap image_plus161 {
             get {
                 object obj = ResourceManager.GetObject("image-plus161", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Import_16x {
+            get {
+                object obj = ResourceManager.GetObject("Import_16x", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -973,6 +1083,16 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap SaveTable16 {
+            get {
+                object obj = ResourceManager.GetObject("SaveTable16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap SaveWebPage16 {
             get {
                 object obj = ResourceManager.GetObject("SaveWebPage16", resourceCulture);
@@ -1103,6 +1223,26 @@ namespace Adressen.Properties {
         /// <summary>
         ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap telephoneOff16 {
+            get {
+                object obj = ResourceManager.GetObject("telephoneOff16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap telephoneShare16 {
+            get {
+                object obj = ResourceManager.GetObject("telephoneShare16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap universal24 {
             get {
                 object obj = ResourceManager.GetObject("universal24", resourceCulture);
@@ -1206,6 +1346,26 @@ namespace Adressen.Properties {
         internal static System.Drawing.Bitmap wordhelp16 {
             get {
                 object obj = ResourceManager.GetObject("wordhelp16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap zone_minus16 {
+            get {
+                object obj = ResourceManager.GetObject("zone_minus16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Ressource vom Typ System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap zone_plus16 {
+            get {
+                object obj = ResourceManager.GetObject("zone_plus16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
