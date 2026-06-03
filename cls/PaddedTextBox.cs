@@ -4,136 +4,61 @@ namespace Adressen.cls;
 
 public class PaddedTextBox : TextBox
 {
-    private int _leftMargin = AppSettings.TextBoxPadding;
-    private int _rightMargin = AppSettings.TextBoxPadding;
-    private string _customPlaceholder = string.Empty;
+    private int _cachedSpaceWidth = -1; // -1: muss berechnet werden; ApplyEditControlsFont() (siehe Settings-Dialog) aktualisiert die Schriftart und invalidiert damit diesen Cache
 
-    [Category("Appearance")]
-    [Description("Gibt den inneren linken Abstand des Textes an.")]
-    public int LeftInnerMargin
+    protected override void OnHandleCreated(EventArgs e)
     {
-        get => _leftMargin;
-        set
+        base.OnHandleCreated(e);
+        ApplyPadding();  // Native Placeholder – kein Flackern, kein WndProc-Eingriff
+    }
+
+    private void ApplyPadding()
+    {
+        var p = GetSpaceWidth();
+
+        if (Multiline)
         {
-            if (_leftMargin != value)
-            {
-                _leftMargin = value;
-                ApplyMargins();
-            }
+            // 1. EM_SETMARGINS anwenden, damit die Links-/Rechts-Ausrichtung exakt mit den einzeiligen TextBoxen übereinstimmt
+            _ = NativeMethods.SendMessage(Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_LEFTMARGIN | NativeMethods.EC_RIGHTMARGIN, (p << 16) | (p & 0xFFFF));
+
+            // 2. Das durch die Margins intern angepasste Rechteck abrufen
+            var rect = new NativeMethods.RECT();
+            _ = NativeMethods.SendMessage(Handle, NativeMethods.EM_GETRECT, IntPtr.Zero, ref rect);
+
+            // 3. Nur die vertikale Ausrichtung korrigieren, die perfekt ausgerichteten horizontalen Werte beibehalten
+            rect.Top = 2;
+            rect.Bottom = ClientSize.Height;
+
+            _ = NativeMethods.SendMessage(Handle, NativeMethods.EM_SETRECT, IntPtr.Zero, ref rect);
+        }
+        else
+        {
+            _ = NativeMethods.SendMessage(Handle, NativeMethods.EM_SETMARGINS, NativeMethods.EC_LEFTMARGIN | NativeMethods.EC_RIGHTMARGIN, (p << 16) | (p & 0xFFFF));
         }
     }
 
-    [Category("Appearance")]
-    [Description("Gibt den inneren rechten Abstand des Textes an.")]
-    public int RightInnerMargin
+    private int GetSpaceWidth()
     {
-        get => _rightMargin;
-        set
-        {
-            if (_rightMargin != value)
-            {
-                _rightMargin = value;
-                ApplyMargins();
-            }
-        }
+        if (_cachedSpaceWidth == -1) { _cachedSpaceWidth = TextRenderer.MeasureText(AppSettings.TextBoxPaddingChar.ToString(), Font, Size.Empty, TextFormatFlags.NoPadding).Width; }
+        return _cachedSpaceWidth;
     }
 
-    private bool ShouldSerializeLeftInnerMargin() => _leftMargin != AppSettings.TextBoxPadding;
-    private bool ShouldSerializeRightInnerMargin() => _rightMargin != AppSettings.TextBoxPadding;
-
-    private void ResetRightInnerMargin() => RightInnerMargin = AppSettings.TextBoxPadding;
-    private void ResetLeftInnerMargin() => LeftInnerMargin = AppSettings.TextBoxPadding;
-
-    [Category("Appearance")]
-    [Description("Der Text, der angezeigt wird, wenn das Steuerelement leer ist.")]
-    [DefaultValue("")]
-    [Localizable(true)]
-    public new string PlaceholderText
+    protected override void OnFontChanged(EventArgs e)
     {
-        get => _customPlaceholder;
-        set
-        {
-            if (_customPlaceholder != value)
-            {
-                _customPlaceholder = value ?? string.Empty;
-                base.PlaceholderText = string.Empty;
-                Invalidate();
-            }
-        }
+        base.OnFontChanged(e);
+        _cachedSpaceWidth = -1;  // Cache invalidieren
+        ApplyPadding();  // Layout neu anwenden, da die Schriftgröße sich geändert hat
     }
 
     protected override void WndProc(ref Message m)
     {
-        // 1. Doppelklick separat behandeln
         if (m.Msg == NativeMethods.WM_LBUTTONDBLCLK)
         {
             HandleCustomDoubleClick(m.LParam);
             return;
         }
-
-        // 2. Basis IMMER ausführen
         base.WndProc(ref m);
-
-        // 3. Nach dem Setzen des Fonts zwingen wir unsere Margins auf
-        if (m.Msg == NativeMethods.WM_SETFONT) { ApplyMargins(); }
-
-        // 4. Custom Placeholder zeichnen NACHDEM das Control fertig gezeichnet ist
-        if (m.Msg == NativeMethods.WM_PAINT && TextLength == 0 && !Focused && !string.IsNullOrEmpty(_customPlaceholder))
-        {
-            // SICHERHEITSCHECK: Verhindert den Crash beim Schließen des Fensters
-            if (!IsHandleCreated || IsDisposed || Disposing || ClientSize.Width <= 0 || ClientSize.Height <= 0) { return; }
-
-            try
-            {
-                using var gScreen = Graphics.FromHwnd(Handle);
-                var editRect = new NativeMethods.RECT();
-                NativeMethods.SendMessage(Handle, NativeMethods.EM_GETRECT, IntPtr.Zero, ref editRect);
-                var targetLeft = Math.Max(editRect.Left, LeftInnerMargin + 1);
-                var targetRight = Math.Min(editRect.Right, ClientSize.Width - RightInnerMargin);
-                var rect = new Rectangle(targetLeft, editRect.Top, Math.Max(0, targetRight - targetLeft), editRect.Bottom - editRect.Top);
-
-                gScreen.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-                using var brush = new SolidBrush(Color.LightGray); // Ideal wäre SystemColors.GrayText
-
-                using var format = new StringFormat(StringFormat.GenericTypographic)
-                {
-                    LineAlignment = Multiline ? StringAlignment.Near : StringAlignment.Center,
-                    FormatFlags = StringFormatFlags.NoWrap,
-                    Trimming = StringTrimming.EllipsisCharacter
-                };
-
-                rect.X += 1;
-                gScreen.DrawString(_customPlaceholder, Font, brush, rect, format);
-            }
-            catch (ArgumentException)
-            {
-                // Das Handle wurde durch das Schließen des Fensters in exakt diesem Moment ungültig.
-                // Wir fangen das ab und tun nichts, da das Control ohnehin zerstört wird.
-            }
-        }
-    }
-
-    private void ApplyMargins()
-    {
-        if (!IsHandleCreated) { return; }
-
-        if (Multiline)
-        {
-            var rect = new NativeMethods.RECT
-            {
-                Left = LeftInnerMargin,
-                Top = 2,
-                Right = ClientSize.Width - RightInnerMargin,
-                Bottom = ClientSize.Height
-            };
-            NativeMethods.SendMessage(Handle, NativeMethods.EM_SETRECT, IntPtr.Zero, ref rect);
-        }
-        else
-        {
-            var lParam = (_rightMargin << 16) | (_leftMargin & 0xFFFF);
-            var wParam = NativeMethods.EC_LEFTMARGIN | NativeMethods.EC_RIGHTMARGIN;
-            NativeMethods.SendMessage(Handle, NativeMethods.EM_SETMARGINS, wParam, lParam);
-        }
+        if (m.Msg == NativeMethods.WM_SETFONT) { ApplyPadding(); }
     }
 
     private void HandleCustomDoubleClick(IntPtr lParam)
@@ -144,9 +69,7 @@ public class PaddedTextBox : TextBox
         var y = (int)((lParam.ToInt64() >> 16) & 0xFFFF);
         var clickLocation = new Point(x, y);
         var index = GetCharIndexFromPosition(clickLocation);
-
         if (index < 0 || index >= TextLength) { return; }
-
         var text = Text;
 
         static int GetCharClass(char c)
@@ -159,10 +82,8 @@ public class PaddedTextBox : TextBox
         var targetClass = GetCharClass(text[index]);
         var start = index;
         var end = index;
-
         while (start > 0 && GetCharClass(text[start - 1]) == targetClass) { start--; }
         while (end < TextLength - 1 && GetCharClass(text[end + 1]) == targetClass) { end++; }
-
         var length = end - start + 1;
         if (length > 0) { Select(start, length); }
     }
@@ -170,45 +91,49 @@ public class PaddedTextBox : TextBox
 
 public class PaddedMaskedTextBox : MaskedTextBox
 {
-    private int _leftMargin = AppSettings.TextBoxPadding;
-    private int _rightMargin = AppSettings.TextBoxPadding;
+    private int _innerMargin = -1;  // -1 bedeutet: "Nutze die dynamisch berechnete Breite des AppSettings.TextBoxPadding-Zeichens"
+    private int _cachedPaddingWidth = -1;
     private string _customPlaceholder = string.Empty;
 
     [Category("Appearance")]
-    [Description("Gibt den inneren linken Abstand des Textes an.")]
-    public int LeftInnerMargin
+    [Description("Gibt den inneren Abstand (links und rechts) des Textes an.")]
+    public int InnerMargin
     {
-        get => _leftMargin;
+        get
+        {
+            // Wenn kein benutzerdefinierter Rand gesetzt wurde, berechne ihn anhand des Zeichens
+            if (_innerMargin == -1) { return GetPaddingWidth(); }
+            return _innerMargin;
+        }
         set
         {
-            if (_leftMargin != value)
+            if (_innerMargin != value)
             {
-                _leftMargin = value;
+                _innerMargin = value;
                 ApplyMargins();
             }
         }
     }
 
-    [Category("Appearance")]
-    [Description("Gibt den inneren rechten Abstand des Textes an.")]
-    public int RightInnerMargin
-    {
-        get => _rightMargin;
-        set
-        {
-            if (_rightMargin != value)
-            {
-                _rightMargin = value;
-                ApplyMargins();
-            }
-        }
-    }
+    //// --- Alias-Eigenschaften ---
+    //[Browsable(false)]
+    //public int LeftInnerMargin
+    //{
+    //    get => InnerMargin;
+    //    set => InnerMargin = value;
+    //}
 
-    private bool ShouldSerializeLeftInnerMargin() => _leftMargin != AppSettings.TextBoxPadding;
-    private bool ShouldSerializeRightInnerMargin() => _rightMargin != AppSettings.TextBoxPadding;
+    //[Browsable(false)]
+    //public int RightInnerMargin
+    //{
+    //    get => InnerMargin;
+    //    set => InnerMargin = value;
+    //}
 
-    private void ResetRightInnerMargin() => RightInnerMargin = AppSettings.TextBoxPadding;
-    private void ResetLeftInnerMargin() => LeftInnerMargin = AppSettings.TextBoxPadding;
+    private bool ShouldSerializeInnerMargin() => _innerMargin != -1;
+    private void ResetInnerMargin() => InnerMargin = -1;
+    //private static bool ShouldSerializeLeftInnerMargin() => false;
+    //private static bool ShouldSerializeRightInnerMargin() => false;
 
     [Category("Appearance")]
     [Description("Der Text, der angezeigt wird, wenn das Steuerelement leer ist.")]
@@ -227,8 +152,41 @@ public class PaddedMaskedTextBox : MaskedTextBox
         }
     }
 
+    private int GetPaddingWidth()
+    {
+        if (_cachedPaddingWidth == -1)
+        {
+            var text = AppSettings.TextBoxPaddingChar.ToString();
+            _cachedPaddingWidth = TextRenderer.MeasureText(text, Font, Size.Empty, TextFormatFlags.NoPadding).Width;
+        }
+        return _cachedPaddingWidth;
+    }
+
+    protected override void OnFontChanged(EventArgs e)
+    {
+        base.OnFontChanged(e);
+        _cachedPaddingWidth = -1; // Cache bei Font-Änderung leeren
+        ApplyMargins();
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        ApplyMargins();
+    }
+
+    private void ApplyMargins()
+    {
+        if (!IsHandleCreated) { return; }
+        var margin = InnerMargin;
+        var lParam = (margin << 16) | (margin & 0xFFFF);
+        var wParam = NativeMethods.EC_LEFTMARGIN | NativeMethods.EC_RIGHTMARGIN;
+        _ = NativeMethods.SendMessage(Handle, NativeMethods.EM_SETMARGINS, wParam, lParam);
+    }
+
     protected override void WndProc(ref Message m)
     {
+        // 1. Abfangen (Early Return)
         if (m.Msg == NativeMethods.WM_PASTE)
         {
             if (Mask != null && Mask.Replace(@"\", "") == "00.00.0000" && Clipboard.ContainsText())
@@ -237,69 +195,72 @@ public class PaddedMaskedTextBox : MaskedTextBox
                 if (DateOnly.TryParse(clipboardText, out var parsedDate))
                 {
                     Text = parsedDate.ToString("dd.MM.yyyy");
-                    return; // WICHTIG: Beendet die Methode hier, damit die Basisklasse nicht versucht, den unformatierten Text in die Maske zu quetschen
+                    return;
                 }
             }
         }
-        if (m.Msg == NativeMethods.WM_LBUTTONDBLCLK)   // Doppelklick separat behandeln
+        if (m.Msg == NativeMethods.WM_LBUTTONDBLCLK)
         {
             HandleCustomDoubleClick(m.LParam);
             return;
         }
-        base.WndProc(ref m);  // Basis IMMER ausführen, damit das Control (und die Maske) gezeichnet wird
-        if (m.Msg == NativeMethods.WM_SETFONT) { ApplyMargins(); }  // Nach dem Setzen des Fonts zwingen wir unsere Margins auf
-        if (m.Msg == NativeMethods.WM_PAINT && !Focused && !string.IsNullOrEmpty(_customPlaceholder))  // Custom Placeholder zeichnen NACHDEM das Control fertig gezeichnet ist
-        {
-            var isEmpty = MaskedTextProvider == null ? TextLength == 0 : MaskedTextProvider.AssignedEditPositionCount == 0;  // Bei MaskedTextBox prüfen wir, ob tatsächliche Eingaben vorliegen, nicht nur die Maske
-            if (isEmpty)
-            {
-                if (!IsHandleCreated || IsDisposed || Disposing || ClientSize.Width <= 0 || ClientSize.Height <= 0) { return; }  // SICHERHEITSCHECK: Verhindert den Crash beim Schließen des Fensters
-                try
-                {
-                    using var gScreen = Graphics.FromHwnd(Handle);
-                    var editRect = new NativeMethods.RECT();
-                    NativeMethods.SendMessage(Handle, NativeMethods.EM_GETRECT, IntPtr.Zero, ref editRect);
-                    using var bgBrush = new SolidBrush(BackColor);  // WICHTIG: Die von der Basisklasse gezeichnete leere Maske mit der Hintergrundfarbe "radieren"
-                    gScreen.FillRectangle(bgBrush, editRect.Left, editRect.Top, editRect.Right - editRect.Left, editRect.Bottom - editRect.Top);
-                    var targetLeft = Math.Max(editRect.Left, LeftInnerMargin + 1);
-                    var targetRight = Math.Min(editRect.Right, ClientSize.Width - RightInnerMargin);
-                    var rect = new Rectangle(targetLeft, editRect.Top, Math.Max(0, targetRight - targetLeft), editRect.Bottom - editRect.Top);
-                    if (rect.Width <= 0 || rect.Height <= 0) { return; }
-                    gScreen.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-                    using var brush = new SolidBrush(Color.LightGray); // SystemColors.GrayText ist ebenfalls eine gute Wahl
-                    using var format = new StringFormat(StringFormat.GenericTypographic)
-                    {
-                        LineAlignment = Multiline ? StringAlignment.Near : StringAlignment.Center,
-                        FormatFlags = StringFormatFlags.NoWrap,
-                        Trimming = StringTrimming.EllipsisCharacter
-                    };
-                    rect.X += 1;
-                    gScreen.DrawString(_customPlaceholder, Font, brush, rect, format);
-                }
-                catch (ArgumentException) { }  // Wird ignoriert, da das Control zerstört wird.
-            }
-        }
+
+        // 2. delegieren (Base-Processing)
+        base.WndProc(ref m);
+        
+        // 3. nachbearbeiten (Post-Processing)
+        if (m.Msg == NativeMethods.WM_SETFONT) { ApplyMargins(); }
+        if (m.Msg == NativeMethods.WM_PAINT) { DrawPlaceholderIfNeeded(); }
     }
 
-    private void ApplyMargins()
+
+    private void DrawPlaceholderIfNeeded()
     {
-        if (!IsHandleCreated) { return; }
-        var lParam = (_rightMargin << 16) | (_leftMargin & 0xFFFF);
-        var wParam = NativeMethods.EC_LEFTMARGIN | NativeMethods.EC_RIGHTMARGIN;
-        NativeMethods.SendMessage(Handle, NativeMethods.EM_SETMARGINS, wParam, lParam);
+        if (Focused || string.IsNullOrEmpty(_customPlaceholder)) { return; }
+
+        var isEmpty = MaskedTextProvider?.AssignedEditPositionCount == 0;
+        if (!isEmpty) { return; }
+        if (!IsHandleCreated || IsDisposed || Disposing || ClientSize.Width <= 0 || ClientSize.Height <= 0) { return; }
+
+        try
+        {
+            using var g = Graphics.FromHwnd(Handle);
+
+            var editRect = new NativeMethods.RECT();
+            NativeMethods.SendMessage(Handle, NativeMethods.EM_GETRECT, IntPtr.Zero, ref editRect);
+
+            // Masken-Zeichen weglöschen
+            using var bgBrush = new SolidBrush(BackColor);
+            g.FillRectangle(bgBrush, editRect.Left, editRect.Top, editRect.Right - editRect.Left, editRect.Bottom - editRect.Top);
+
+            var targetLeft = Math.Max(editRect.Left, InnerMargin + 1);
+            var targetRight = Math.Min(editRect.Right, ClientSize.Width - InnerMargin);
+            var rect = new Rectangle(targetLeft, editRect.Top, Math.Max(0, targetRight - targetLeft), editRect.Bottom - editRect.Top);
+
+            if (rect.Width <= 0 || rect.Height <= 0) { return; }
+
+            var flags = TextFormatFlags.NoPadding       // GenericTypographic → kein Glyph-Overhang-Padding
+                      | TextFormatFlags.SingleLine       // StringFormatFlags.NoWrap
+                      | TextFormatFlags.EndEllipsis      // StringTrimming.EllipsisCharacter
+                      | (Multiline
+                            ? TextFormatFlags.Top            // StringAlignment.Near
+                            : TextFormatFlags.VerticalCenter); // StringAlignment.Center
+
+            TextRenderer.DrawText(g, _customPlaceholder, Font, rect, SystemColors.GrayText, flags);
+        }
+        catch (ArgumentException) { }
     }
 
     private void HandleCustomDoubleClick(IntPtr lParam)
     {
-        // Exakt den sichtbaren Text (inkl. Platzhalter und Trennzeichen) abrufen
         var text = MaskedTextProvider != null ? MaskedTextProvider.ToDisplayString() : Text;
         if (string.IsNullOrEmpty(text)) { return; }
+
         var x = (int)(lParam.ToInt64() & 0xFFFF);
         var y = (int)((lParam.ToInt64() >> 16) & 0xFFFF);
         var clickLocation = new Point(x, y);
         var index = GetCharIndexFromPosition(clickLocation);
 
-        // Prüfen, ob der Index im Bereich des Display-Strings liegt
         if (index < 0 || index >= text.Length) { return; }
 
         static int GetCharClass(char c)
@@ -308,11 +269,14 @@ public class PaddedMaskedTextBox : MaskedTextBox
             if (char.IsLetterOrDigit(c) || c == '_') { return 1; }
             return 2;
         }
+
         var targetClass = GetCharClass(text[index]);
         var start = index;
         var end = index;
+
         while (start > 0 && GetCharClass(text[start - 1]) == targetClass) { start--; }
         while (end < text.Length - 1 && GetCharClass(text[end + 1]) == targetClass) { end++; }
+
         var length = end - start + 1;
         if (length > 0) { Select(start, length); }
     }

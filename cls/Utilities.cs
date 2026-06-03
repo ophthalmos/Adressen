@@ -4,22 +4,29 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
 using System.Globalization;
 using System.IO.Compression;
+using System.Media;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using Microsoft.Win32;
 
 namespace Adressen.cls;
 
-internal static class Utils
+internal static partial class Utils
 {
+    [GeneratedRegex(@"[^\d+]")]
+    private static partial Regex NonDigitOrPlusRegex();
+
     public static void MsgTaskDlg(nint hwnd, string heading, string message, TaskDialogIcon? icon = null)
     {
         TaskDialog.ShowDialog(hwnd, new TaskDialogPage() { Caption = Application.ProductName, SizeToContent = true, Heading = heading, Text = message, Icon = icon ?? TaskDialogIcon.None, AllowCancel = true, Buttons = { TaskDialogButton.OK } });
     }
+    private const string runLocation = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
     public static void ErrTaskDlg(nint? hwnd, Exception error)
     {
@@ -85,9 +92,51 @@ internal static class Utils
         return success;
     }
 
-    public static bool IsArrowKeyUpDownDown()
-    {   // Das bitweise UND mit 0x8000 prüft das höchste Bit. Ist es gesetzt, wird die Taste exakt jetzt physisch gedrückt gehalten.
-        return (NativeMethods.GetAsyncKeyState(NativeMethods.VK_UP) & 0x8000) != 0 || (NativeMethods.GetAsyncKeyState(NativeMethods.VK_DOWN) & 0x8000) != 0;
+    internal static void SetAutoStart(string? appName, string assemblyLocation, string? commandLineArgs)
+    {
+        using var key = Registry.CurrentUser.CreateSubKey(runLocation);
+        key?.SetValue(appName, $"{assemblyLocation} {commandLineArgs}".Trim());
+    }
+
+    //internal static void SetAutoStart(string? appName, string assemblyLocation, bool enable, bool withMin2Tray = false)
+    //{
+    //    using var key = Registry.CurrentUser.OpenSubKey(runLocation, writable: true);
+    //    if (key == null) { return; }
+    //    if (enable)
+    //    {
+    //        var value = withMin2Tray ? $"{assemblyLocation} -min2Tray" : assemblyLocation;
+    //        key.SetValue(appName, value);
+    //    }
+    //    else
+    //    {
+    //        key.DeleteValue(appName, throwOnMissingValue: false);
+    //    }
+    //}
+
+    //internal static bool IsAutoStartEnabled(string? appName, string assemblyLocation)
+    //{
+    //    using var key = Registry.CurrentUser.OpenSubKey(runLocation);
+    //    if (key == null) { return false; }
+    //    var value = key.GetValue(appName) as string;
+    //    return !string.IsNullOrEmpty(value) && string.Equals(value, assemblyLocation, StringComparison.OrdinalIgnoreCase);
+    //}
+
+
+    internal static (bool IsEnabled, bool HasMin2Tray) IsAutoStartEnabled(string? appName, string assemblyLocation)
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(runLocation);
+        if (key == null) { return (false, false); }
+        var value = key.GetValue(appName) as string;
+        if (string.IsNullOrEmpty(value)) { return (false, false); }
+        var isEnabled = value.StartsWith(assemblyLocation, StringComparison.OrdinalIgnoreCase);
+        var hasMin2Tray = isEnabled && value.Contains("-min2Tray", StringComparison.OrdinalIgnoreCase);
+        return (isEnabled, hasMin2Tray);
+    }
+
+    internal static void UnSetAutoStart(string? appName)
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(runLocation, writable: true);
+        key?.DeleteValue(appName ?? "Adressen", throwOnMissingValue: false);
     }
 
     public static void SortContacts(BindingList<Contact>? contacts)
@@ -646,12 +695,12 @@ internal static class Utils
     {
         TaskDialogButton wordButton = new TaskDialogCommandLinkButton("Microsoft Word");
         TaskDialogButton libreButton = new TaskDialogCommandLinkButton("LibreOffice Writer");
-        //using TaskDialogIcon questionDialogIcon = new(Properties.Resources.question32);
+        //var settingsButton = new TaskDialogButton("Einstellungen öffnen");  // geht nicht gleichzeitig mit CommandLinkButtons
         var page = new TaskDialogPage
         {
             Caption = Application.ProductName,
             Heading = "Wähle die Textverarbeitung",
-            Icon = TaskDialogIcon.ShieldBlueBar,
+            Text = "Du kannst deine bevorzugte Auswahl in den Einstellungen\nfestlegen, so dass dieser Dialog nicht mehr angezeigt wird.",  // \nUm die Einstellungen zu öffnen, kannst du 'OK' klicken.",
             Buttons = { wordButton, libreButton, TaskDialogButton.Cancel },
             AllowCancel = true,
             SizeToContent = true
@@ -659,63 +708,70 @@ internal static class Utils
         var result = TaskDialog.ShowDialog(hwnd, page);
         if (result == wordButton) { return true; }
         if (result == libreButton) { return false; }
+        //if (result == settingsButton) { return null; }  // null wird schon für 'Abbrechen' verwendet, daher verzichten wir auf diesen Button
         return null;
     }
 
-    internal static (bool IsYes, bool IsNo, bool IsCancelled) YesNo_TaskDialog(IWin32Window? owner, string caption, string heading, string text, string yes = "", string no = "")
+    internal static (bool IsYes, bool IsCancelled) YesNo_TaskDialog(IWin32Window? owner, string caption, string heading, string text, string yes = "", string no = "")
     {
         var yesButton = string.IsNullOrEmpty(yes) ? TaskDialogButton.Yes : new TaskDialogButton(yes);
         var noButton = string.IsNullOrEmpty(no) ? TaskDialogButton.No : new TaskDialogButton(no);
+        using var customIcon = Properties.Resources.question32;         // Beide Instanzen sauber kapseln,
+        using var questionDialogIcon = new TaskDialogIcon(customIcon);  // damit keine GDI-Leaks entstehen
         var page = new TaskDialogPage
         {
             Caption = caption,
             Heading = heading,
             Text = text,
-            Icon = new TaskDialogIcon(Properties.Resources.question32),
+            Icon = questionDialogIcon,
             Buttons = { yesButton, noButton },
             AllowCancel = true,
             SizeToContent = true
         };
         var result = owner is not null ? TaskDialog.ShowDialog(owner, page) : TaskDialog.ShowDialog(page);
         var isYes = result == yesButton;
-        var isNo = result == noButton;
-        var isCancelled = result == TaskDialogButton.Cancel || (!isYes && !isNo);
-        return (isYes, isNo, isCancelled);
+        var isCancelled = result == TaskDialogButton.Cancel;
+        return (isYes, isCancelled);
     }
 
-
-    internal static bool ValuesEqual(object? a, object? b)
+    internal static string SanitizeFileName(string fileName)  // Entfernt alle ungültigen Zeichen und reduziert Punkte auf einen
     {
-        if (a is DBNull) { a = string.Empty; }
-        if (b is DBNull) { b = string.Empty; }
-        if (a is string sa && b is string sb) { return string.Equals(sa, sb, StringComparison.Ordinal); }
-        return string.Equals(a?.ToString(), b?.ToString(), StringComparison.Ordinal); // Fallback: ToString-Vergleich
+        var invalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
+        var invalidRegStr = string.Format(@"([{0}]*\.{{2,}})|([{0}]+)", invalidChars);
+        var clean = Regex.Replace(fileName, invalidRegStr, match => match.Value.Contains("..") ? "." : "");
+        return clean;
     }
 
-    public static string BuildMask(params string[] fields) => string.Join(",", fields.Where(f => !string.IsNullOrWhiteSpace(f)).Select(f => f.Trim()));
+    internal static string NormalizePhoneNumber(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) { return string.Empty; }
+        var cleaned = NonDigitOrPlusRegex().Replace(input, string.Empty);  // Leerzeichen, Klammern, Bindestriche etc. entfernen
+        if (cleaned.StartsWith("+49")) { cleaned = "0" + cleaned[3..]; }  // Ländercode für Deutschland standardisieren (+49 oder 0049 -> 0)
+        else if (cleaned.StartsWith("0049")) { cleaned = "0" + cleaned[4..]; }
+        return cleaned;
+    }
+
+    internal static void PlayIncomingCallSound(string appPath)
+    {
+        var file = Path.Combine(appPath, "ringing.wav");
+        if (!string.IsNullOrEmpty(file) && File.Exists(file))
+        {
+            Task.Run(() => { using var player = new SoundPlayer(file); player.PlaySync(); });  // Blockierend auf Thread-Pool – UI bleibt frei, Dispose erst nach Ende
+        }
+        else { SystemSounds.Asterisk.Play(); }  // Windows-Systemton, immer verfügbar
+    }
 
     internal static (bool askBefore, bool deleteNow) AskBeforeDeleteContact(nint handle, IContactEntity contact, bool askBeforeDelete, bool showVerification = true)
     {
         var deleteNow = false;
         try
         {
-            // Wir holen die Daten direkt vom Objekt, nicht aus den Grid-Zellen
-            // Das ist viel schneller und weniger fehleranfällig
-            var details = contact.DisplayName;
-
-            // Falls du mehr Details wie Unternehmen/Ort anzeigen willst, 
-            // musst du diese ggf. in das Interface aufnehmen oder hier casten:
+            var details = contact.DisplayName;  // Wir holen die Daten direkt vom Objekt, nicht aus den Grid-Zellen. Das ist viel schneller und weniger fehleranfällig
             var zusatzInfo = "";
-            if (contact is Contact c)
-            {
-                zusatzInfo = $"\n{c.Unternehmen}\n{c.Strasse}\n{c.PLZ} {c.Ort}";
-            }
-            else if (contact is Adresse a)
-            {
-                zusatzInfo = $"\n{a.Unternehmen}\n{a.Strasse}\n{a.PLZ} {a.Ort}";
-            }
-
-            using TaskDialogIcon questionDialogIcon = new(Properties.Resources.question32);
+            if (contact is Contact c) { zusatzInfo = $"\n{c.Unternehmen}\n{c.Strasse}\n{c.PLZ} {c.Ort}"; }
+            else if (contact is Adresse a) { zusatzInfo = $"\n{a.Unternehmen}\n{a.Strasse}\n{a.PLZ} {a.Ort}"; }
+            using var customIcon = Properties.Resources.question32;         // Beide Instanzen sauber kapseln,
+            using var questionDialogIcon = new TaskDialogIcon(customIcon);  // damit keine GDI-Leaks entstehen
             var page = new TaskDialogPage()
             {
                 Heading = "Möchtest du den Datensatz löschen?",
@@ -727,14 +783,8 @@ internal static class Utils
                 Verification = showVerification ? new TaskDialogVerificationCheckBox() { Text = "Immer fragen" } : null,
                 Buttons = { TaskDialogButton.Yes, TaskDialogButton.No },
             };
-
-            if (page.Verification is TaskDialogVerificationCheckBox check)
-            {
-                check.Checked = askBeforeDelete;
-            }
-
+            if (page.Verification is TaskDialogVerificationCheckBox check) { check.Checked = askBeforeDelete; }
             var resultButton = TaskDialog.ShowDialog(handle, page);
-
 
             // Logik für die Checkbox
             if (page.Verification is TaskDialogVerificationCheckBox finalCheck)
@@ -744,12 +794,8 @@ internal static class Utils
                     MsgTaskDlg(page.BoundDialog?.Handle ?? 0, "Hinweis", "Du kannst die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.", new(Properties.Resources.info32));
                     askBeforeDelete = false;
                 }
-                else if (finalCheck.Checked)
-                {
-                    askBeforeDelete = true;
-                }
+                else if (finalCheck.Checked) { askBeforeDelete = true; }
             }
-
             if (resultButton == TaskDialogButton.Yes) { deleteNow = true; }
         }
         catch (Exception ex) { ErrTaskDlg(handle, ex); }
@@ -767,7 +813,8 @@ internal static class Utils
             var strasse = adresse.Strasse ?? string.Empty;
             var plz = adresse.PLZ ?? string.Empty;
             var ort = adresse.Ort ?? string.Empty;
-            using TaskDialogIcon questionDialogIcon = new(Properties.Resources.question32);
+            using var customIcon = Properties.Resources.question32;         // Beide Instanzen sauber kapseln,
+            using var questionDialogIcon = new TaskDialogIcon(customIcon);  // damit keine GDI-Leaks entstehen
 
             var page = new TaskDialogPage()
             {
@@ -782,11 +829,7 @@ internal static class Utils
             };
 
             // Korrigiert: Sicherer Null-Check für die Zuweisung
-            if (page.Verification is TaskDialogVerificationCheckBox check)
-            {
-                check.Checked = askBeforeDelete;
-            }
-
+            if (page.Verification is TaskDialogVerificationCheckBox check) { check.Checked = askBeforeDelete; }
             var resultButton = TaskDialog.ShowDialog(hwnd, page);
 
             // Korrigiert: Sicheres Auslesen des Ergebnisses
@@ -797,16 +840,11 @@ internal static class Utils
                     MsgTaskDlg(hwnd, "Hinweis", "Du kannst die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.", new(Properties.Resources.info32));
                     askBeforeDelete = false;
                 }
-                else if (finalCheck.Checked)
-                {
-                    askBeforeDelete = true;
-                }
+                else if (finalCheck.Checked) { askBeforeDelete = true; }
             }
-
             if (resultButton == TaskDialogButton.Yes) { deleteNow = true; }
         }
         catch (Exception ex) { ErrTaskDlg(hwnd, ex); }
-
         return (askBeforeDelete, deleteNow);
     }
 
@@ -850,18 +888,11 @@ internal static class Utils
         return false;
     }
 
-    //internal static string CorrectUNC(string unc) => unc.StartsWith('\\') ? @"\\" + unc.TrimStart('\\') : unc;
-
     internal static string CorrectUNC(string unc)
     {
         if (string.IsNullOrWhiteSpace(unc)) { return string.Empty; }
-
-        // Wenn es kein lokaler Pfad (C:\) und kein relativer Pfad ist, 
-        // aber mit einem Backslash startet, erzwingen wir genau zwei.
-        if (unc.StartsWith('\\') && !unc.StartsWith(@"\\"))
-        {
-            return @"\\" + unc.TrimStart('\\');
-        }
+        // Wenn es kein lokaler Pfad (C:\) und kein relativer Pfad ist, aber mit einem Backslash startet, erzwingen wir genau zwei.
+        if (unc.StartsWith('\\') && !unc.StartsWith(@"\\")) { return @"\\" + unc.TrimStart('\\'); }
         return unc;
     }
 
@@ -949,20 +980,14 @@ internal static class Utils
         {
             // 1. Pfadvorbereitung
             backupDir = Path.Combine(backupDir, new CultureInfo("de-DE").DateTimeFormat.GetDayName(DateTime.Today.DayOfWeek));
-
-            if (!Directory.Exists(backupDir))
-            {
-                Directory.CreateDirectory(backupDir);
-            }
-
+            if (!Directory.Exists(backupDir)) { Directory.CreateDirectory(backupDir); }
             var fileName = Path.GetFileNameWithoutExtension(filePath);
             var extension = Path.GetExtension(filePath);
             var todaysBackupFile = Path.Combine(backupDir, $"{fileName}_{DateTime.Now:yyyy_MM_dd}{extension}");
 
             if (File.Exists(todaysBackupFile)) { return; }
 
-            // 2. Sicherer, asynchroner Kopiervorgang (Löst auch das Lock-Problem)
-            // FileShare.ReadWrite ist entscheidend für SQLite!
+            // 2. Sicherer, asynchroner Kopiervorgang (Löst auch das Lock-Problem); FileShare.ReadWrite ist entscheidend für SQLite!
             await using (var sourceStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, useAsync: true))
             {
                 await using var destStream = new FileStream(todaysBackupFile, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
@@ -977,56 +1002,27 @@ internal static class Utils
                 File.Delete(oldestFile);
             }
         }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Backup fehlgeschlagen: {ex.Message}");
-        }
+        catch (Exception ex) { Debug.WriteLine($"Backup fehlgeschlagen: {ex.Message}"); }
     }
 
     public static string TruncateMiddle(string name, string suffix, Font font, int maxWidth)
     {
         var fullText = $"{name}{suffix}";
-
-        // Puffer leicht anpassen, da ListBox weniger fixes internes Padding hat.
-        var availableWidth = maxWidth - 4;
-
-        if (TextRenderer.MeasureText(fullText, font).Width <= availableWidth)
-        {
-            return fullText;
-        }
-
+        var availableWidth = maxWidth - 4;  // Puffer leicht anpassen, da ListBox weniger fixes internes Padding hat.
+        if (TextRenderer.MeasureText(fullText, font).Width <= availableWidth) { return fullText; }
         var leftLen = name.Length / 2;
         var rightLen = name.Length - leftLen;
 
         while (leftLen + rightLen > 0)
         {
-            if (leftLen > rightLen)
-            {
-                leftLen--;
-            }
-            else
-            {
-                rightLen--;
-            }
-
+            if (leftLen > rightLen) { leftLen--; }
+            else { rightLen--; }
             var testName = name[..leftLen] + "…" + name[^rightLen..];
             var testFull = $"{testName}{suffix}";
-
-            if (TextRenderer.MeasureText(testFull, font).Width <= availableWidth)
-            {
-                return testFull;
-            }
+            if (TextRenderer.MeasureText(testFull, font).Width <= availableWidth) { return testFull; }
         }
-
         return $"…{suffix}";
     }
-
-    //public static void SetImage(ToolStripItem item, Image img)
-    //{
-    //    if (item != null && img != null) { item.Image = img; }
-    //}
-
-    public static void SetPlaceholder(this TextBoxBase control, string text) => _ = NativeMethods.SendMessage(control.Handle, NativeMethods.EM_SETCUEBANNER, 0, text);  // maskedTextBox
 
     public static void RestoreWindowBounds(Form form, WindowPlacement? placement, bool isMaximized = false)
     {
@@ -1080,4 +1076,23 @@ internal static class Utils
         var screenCenter = control.PointToScreen(clientCenter);
         Cursor.Position = screenCenter;
     }
+
+    internal static Bitmap CreateIconFromText(string text, Font font, Color textColor, Size imageSize)
+    {
+        var bitmap = new Bitmap(imageSize.Width, imageSize.Height);
+        using var g = Graphics.FromImage(bitmap);
+        g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+
+        g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+        g.SmoothingMode = SmoothingMode.HighQuality;
+        g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+        g.Clear(Color.Transparent);  // Hintergrund transparent halten
+        using var brush = new SolidBrush(textColor);
+        using var format = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+        var rect = new Rectangle(0, 0, imageSize.Width, imageSize.Height);
+        g.DrawString(text, font, brush, rect, format);
+        return bitmap;
+    }
+
 }

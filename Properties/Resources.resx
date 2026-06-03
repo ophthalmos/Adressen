@@ -179,9 +179,6 @@
   <data name="date_plus" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\date_plus.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="arrow_previous16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\arrow_previous16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="UpArrow_Blue_24" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\UpArrow_Blue_24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -206,9 +203,6 @@
   <data name="CompareFiles_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\CompareFiles_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="IncreaseFontSize16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\IncreaseFontSize16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="envelope16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\envelope16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -227,8 +221,8 @@
   <data name="ClipBoard24" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\ClipBoard24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="mail16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\mail16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="address-book" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\address-book.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="AvatarBild100" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\AvatarBild100.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -239,9 +233,8 @@
   <data name="vertical" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\vertical.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="PrintArea32" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\PrintArea32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-    <comment>TaskDialogIcon HTMLExport</comment>
+  <data name="stickynoteminus16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\stickynoteminus16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="add-contact16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\add-contact16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -278,9 +271,6 @@
   </data>
   <data name="control-double16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\control-double16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="address-book" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\address-book.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="ZoomToFit16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\ZoomToFit16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -319,8 +309,8 @@
   <data name="copy-contact" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\copy-contact.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="SaveHL" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\SaveHL.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="IncreaseFontSize16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\IncreaseFontSize16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="RunUpdate16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\RunUpdate16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -349,20 +339,23 @@
   <data name="printer24" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\printer24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="SaveHL" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\SaveHL.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="info32" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\info32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="document-text_24" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\document-text_24.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="printarrow16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\printarrow16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="import16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\import16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="Web_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\Web_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="mail16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\mail16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="mobile-minus16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\mobile-minus16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -376,11 +369,12 @@
   <data name="database16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\database16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="clipboard-text16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\clipboard-text16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="printarrow16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\printarrow16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="Add_8x16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\Add_8x16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="PrintArea32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\PrintArea32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <comment>TaskDialogIcon HTMLExport</comment>
   </data>
   <data name="splitter16x" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\splitter16x.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -421,6 +415,9 @@
   <data name="mobile-plus16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\mobile-plus16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="clipboard-text16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\clipboard-text16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="keyboard16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\keyboard16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -433,6 +430,9 @@
   <data name="ZoomHS16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\ZoomHS16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="stickynoteplus16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\stickynoteplus16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="delete16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\delete16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -441,6 +441,9 @@
   </data>
   <data name="Clearall16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\Clearall16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Add_8x16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\Add_8x16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="plus-white16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\plus-white16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -472,10 +475,55 @@
   <data name="mail" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\img\mail.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="stickynoteplus16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\stickynoteplus16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="EditInformation16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\EditInformation16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="stickynoteminus16" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\img\stickynoteminus16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="Import_16x" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\Import_16x.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Export_16x" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\Export_16x.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="calendarselectweek16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\calendarselectweek16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bank_plus16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\bank_plus16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bank_minus16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\bank_minus16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="zone_plus16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\zone_plus16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="zone_minus16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\zone_minus16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="globe_plus16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\globe_plus16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="globe_minus16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\globe_minus16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="calendarselectmonth16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\calendarselectmonth16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="SaveTable16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\SaveTable16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="blueprintMinus" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\blueprintMinus.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="blueprintPlus" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\blueprintPlus.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="telephoneOff16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\telephoneOff16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="telephoneShare16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\telephoneShare16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="FritzBox32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\img\FritzBox32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

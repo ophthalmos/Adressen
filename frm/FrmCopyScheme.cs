@@ -1,7 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using Adressen.cls;
 
-namespace Adressen; // WICHTIG: Muss exakt wie im Designer heißen
+namespace Adressen; 
 
 public partial class FrmCopyScheme : Form
 {
@@ -9,8 +9,8 @@ public partial class FrmCopyScheme : Form
     private readonly Dictionary<string, string> _addBookDict;
     private readonly Font _tabFont = new("Segoe UI", 10.0f, FontStyle.Bold, GraphicsUnit.Point);
 
-    // Helper-Property für Zugriff auf die Textbox des aktuellen Tabs
-    private TextBox CurrentPatternBox
+
+    private TextBox CurrentPatternBox  // Helper-Property für Zugriff auf die Textbox des aktuellen Tabs
     {
         get
         {
@@ -23,14 +23,12 @@ public partial class FrmCopyScheme : Form
         }
     }
 
-    // Neuer Konstruktor: Nimmt nur Settings & Dictionary
     internal FrmCopyScheme(AppSettings settings, Dictionary<string, string> addressDict)
     {
         InitializeComponent();
         _settings = settings;
         _addBookDict = addressDict;
 
-        // --- Farben anwenden ---
         panelLeft.BackColor = _settings.ColorScheme switch
         {
             "blue" => SystemColors.GradientInactiveCaption,
@@ -50,25 +48,16 @@ public partial class FrmCopyScheme : Form
             };
         }
 
-        // --- Combobox füllen ---
         cbxFields.Items.AddRange([.. _addBookDict.Keys]);
         if (cbxFields.Items.Count > 0) { cbxFields.SelectedIndex = 0; }
         Utils.AdjustComboBoxDropDownWidth(cbxFields);
-        // --- Textboxen aus Settings füllen ---
         tbPattern1.Lines = _settings.CopyPattern1 ?? [];
         tbPattern2.Lines = _settings.CopyPattern2 ?? [];
         tbPattern3.Lines = _settings.CopyPattern3 ?? [];
         tbPattern4.Lines = _settings.CopyPattern4 ?? [];
         tbPattern5.Lines = _settings.CopyPattern5 ?? [];
         tbPattern6.Lines = _settings.CopyPattern6 ?? [];
-
-        // --- Letzten aktiven Tab setzen ---
-        if (_settings.CopyPatternIndex >= 0 && _settings.CopyPatternIndex < tabControl.TabCount)
-        {
-            tabControl.SelectedIndex = _settings.CopyPatternIndex;
-        }
-
-        // --- Tooltips initialisieren ---
+        if (_settings.CopyPatternIndex >= 0 && _settings.CopyPatternIndex < tabControl.TabCount)        {            tabControl.SelectedIndex = _settings.CopyPatternIndex;        }
         UpdateAllTooltips();
     }
 
@@ -81,13 +70,10 @@ public partial class FrmCopyScheme : Form
         Utils.MoveCursorToControl(btnCopy);
     }
 
-    // WICHTIG: Dies ist der Button "Text in Zwischenablage kopieren"
-    // Da er im Designer DialogResult = OK hat, dient er gleichzeitig als "Speichern & Schließen".
-    private void BtnCopy_Click(object sender, EventArgs e)
+  
+    private void BtnCopy_Click(object sender, EventArgs e)  // Button "Text in Zwischenablage kopieren" = "Speichern & Schließen"
     {
         Utils.SetClipboardText(tbResult.Text.Trim());
-
-        // 2. Änderungen zurück in das Settings-Objekt schreiben
         _settings.CopyPattern1 = tbPattern1.Lines;
         _settings.CopyPattern2 = tbPattern2.Lines;
         _settings.CopyPattern3 = tbPattern3.Lines;
@@ -95,9 +81,7 @@ public partial class FrmCopyScheme : Form
         _settings.CopyPattern5 = tbPattern5.Lines;
         _settings.CopyPattern6 = tbPattern6.Lines;
         _settings.CopyPatternIndex = tabControl.SelectedIndex;
-
-        // Form schließt sich automatisch wegen btnCopy.DialogResult = OK
-    }
+    }  // Form schließt sich automatisch wegen btnCopy.DialogResult = OK
 
     private void BtnInsert_Click(object sender, EventArgs e)
     {
@@ -114,7 +98,6 @@ public partial class FrmCopyScheme : Form
         tbPattern.Focus();
     }
 
-    // Wird für alle tbPatternX TextChanged Events aufgerufen
     private void TbPattern_TextChanged(object sender, EventArgs e) => UpdateCurrentTabInfo();
 
     private void TabControl_SelectedIndexChanged(object sender, EventArgs e)
@@ -122,13 +105,10 @@ public partial class FrmCopyScheme : Form
         if (tabControl.Visible && tabControl.Focused) { UpdateCurrentTabInfo(); }
     }
 
-    // Aktualisiert Tooltip und Scrollbars für den aktuellen Tab
     private void UpdateCurrentTabInfo()
     {
         if (!tabControl.Visible || tabControl.SelectedTab == null) { return; }
-
         var tbPattern = CurrentPatternBox;
-
         if (string.IsNullOrEmpty(tbPattern.Text))
         {
             tbResult.Clear();
@@ -137,57 +117,49 @@ public partial class FrmCopyScheme : Form
         else
         {
             tbResult.Lines = UsePattern(tbPattern.Lines);
-            tabControl.SelectedTab.ToolTipText = tbResult.Text.Trim();
-
+            var tooltipText = tbResult.Text.Trim().Replace("\t", "    ");  // WinForms-Tooltips brechen oft bei Tab-Zeichen ab.
+            tabControl.SelectedTab.ToolTipText = tooltipText;
             var textSize = TextRenderer.MeasureText(tbPattern.Text, tbPattern.Font,
                 new Size(tbPattern.Width - SystemInformation.VerticalScrollBarWidth, int.MaxValue),
                 TextFormatFlags.LeftAndRightPadding | TextFormatFlags.TextBoxControl);
-
-            tbPattern.ScrollBars = textSize.Height > tbPattern.Height ? ScrollBars.Vertical : ScrollBars.None;
+            if (textSize.Height > tbPattern.Height) { tbPattern.ScrollBars = ScrollBars.Vertical; }
+            else { tbPattern.ScrollBars = ScrollBars.None; }
         }
     }
 
-    // Aktualisiert alle Tooltips (beim Start nötig)
     private void UpdateAllTooltips()
     {
-        tabPage1.ToolTipText = string.Join(Environment.NewLine, UsePattern(tbPattern1.Lines)).Trim();
-        tabPage2.ToolTipText = string.Join(Environment.NewLine, UsePattern(tbPattern2.Lines)).Trim();
-        tabPage3.ToolTipText = string.Join(Environment.NewLine, UsePattern(tbPattern3.Lines)).Trim();
-        tabPage4.ToolTipText = string.Join(Environment.NewLine, UsePattern(tbPattern4.Lines)).Trim();
-        tabPage5.ToolTipText = string.Join(Environment.NewLine, UsePattern(tbPattern5.Lines)).Trim();
-        tabPage6.ToolTipText = string.Join(Environment.NewLine, UsePattern(tbPattern6.Lines)).Trim();
+        string GetCleanTooltip(string[] lines)  // Lokale Hilfsfunktion für saubere Tooltip-Texte ohne Tabulatoren
+        {
+            var text = string.Join(Environment.NewLine, UsePattern(lines)).Trim();
+            return text.Replace("\t", "    ");
+        }
+        tabPage1.ToolTipText = GetCleanTooltip(tbPattern1.Lines);
+        tabPage2.ToolTipText = GetCleanTooltip(tbPattern2.Lines);
+        tabPage3.ToolTipText = GetCleanTooltip(tbPattern3.Lines);
+        tabPage4.ToolTipText = GetCleanTooltip(tbPattern4.Lines);
+        tabPage5.ToolTipText = GetCleanTooltip(tbPattern5.Lines);
+        tabPage6.ToolTipText = GetCleanTooltip(tbPattern6.Lines);
     }
 
     private string[] UsePattern(string[] pattern)
     {
-        if (pattern == null)
-        {
-            return [];
-        }
-
+        if (pattern == null) { return []; }
         var result = new string[pattern.Length];
-
         for (var i = 0; i < pattern.Length; i++)
         {
             var line = pattern[i];
-
-            // Das Pattern @"\[([^\]]+)\]" sucht nach:
-            // \[       -> einer öffnenden eckigen Klammer
-            // ([^\]]+) -> (Gruppe 1) beliebig vielen Zeichen, die KEINE schließende eckige Klammer sind
-            // \]       -> einer schließenden eckigen Klammer
-            result[i] = Regex.Replace(line, @"\[([^\]]+)\]", match =>
+            line = Regex.Replace(line, @"\[([^\]]+)\]", match =>
             {
-                // match.Groups[1].Value enthält den reinen Key OHNE die Klammern (z.B. "Vorname")
                 var key = match.Groups[1].Value;
-
-                if (_addBookDict.TryGetValue(key, out var value)) { return value; }
-
-                // Wenn der Key nicht im Dictionary existiert (z.B. wenn der Nutzer manuell [Hallo] tippt), 
-                // bleibt der Originaltext inklusive Klammern unangetastet stehen.
+                if (_addBookDict.TryGetValue(key, out var value)) { return value ?? string.Empty; }  // Falls der Wert null ist, leeren String zurückgeben, damit keine "null"-Strings im Text landen.
                 return match.Value;
             });
+            line = Regex.Replace(line, @"(,\s*){2,}", ", ");  // Mehrfache Kommas (auch getrennt durch Leerzeichen) zu einem einzigen Komma zusammenfassen
+            line = Regex.Replace(line, @" {2,}", " ");  // Mehrfache aufeinanderfolgende normale Leerzeichen zu einem einzigen zusammenfassen
+            line = line.Trim(' ', ',');  // Führende und nachfolgende Leerzeichen sowie Kommas entfernen (z.B. wenn das erste Feld leer war)
+            result[i] = line;
         }
-
         return result;
     }
 
@@ -239,7 +211,7 @@ public partial class FrmCopyScheme : Form
         var query = Uri.EscapeDataString(searchText);
         var url = $"https://www.google.com/search?q={query}";
         Utils.StartLink(Handle, url);
-        BtnCopy_Click(sender, e); 
+        BtnCopy_Click(sender, e);
         DialogResult = DialogResult.OK;
         //Close();
     }

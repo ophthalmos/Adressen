@@ -1,6 +1,6 @@
 ﻿namespace Adressen
 {
-    partial class TextBoxSearch
+    partial class FrmTextBoxSearch
     {
         /// <summary>
         /// Required designer variable.

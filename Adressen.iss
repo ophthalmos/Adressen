@@ -1,6 +1,6 @@
 #define MyAppLong "Adressen & Kontakte"
 #define MyAppName "Adressen"
-#define MyAppVersion "1.2.3"
+#define MyAppVersion "1.2.4"
 
 [Setup]
 AppName={#MyAppName}
@@ -75,11 +75,11 @@ Source: "bin\x64\Release\net10.0-windows10.0.19041.0\SQLitePCLRaw.core.dll"; Des
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\SQLitePCLRaw.provider.e_sqlite3.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\System.Management.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\WinRT.Runtime.dll"; DestDir: "{app}"; Flags: ignoreversion
-; Source: "bin\x64\Release\net10.0-windows10.0.19041.0\geodata.db"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\ringing.wav"; DestDir: "{app}"; Flags: ignoreversion
 
-Source: "bin\x64\Release\net10.0-windows10.0.19041.0\geodata.db"; DestDir: "{app}"; DestName: "geodata.db"; Permissions: users-modify; Flags: ignoreversion; Tasks: geode
-Source: "bin\x64\Release\net10.0-windows10.0.19041.0\geodata_at.db"; DestDir: "{app}"; DestName: "geodata.db"; Permissions: users-modify; Flags: ignoreversion; Tasks: geoat
-Source: "bin\x64\Release\net10.0-windows10.0.19041.0\geodata_ch.db"; DestDir: "{app}"; DestName: "geodata.db"; Permissions: users-modify; Flags: ignoreversion; Tasks: geoch
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\streetdata.db"; DestDir: "{app}"; DestName: "streetdata.db"; Permissions: users-modify; Flags: ignoreversion; Tasks: streetde
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\streetdata_at.db"; DestDir: "{app}"; DestName: "streetdata.db"; Permissions: users-modify; Flags: ignoreversion; Tasks: streetat
+Source: "bin\x64\Release\net10.0-windows10.0.19041.0\streetdata_ch.db"; DestDir: "{app}"; DestName: "streetdata.db"; Permissions: users-modify; Flags: ignoreversion; Tasks: streetch
 
 
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\client_secret.json"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion  
@@ -100,16 +100,16 @@ Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppName}.exe\SupportedType
 [Tasks]
 Name: fileassoc; Description: {cm:AssocFileExtension,{#MyAppName},.adb}
 Name: desktopicon; Description: {cm:CreateDesktopIcon}
-Name: geode; Description: "Deutschland"; GroupDescription: "{cm:GeoGroupDesc}"; Flags: exclusive
-Name: geoat; Description: "Österreich"; GroupDescription: "{cm:GeoGroupDesc}"; Flags: exclusive unchecked
-Name: geoch; Description: "Schweiz"; GroupDescription: "{cm:GeoGroupDesc}"; Flags: exclusive unchecked
-Name: geono; Description: "Keines"; GroupDescription: "{cm:GeoGroupDesc}"; Flags: exclusive unchecked
+Name: streetde; Description: "Deutschland"; GroupDescription: "{cm:StreetGroupDesc}"; Flags: exclusive
+Name: streetat; Description: "Österreich"; GroupDescription: "{cm:StreetGroupDesc}"; Flags: exclusive unchecked
+Name: streetch; Description: "Schweiz"; GroupDescription: "{cm:StreetGroupDesc}"; Flags: exclusive unchecked
+Name: streetno; Description: "Keines"; GroupDescription: "{cm:StreetGroupDesc}"; Flags: exclusive unchecked
 
 [InstallDelete]
-Type: files; Name: "{app}\geodata.db"; Tasks: geono
+Type: files; Name: "{app}\streetdata.db"; Tasks: streetno
+Type: files; Name: "{app}\geodata.db"
 ;Type: filesandordirs; Name: "{userappdata}\{#MyAppName}\token.json";
 ;Type: files; Name: "{app}\System.Data.SQLite.dll"
-;Type: files; Name: "{app}\SQLite.Interop.dll"
 
 [Run]
 Filename: "{app}\{#MyAppName}.exe"; Description: "Starte Adressen && Kontakte"; Flags: postinstall nowait skipifsilent shellexec
@@ -123,7 +123,7 @@ ConfirmUninstall=Möchtest du '%1' von deinem PC entfernen? Eine Deinstallation i
 RemoveSettings=Möchtest du die Einstellungsdateien ebenfalls entfernen?
 Description=Adressen-Datenbank
 ;Eintrag für die Tasks-Seite mit vorangestelltem Zeilenumbruch:
-GeoGroupDesc=%nWelches Straßenverzeichnis soll installiert werden?
+StreetGroupDesc=%nWelches Straßenverzeichnis soll installiert werden?
 
 [Code]
 procedure CurUninstallStepChanged (CurUninstallStep: TUninstallStep);

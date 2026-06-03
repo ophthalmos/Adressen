@@ -14,6 +14,9 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
 {
     private static PeopleServiceService? _cachedService;
     private static readonly SemaphoreSlim _serviceLock = new(1, 1);
+    // _allKnownPhoneTypes muss nicht zwangsläufig alle von Google unterstützten Typen enthalten, sondern nur die, die wir mit dem Fallback-Mechanismus auf bestimmte Felder verteilen.
+    private static readonly HashSet<string> _allKnownPhoneTypes = new(StringComparer.OrdinalIgnoreCase) {
+        TYPE_HOME, TYPE_WORK, TYPE_MOBILE, TYPE_FAX, TYPE_HOME_FAX, TYPE_WORK_FAX, TYPE_OTHER_FAX, TYPE_WORK_MOBILE, TYPE_MAIN, TYPE_PAGER, TYPE_OTHER };  // , "googleVoice", "workPager"
 
     // --- GOOGLE API KONSTANTEN ---
     private const string CONTACT_PERSON_FIELDS = "names,memberships,nicknames,addresses,phoneNumbers,emailAddresses,biographies,birthdays,urls,organizations,photos,userDefined,metadata";
@@ -32,6 +35,13 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
     private const string TYPE_MOBILE = "mobile";
     private const string TYPE_FAX = "fax";
     private const string TYPE_HOMEPAGE = "homePage";
+    private const string TYPE_OTHER = "other";
+    private const string TYPE_HOME_FAX = "homeFax";
+    private const string TYPE_WORK_FAX = "workFax";
+    private const string TYPE_OTHER_FAX = "otherFax";
+    private const string TYPE_WORK_MOBILE = "workMobile";
+    private const string TYPE_MAIN = "main";  // Hauptnummer, wird von Google als Fallback für fehlende Typen verwendet
+    private const string TYPE_PAGER = "pager";  // seltener Typ, den wir als letzten Fallback für Mobilnummern verwenden, da Pager in der Regel keine Handynummern sind
 
     // UserDefined Keys (benutzerdefinierte Felder)
     private const string KEY_ANREDE = "Anrede";
@@ -65,7 +75,7 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
     }
 
     //public async Task<Contact> CreateContactAsync(Contact contact, Image? profileImage, CancellationToken token = default)
-        public async Task<Contact> CreateContactAsync(Contact contact, Image? profileImage, ImageFormat? photoFormat, CancellationToken token = default)
+    public async Task<Contact> CreateContactAsync(Contact contact, Image? profileImage, ImageFormat? photoFormat, CancellationToken token = default)
 
     {
         var service = await GetServiceAsync(token);
@@ -129,12 +139,6 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         contact.ETag = createdPerson.ETag;
         contact.LastModified = createdPerson.Metadata?.Sources?.FirstOrDefault(static s => s.Type == "CONTACT")?.UpdateTimeDateTimeOffset?.UtcDateTime;
 
-        //if (profileImage != null && !string.IsNullOrEmpty(contact.ResourceName))
-        //{
-        //    var (photoUrl, newETag) = await UploadPhotoInternalAsync(service, contact.ResourceName, profileImage, profileImage.RawFormat, token);
-        //    if (!string.IsNullOrEmpty(photoUrl)) { contact.PhotoUrl = photoUrl; }
-        //    if (!string.IsNullOrEmpty(newETag)) { contact.ETag = newETag; }
-        //}
         if (profileImage != null && !string.IsNullOrEmpty(contact.ResourceName))
         {
             var format = photoFormat ?? profileImage.RawFormat;  // Fallback falls doch mal kein Format mitgegeben wird
@@ -232,18 +236,18 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
             }
         }
 
-        if (changedFields.Contains("emailAddresses"))
-        {
-            UpdateGoogleEmail(personToUpdate, TYPE_HOME, contact.Mail1);
-            UpdateGoogleEmail(personToUpdate, TYPE_WORK, contact.Mail2);
-        }
-
         if (changedFields.Contains("phoneNumbers"))
         {
-            UpdateGooglePhone(personToUpdate, TYPE_HOME, contact.Telefon1);
-            UpdateGooglePhone(personToUpdate, TYPE_WORK, contact.Telefon2);
-            UpdateGooglePhone(personToUpdate, TYPE_MOBILE, contact.Mobil);
-            UpdateGooglePhone(personToUpdate, TYPE_FAX, contact.Fax);
+            UpdateGooglePhone(personToUpdate, TYPE_HOME, contact.Telefon1, TYPE_OTHER, TYPE_MAIN);
+            UpdateGooglePhone(personToUpdate, TYPE_WORK, contact.Telefon2, TYPE_MAIN, TYPE_WORK_MOBILE);
+            UpdateGooglePhone(personToUpdate, TYPE_MOBILE, contact.Mobil, TYPE_WORK_MOBILE, TYPE_PAGER);
+            UpdateGooglePhone(personToUpdate, TYPE_FAX, contact.Fax, TYPE_HOME_FAX, TYPE_WORK_FAX, TYPE_OTHER_FAX);
+        }
+
+        if (changedFields.Contains("emailAddresses"))
+        {
+            UpdateGoogleEmail(personToUpdate, TYPE_HOME, contact.Mail1, TYPE_OTHER);
+            UpdateGoogleEmail(personToUpdate, TYPE_WORK, contact.Mail2);
         }
 
         if (changedFields.Contains("urls"))
@@ -440,30 +444,17 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
             if (_cachedService != null) { return _cachedService; }
 
             var scopes = new[] { PeopleServiceService.Scope.Contacts };
-            UserCredential credential;
-
-            using (var stream = new FileStream(secretPath, FileMode.Open, FileAccess.Read))
-            {
-                credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                    GoogleClientSecrets.FromStream(stream).Secrets,
-                    scopes,
-                    "user",
-                    token,
-                    new FileDataStore(tokenDir, true));
-            }
+            using var stream = new FileStream(secretPath, FileMode.Open, FileAccess.Read);
+            var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(GoogleClientSecrets.FromStream(stream).Secrets, scopes, "user", token, new FileDataStore(tokenDir, true));
 
             _cachedService = new PeopleServiceService(new BaseClientService.Initializer()
             {
                 HttpClientInitializer = credential,
                 ApplicationName = Application.ProductName,
             });
-
             return _cachedService;
         }
-        finally
-        {
-            _serviceLock.Release();
-        }
+        finally { _serviceLock.Release(); }
     }
 
     public static void ClearServiceCache() => _cachedService = null;
@@ -549,6 +540,7 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
 
     private static Contact MapPersonToContact(Person person, Dictionary<string, string> groupMap)
     {
+        var addr = GetGoogleAddressByType(person, TYPE_HOME, TYPE_WORK, TYPE_OTHER);
         var newContact = new Contact
         {
             RawGooglePerson = person,
@@ -562,20 +554,29 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
             Suffix = person.Names?.FirstOrDefault()?.HonorificSuffix ?? "",
             Unternehmen = person.Organizations?.FirstOrDefault()?.Name ?? "",
             Position = person.Organizations?.FirstOrDefault()?.Title ?? "",
-            Strasse = person.Addresses?.FirstOrDefault()?.StreetAddress ?? "",
-            PLZ = person.Addresses?.FirstOrDefault()?.PostalCode ?? "",
-            Ort = person.Addresses?.FirstOrDefault()?.City ?? "",
-            Postfach = person.Addresses?.FirstOrDefault()?.PoBox ?? "",
-            Land = person.Addresses?.FirstOrDefault()?.Country ?? "",
+            Strasse = addr?.StreetAddress ?? "",
+            PLZ = addr?.PostalCode ?? "",
+            Ort = addr?.City ?? "",
+            Postfach = addr?.PoBox ?? "",
+            Land = addr?.Country ?? "",
             Notizen = person.Biographies?.FirstOrDefault()?.Value.ReplaceLineEndings() ?? "",
-            Internet = person.Urls?.FirstOrDefault()?.Value ?? "",
-            Mail1 = person.EmailAddresses?.FirstOrDefault()?.Value ?? "",
-            Mail2 = (person.EmailAddresses?.Count > 1) ? person.EmailAddresses[1].Value : "",
-            Telefon1 = GetGooglePhoneByType(person, TYPE_HOME) ?? "",
-            Telefon2 = GetGooglePhoneByType(person, TYPE_WORK) ?? "",
-            Mobil = GetGooglePhoneByType(person, TYPE_MOBILE) ?? "",
-            Fax = GetGooglePhoneByType(person, TYPE_FAX) ?? ""
+            Internet = GetGoogleUrlByType(person, TYPE_HOMEPAGE, TYPE_HOME, TYPE_WORK, TYPE_OTHER),
+            Mail1 = GetGoogleEmailByType(person, TYPE_HOME, TYPE_OTHER),
+            Mail2 = GetGoogleEmailByType(person, TYPE_WORK),
+            Telefon1 = GetGooglePhoneByType(person, TYPE_HOME, TYPE_OTHER, TYPE_MAIN),
+            Telefon2 = GetGooglePhoneByType(person, TYPE_WORK, TYPE_MAIN, TYPE_WORK_MOBILE),
+            Mobil = GetGooglePhoneByType(person, TYPE_MOBILE, TYPE_WORK_MOBILE, TYPE_PAGER),
+            Fax = GetGooglePhoneByType(person, TYPE_FAX, TYPE_HOME_FAX, TYPE_WORK_FAX, TYPE_OTHER_FAX),
         };
+        // Fallback für Custom-Typen: Alle unbekannten Nummern auf noch freie Felder verteilen
+        List<PhoneNumber> customPhones = [.. (person.PhoneNumbers ?? []).Where(static p => !string.IsNullOrEmpty(p.Value) && !_allKnownPhoneTypes.Contains(p.Type ?? ""))];
+        foreach (var customPhone in customPhones)
+        {
+            if (string.IsNullOrEmpty(newContact.Telefon1)) { newContact.Telefon1 = customPhone.Value!; }
+            else if (string.IsNullOrEmpty(newContact.Telefon2)) { newContact.Telefon2 = customPhone.Value!; }
+            else if (string.IsNullOrEmpty(newContact.Mobil)) { newContact.Mobil = customPhone.Value!; }
+            else { break; } // Alle verfügbaren Felder belegt; eine Nummer mit unbekanntem Typ ist mit hoher Wahrscheinlichkeit kein Fax
+        }
 
         if (person.UserDefined != null)
         {
@@ -598,7 +599,8 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         if (person.Photos != null)
         {
             var photo = person.Photos.FirstOrDefault(p => !string.IsNullOrEmpty(p.Url));
-            if (photo != null && (!photo.Default__ ?? true)) { newContact.PhotoUrl = photo.Url; }
+            if (photo != null && photo.Default__ != true) { newContact.PhotoUrl = photo.Url; }
+            //if (photo != null && (!photo.Default__ ?? true)) { newContact.PhotoUrl = photo.Url; }  // !photo.Default__ führt zu einem Kompilierfehler, da ! nur für bool, nicht für bool? definiert ist
         }
 
         var groupNames = new HashSet<string>();
@@ -606,8 +608,7 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         {
             foreach (var m in person.Memberships)
             {
-                if (m.ContactGroupMembership?.ContactGroupResourceName != null &&
-                    groupMap.TryGetValue(m.ContactGroupMembership.ContactGroupResourceName, out var gName))
+                if (m.ContactGroupMembership?.ContactGroupResourceName != null && groupMap.TryGetValue(m.ContactGroupMembership.ContactGroupResourceName, out var gName))
                 {
                     groupNames.Add(gName.Equals(GROUP_STARRED_LABEL, StringComparison.OrdinalIgnoreCase) ? STAR_SYMBOL : gName);
                 }
@@ -619,38 +620,62 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         return newContact;
     }
 
-    internal static string GetGooglePhoneByType(Person person, string type)
+    internal static string GetGooglePhoneByType(Person person, string primaryType, params string[] fallbackTypes)
     {
-        foreach (var phone in person.PhoneNumbers ?? [])
+        var numbers = person.PhoneNumbers ?? [];
+        foreach (var type in fallbackTypes.Prepend(primaryType))
         {
-            if (phone.Type?.Contains(type, StringComparison.OrdinalIgnoreCase) == true) { return phone.Value ?? string.Empty; }
+            var match = numbers.FirstOrDefault(p => p.Type?.Equals(type, StringComparison.OrdinalIgnoreCase) == true && !string.IsNullOrEmpty(p.Value));
+            if (match != null) { return match.Value!; }
         }
         return string.Empty;
     }
 
-    private static void UpdateGoogleEmail(Person person, string targetType, string? newValue)
+    private static string GetGoogleEmailByType(Person person, string primaryType, params string[] fallbackTypes)
     {
-        person.EmailAddresses ??= [];
-        var existing = person.EmailAddresses.FirstOrDefault(e => e.Type?.Equals(targetType, StringComparison.OrdinalIgnoreCase) == true);
-        if (string.IsNullOrWhiteSpace(newValue))
+        var emails = person.EmailAddresses ?? [];
+        foreach (var type in fallbackTypes.Prepend(primaryType))
         {
-            if (existing != null) { person.EmailAddresses.Remove(existing); }
+            var match = emails.FirstOrDefault(e => e.Type?.Equals(type, StringComparison.OrdinalIgnoreCase) == true && !string.IsNullOrEmpty(e.Value));
+            if (match != null) { return match.Value!; }
         }
-        else
-        {
-            if (existing == null)
-            {
-                existing = new EmailAddress { Type = targetType };
-                person.EmailAddresses.Add(existing);
-            }
-            existing.Value = newValue;
-        }
+        return string.Empty;
     }
 
-    private static void UpdateGooglePhone(Person person, string targetType, string? newValue)
+    private static Address? GetGoogleAddressByType(Person person, string primaryType, params string[] fallbackTypes)
+    {
+        var addresses = person.Addresses ?? [];
+        foreach (var type in fallbackTypes.Prepend(primaryType))
+        {
+            var match = addresses.FirstOrDefault(a => a.Type?.Equals(type, StringComparison.OrdinalIgnoreCase) == true);
+            if (match != null) { return match; }
+        }
+        return addresses.FirstOrDefault(); // absoluter Fallback: irgendeineAdresse
+    }
+
+    private static string GetGoogleUrlByType(Person person, string primaryType, params string[] fallbackTypes)
+    {
+        var urls = person.Urls ?? [];
+        foreach (var type in fallbackTypes.Prepend(primaryType))
+        {
+            var match = urls.FirstOrDefault(u => u.Type?.Equals(type, StringComparison.OrdinalIgnoreCase) == true && !string.IsNullOrEmpty(u.Value));
+            if (match != null) { return match.Value!; }
+        }
+        return urls.FirstOrDefault(u => !string.IsNullOrEmpty(u.Value))?.Value ?? string.Empty;
+    }
+
+    private static void UpdateGooglePhone(Person person, string targetType, string? newValue, params string[] fallbackTypes)
     {
         person.PhoneNumbers ??= [];
         var existing = person.PhoneNumbers.FirstOrDefault(e => e.Type?.Equals(targetType, StringComparison.OrdinalIgnoreCase) == true);
+        if (existing == null)
+        {
+            foreach (var fbType in fallbackTypes)
+            {
+                existing = person.PhoneNumbers.FirstOrDefault(e => e.Type?.Equals(fbType, StringComparison.OrdinalIgnoreCase) == true);
+                if (existing != null) { break; }
+            }
+        }
         if (string.IsNullOrWhiteSpace(newValue))
         {
             if (existing != null) { person.PhoneNumbers.Remove(existing); }
@@ -662,6 +687,35 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
                 existing = new PhoneNumber { Type = targetType };
                 person.PhoneNumbers.Add(existing);
             }
+            else { existing.Type = targetType; }  // Den Typ auf den Zieltyp anheben/migrieren um zu verhindern, dass nachfolgende Telefonfelder dasselbe Objekt manipulieren!
+            existing.Value = newValue; // Typ bleibt unverändert, nur Wert wird aktualisiert
+        }
+    }
+
+    private static void UpdateGoogleEmail(Person person, string targetType, string? newValue, params string[] fallbackTypes)
+    {
+        person.EmailAddresses ??= [];
+        var existing = person.EmailAddresses.FirstOrDefault(e => e.Type?.Equals(targetType, StringComparison.OrdinalIgnoreCase) == true);
+        if (existing == null)
+        {
+            foreach (var fbType in fallbackTypes)
+            {
+                existing = person.EmailAddresses.FirstOrDefault(e => e.Type?.Equals(fbType, StringComparison.OrdinalIgnoreCase) == true);
+                if (existing != null) { break; }
+            }
+        }
+        if (string.IsNullOrWhiteSpace(newValue))
+        {
+            if (existing != null) { person.EmailAddresses.Remove(existing); }
+        }
+        else
+        {
+            if (existing == null)
+            {
+                existing = new EmailAddress { Type = targetType };
+                person.EmailAddresses.Add(existing);
+            }
+            else { existing.Type = targetType; } // Typ auf Zieltyp migrieren, verhindert Doppelmanipulation
             existing.Value = newValue;
         }
     }

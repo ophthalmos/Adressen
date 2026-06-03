@@ -21,7 +21,12 @@ public partial class FrmProgSettings : Form
         cbxFontName.EndUpdate();
         MapSettingsToUi();  // Dann die gespeicherte Schriftart auswählen
         UpdateUiState();
+        var (autoStart, min2Tray) = Utils.IsAutoStartEnabled(Application.ProductName, Application.ExecutablePath);
+        ckbAutostart.Checked = autoStart;
+        ckbMin2Tray.Checked = min2Tray;
     }
+
+    internal void SelectAnrufMonTab() => tabControl.SelectedTab = tpAnrufMon;
 
     private void MapSettingsToUi()  // Mapping statt DataBinding, da wir hier auch Logik für die RadioButtons haben und die Schriftart-Auswahl…
     {
@@ -34,6 +39,10 @@ public partial class FrmProgSettings : Form
         ckbAskBeforeSaveSQL.Checked = _settings.AskBeforeSaveSQL;
         ckbAskBeforeSaveSQLExpander.Checked = _settings.AskBeforeSaveSQLExpander;
         ckbAskPrintEnvelope.Checked = _settings.AskPrintEnvelope;
+        ckbPlaceholderText.Checked = _settings.ShowPlaceholderText;
+        ckbFritzMonitorEnabled.Checked = _settings.FritzMonitorEnabled;
+        ckbMonitorContactsFirst.Checked = _settings.FritzContactsFirst;
+        ckbFritzPlaySound.Checked = _settings.FritzMonitorPlaySound;
 
         // TextBoxen
         tbStandard.Text = _settings.StandardFile;
@@ -41,6 +50,7 @@ public partial class FrmProgSettings : Form
         tbZipArchive.Text = _settings.AddZipDirectory;
         tbDatabaseFolder.Text = _settings.DatabaseFolder;
         tbWatchFolder.Text = _settings.DocumentFolder;
+        iPv4AddressControl.Address = _settings.FritzBoxHost;
 
         // RadioButtons: Start-Verhalten
         if (_settings.ReloadRecent) { rbRecent.Checked = true; }
@@ -82,13 +92,17 @@ public partial class FrmProgSettings : Form
         _settings.AskBeforeSaveSQL = ckbAskBeforeSaveSQL.Checked;
         _settings.AskBeforeSaveSQLExpander = ckbAskBeforeSaveSQLExpander.Checked;
         _settings.AskPrintEnvelope = ckbAskPrintEnvelope.Checked;
-
+        _settings.ShowPlaceholderText = ckbPlaceholderText.Checked;
+        _settings.FritzMonitorEnabled = ckbFritzMonitorEnabled.Checked;
+        _settings.FritzContactsFirst = ckbMonitorContactsFirst.Checked;
         // TextBoxen
         _settings.StandardFile = Utils.CorrectUNC(tbStandard.Text.Trim());
         _settings.BackupDirectory = Utils.CorrectUNC(tbBackupFolder.Text.Trim());
         _settings.AddZipDirectory = Utils.CorrectUNC(tbZipArchive.Text.Trim());
         _settings.DatabaseFolder = Utils.CorrectUNC(tbDatabaseFolder.Text.Trim());
         _settings.DocumentFolder = Utils.CorrectUNC(tbWatchFolder.Text.Trim());
+        _settings.FritzBoxHost = iPv4AddressControl.Address;
+        _settings.FritzMonitorPlaySound = ckbFritzPlaySound.Checked;
 
         // Start-Verhalten Logik
         if (rbRecent.Checked)
@@ -259,6 +273,11 @@ public partial class FrmProgSettings : Form
         tbZipArchive.Enabled = btnZipArchive.Enabled = ckbZipArchive.Checked;
         var watchActive = ckbWatchFolder.Checked;
         tbWatchFolder.Enabled = btnWatchFolder.Enabled = lblWatchFolder.Enabled = watchActive;
+        var isMonitorActive = ckbFritzMonitorEnabled.Checked;
+        iPv4AddressControl.Enabled = isMonitorActive;
+        lblFritzBoxHost.Enabled = isMonitorActive;
+        ckbMonitorContactsFirst.Enabled = isMonitorActive;
+        ckbFritzPlaySound.Enabled = isMonitorActive;
     }
 
     // Events, die die UI beeinflussen
@@ -415,4 +434,34 @@ public partial class FrmProgSettings : Form
 
     private void CbxFontName_SelectedIndexChanged(object sender, EventArgs e) => UpdateFontResetButtonState();
     private void NudFontSize_ValueChanged(object sender, EventArgs e) => UpdateFontResetButtonState();
+
+    private void CkbFritzMonitorEnabled_CheckedChanged(object sender, EventArgs e) => UpdateUiState();
+
+    private void CkbAutostart_CheckedChanged(object sender, EventArgs e)
+    {
+        if (ckbAutostart.Focused)
+        {
+            if (ckbAutostart.Checked)
+            {
+                Utils.SetAutoStart(Application.ProductName, Application.ExecutablePath, ckbMin2Tray.Checked ? "-min2Tray" : "");
+                ckbMin2Tray.Enabled = true;
+            }
+            else
+            {
+                Utils.UnSetAutoStart(Application.ProductName);
+                ckbMin2Tray.Enabled = false;
+            }
+        }
+    }
+
+    private void CkbMin2Tray_CheckedChanged(object sender, EventArgs e)
+    {
+        if (ckbMin2Tray.Focused)
+        {
+            if (ckbMin2Tray.Checked && ckbAutostart.Checked) { Utils.SetAutoStart(Application.ProductName, Application.ExecutablePath, "-min2Tray"); }
+            else if (ckbAutostart.Checked) { Utils.SetAutoStart(Application.ProductName, Application.ExecutablePath, ""); }  // Autostart bleibt aktiv, aber ohne Parameter
+        }
+    }
+
+    private void LinkLblAdressen_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => tabControl.SelectedTab = tpAdressen;
 }

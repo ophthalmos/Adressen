@@ -15,7 +15,7 @@ internal class TextBoxSearchManager
     {
         var selectedText = tb.SelectedText;
         if (!string.IsNullOrEmpty(selectedText)) { _searchString = selectedText; }
-        using var f = new TextBoxSearch(_searchString ?? string.Empty, CaseChecked);
+        using var f = new FrmTextBoxSearch(_searchString ?? string.Empty, CaseChecked);
         if (f.ShowDialog() == DialogResult.OK)
         {
             _searchString = f.SearchText;
