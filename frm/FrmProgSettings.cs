@@ -43,6 +43,12 @@ public partial class FrmProgSettings : Form
         ckbFritzMonitorEnabled.Checked = _settings.FritzMonitorEnabled;
         ckbMonitorContactsFirst.Checked = _settings.FritzContactsFirst;
         ckbFritzPlaySound.Checked = _settings.FritzMonitorPlaySound;
+        ckbBalloonTipMin2Tray.Checked = _settings.ShowBalloonTipMin2Tray;
+        ckbGlobalHotkey.Checked = _settings.GlobalHotkeyEnabled;
+        if (cbxHotkeyKey.Items.Contains(_settings.GlobalHotkeyKey)) { cbxHotkeyKey.SelectedItem = _settings.GlobalHotkeyKey; }
+        else { cbxHotkeyKey.SelectedItem = "A"; }
+        cbxHotkeyKey.Enabled = ckbGlobalHotkey.Checked;
+        ckbBirthdayRemind.Checked = _settings.BirthdayRemindDaily;
 
         // TextBoxen
         tbStandard.Text = _settings.StandardFile;
@@ -50,6 +56,7 @@ public partial class FrmProgSettings : Form
         tbZipArchive.Text = _settings.AddZipDirectory;
         tbDatabaseFolder.Text = _settings.DatabaseFolder;
         tbWatchFolder.Text = _settings.DocumentFolder;
+        tbCalledNumbers.Text = _settings.FritzCalledNumbers;
         iPv4AddressControl.Address = _settings.FritzBoxHost;
 
         // RadioButtons: Start-Verhalten
@@ -95,6 +102,10 @@ public partial class FrmProgSettings : Form
         _settings.ShowPlaceholderText = ckbPlaceholderText.Checked;
         _settings.FritzMonitorEnabled = ckbFritzMonitorEnabled.Checked;
         _settings.FritzContactsFirst = ckbMonitorContactsFirst.Checked;
+        _settings.ShowBalloonTipMin2Tray = ckbBalloonTipMin2Tray.Checked;
+        _settings.GlobalHotkeyEnabled = ckbGlobalHotkey.Checked;
+        _settings.GlobalHotkeyKey = cbxHotkeyKey.SelectedItem?.ToString() ?? "A";
+        _settings.BirthdayRemindDaily = ckbBirthdayRemind.Checked;  
         // TextBoxen
         _settings.StandardFile = Utils.CorrectUNC(tbStandard.Text.Trim());
         _settings.BackupDirectory = Utils.CorrectUNC(tbBackupFolder.Text.Trim());
@@ -102,6 +113,7 @@ public partial class FrmProgSettings : Form
         _settings.DatabaseFolder = Utils.CorrectUNC(tbDatabaseFolder.Text.Trim());
         _settings.DocumentFolder = Utils.CorrectUNC(tbWatchFolder.Text.Trim());
         _settings.FritzBoxHost = iPv4AddressControl.Address;
+        _settings.FritzCalledNumbers = tbCalledNumbers.Text.Trim();
         _settings.FritzMonitorPlaySound = ckbFritzPlaySound.Checked;
 
         // Start-Verhalten Logik
@@ -261,23 +273,21 @@ public partial class FrmProgSettings : Form
         tbStandard.Enabled = btnStandardFile.Enabled = rbStandard.Checked;
         ckbAskBeforeSaveSQLExpander.Enabled = ckbAskBeforeSaveSQL.Checked;
         ckbAskBeforeSaveSQLExpander.Enabled = ckbAskBeforeSaveSQL.Checked;
-        if (ckbAskBeforeSaveSQLExpander.Checked)
-        {
-            ckbAskBeforeSaveSQL.Checked = true;
-            ckbAskBeforeSaveSQL.Enabled = false;
-        }
-        else { ckbAskBeforeSaveSQL.Enabled = true; }
         var backupActive = ckbBackup.Checked;
         tbBackupFolder.Enabled = btnBackupFolder.Enabled = backupActive;
         btnExplorer.Enabled = backupActive && !string.IsNullOrEmpty(tbBackupFolder.Text);
         tbZipArchive.Enabled = btnZipArchive.Enabled = ckbZipArchive.Checked;
         var watchActive = ckbWatchFolder.Checked;
-        tbWatchFolder.Enabled = btnWatchFolder.Enabled = lblWatchFolder.Enabled = watchActive;
+        tbWatchFolder.Enabled = btnWatchFolder.Enabled = watchActive;
         var isMonitorActive = ckbFritzMonitorEnabled.Checked;
         iPv4AddressControl.Enabled = isMonitorActive;
         lblFritzBoxHost.Enabled = isMonitorActive;
+        tbCalledNumbers.Enabled = isMonitorActive;
+        labelMSNs.Enabled = isMonitorActive;
+        labelCommaSep.Enabled = isMonitorActive;
         ckbMonitorContactsFirst.Enabled = isMonitorActive;
         ckbFritzPlaySound.Enabled = isMonitorActive;
+        cbxHotkeyKey.Enabled = lblKeyPrefix.Enabled = ckbGlobalHotkey.Checked;
     }
 
     // Events, die die UI beeinflussen
@@ -288,7 +298,8 @@ public partial class FrmProgSettings : Form
     private void CkbZipArchive_CheckedChanged(object sender, EventArgs e) => UpdateUiState();
     private void TbZipArchive_TextChanged(object sender, EventArgs e) => UpdateUiState();
     private void CkbAskBeforeSaveSQL_CheckedChanged(object sender, EventArgs e) => UpdateUiState();
-    private void CkbAskBeforeSaveSQLExpander_CheckedChanged(object sender, EventArgs e) => UpdateUiState();
+    private void CkbGlobalHotkey_CheckedChanged(object sender, EventArgs e) => UpdateUiState();
+
 
     // --- File Dialog Buttons ---
 
@@ -464,4 +475,5 @@ public partial class FrmProgSettings : Form
     }
 
     private void LinkLblAdressen_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => tabControl.SelectedTab = tpAdressen;
+
 }

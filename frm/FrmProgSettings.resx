@@ -142,8 +142,16 @@ handen ist, können eingehende Anrufe
 anzeigt werden. Voraussetzung ist die
 Öffnung des TCP-Port 1012 durch die
 Wahl von #96*5* an einem DECT- oder
-Analogtelefon (Schließen mit #96*4*).
-Der Port wird ausschließlich im lokalen
-Netzwerk geöffnet (nicht ins Internet).</value>
+Analogtelefon (Schließen mit #96*4*).</value>
+  </data>
+  <data name="lblInfo.Text" xml:space="preserve">
+    <value>Der globale Hotkey bringt das Adressen-
+programm nach vorne – egal, welche An-
+wendung du gerade nutzt. Wenn das Pro-
+gramm bereits aktiv ist, wird es mit der-
+selben Tastenkombination minimiert oder
+ins Tray gelegt. So kannst du ohne Um-
+wege zwischen Anwendungen wechseln.
+</value>
   </data>
 </root>

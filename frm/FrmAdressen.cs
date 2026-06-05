@@ -120,7 +120,10 @@ public partial class FrmAdressen : Form
     private DateTime _lastDialogInteraction = DateTime.MinValue;
     private readonly TextBoxSearchManager _searchManager = new();
     private FritzCallMonitor? _fritzMonitor;
+    private HashSet<string> _fritzCalledNumberFilter = [];
     private bool _startMinToTray = false;
+    private string _lastFailedHotkey = string.Empty;
+    private DateOnly _lastBirthdayReminderDate = DateOnly.MinValue;
 
     public FrmAdressen(FrmSplashScreen? splashScreen, string[] args)
     {
@@ -666,7 +669,7 @@ public partial class FrmAdressen : Form
         tsBtnFritzMonitor.Visible = false;
         tsBtnFritzMonitor.Image = Resources.telephoneOff16;
         tsBtnFritzMonitor.Text = "FRITZ!Box-Anrufmonitor aktiv";
-
+        _fritzCalledNumberFilter = BuildCalledNumberFilter();  // Filter immer neu aufbauen – auch wenn Monitor gleich disabled wird
         if (!_settings.FritzMonitorEnabled) { return; }
 
         _fritzMonitor = new FritzCallMonitor(_settings.FritzBoxHost ?? "192.168.178.1");
@@ -678,23 +681,31 @@ public partial class FrmAdressen : Form
     // Eingehender Anruf → Suche auslösen
     private void FritzMonitor_CallEventReceived(object? sender, FritzCallEvent evt)
     {
-        if (InvokeRequired) { BeginInvoke(() => FritzMonitor_CallEventReceived(sender, evt)); return; }
+        if (IsDisposed || !IsHandleCreated) { return; }  // Sicherstellen, dass das Fenster noch existiert und aufnahmefähig ist
+        if (InvokeRequired) { _ = InvokeAsync(() => FritzMonitor_CallEventReceived(sender, evt)); return; }
 
         // Nur bei eingehenden Anrufen mit bekannter Nummer reagieren
         if (evt.Type != FritzCallType.Ring || evt.IsAnonymous) { return; }
 
+        if (_fritzCalledNumberFilter.Count > 0)  // MSN-Filter: Nur reagieren wenn CalledNumber in der konfigurierten Liste steht
+        {
+            var calledNormalized = Utils.NormalizePhoneNumber(evt.CalledNumber);
+            if (!_fritzCalledNumberFilter.Contains(calledNormalized)) { return; }
+        }
 
         if (!Visible) { RestoreFromTray(); }
         else if (WindowState == FormWindowState.Minimized) { WindowState = FormWindowState.Normal; }
         Activate();
         if (_settings.FritzMonitorPlaySound) { Utils.PlayIncomingCallSound(Application.StartupPath); }
         tsBtnFritzMonitor.Image = Resources.telephoneShare16;
-        tsBtnFritzMonitor.Text = $"{evt.CallerNumber}, bitte Klicken um Suche zu starten";
+        tsBtnFritzMonitor.Text = $"{evt.CallerNumber} ({DateTime.Now:HH:mm:ss})";
+        tsBtnFritzMonitor.Tag = evt.CallerNumber;
     }
 
     private async void TsBtnFritzMonitor_Click(object sender, EventArgs e)
     {
-        var normalized = Utils.NormalizePhoneNumber(tsBtnFritzMonitor.Text ?? string.Empty);
+        var rawNumber = tsBtnFritzMonitor.Tag as string ?? string.Empty;
+        var normalized = Utils.NormalizePhoneNumber(rawNumber);
         if (string.IsNullOrEmpty(normalized))
         {
             var detailedText =
@@ -759,26 +770,59 @@ public partial class FrmAdressen : Form
         tsBtnFritzMonitor.Visible = connected;
     }
 
-    //private static void PlayIncomingCallSound()
-    //{
-    //    var file = Path.Combine(appPath, "ringing.wav");
-    //    if (!string.IsNullOrEmpty(file) && File.Exists(file))
-    //    {
-    //        Task.Run(() => { using var player = new SoundPlayer(file); player.PlaySync(); });  // Blockierend auf Thread-Pool – UI bleibt frei, Dispose erst nach Ende
-    //    }
-    //    else { SystemSounds.Asterisk.Play(); }  // Windows-Systemton, immer verfügbar
-    //}
+    private HashSet<string> BuildCalledNumberFilter()
+    {
+        var raw = _settings.FritzCalledNumbers ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(raw)) { return []; }  // leer = alle Nummern
+        // Trennzeichen: Komma, Semikolon oder Leerzeichen
+        return [.. raw.Split([',', ';', ' '], StringSplitOptions.RemoveEmptyEntries).Select(Utils.NormalizePhoneNumber).Where(n => !string.IsNullOrEmpty(n))];
+    }
 
-    //private static string NormalizePhoneNumber(string raw)
-    //{
-    //    if (raw.StartsWith("📞 ")) { raw = raw[3..]; }  // "📞 " entfernen, falls vom FritzMonitor-Button
-    //    if (string.IsNullOrWhiteSpace(raw)) { return ""; }
-    //    if (raw.StartsWith("+49")) { raw = "0" + raw[3..]; }
-    //    else if (raw.StartsWith("0049")) { raw = "0" + raw[4..]; }
-    //    return new string([.. raw.Where(char.IsDigit)]);
-    //}
+    protected override void OnHandleCreated(EventArgs e)  // wg. Tray-Problem (Handle-Recreation)
+    {
+        base.OnHandleCreated(e);
+        RegisterGlobalHotkey();  // Statt den Hotkey nur einmalig in Load zu registrieren…
+    }
 
-    // Cleanup
+    protected override void OnHandleDestroyed(EventArgs e)  // wg. Tray-Problem (Handle-Recreation)
+    {
+        UnregisterGlobalHotkey();
+        base.OnHandleDestroyed(e);
+    }
+
+    private void RegisterGlobalHotkey()
+    {
+        UnregisterGlobalHotkey();
+        if (_settings.GlobalHotkeyEnabled && Enum.TryParse<Keys>(_settings.GlobalHotkeyKey, out var key))
+        {
+            var modifiers = NativeMethods.MOD_CONTROL | NativeMethods.MOD_ALT;
+            var success = NativeMethods.RegisterHotKey(Handle, NativeMethods.HOTKEY_ID, modifiers, (int)key);
+            if (!success)
+            {
+                var currentHotkey = _settings.GlobalHotkeyKey;
+                //if (_lastFailedHotkey != currentHotkey)  // Fehlermeldung nur einmalig pro konfiguriertem Buchstaben anzeigen
+                //{
+                //    _lastFailedHotkey = currentHotkey;
+                _ = InvokeAsync(() =>  // ValueTask mit einem _ = verwerfen (Fire-and-forget)
+                {
+                    Utils.MsgTaskDlg(
+                        Handle,
+                        "Hotkey-Registrierung fehlgeschlagen",
+                        $"Die Tastenkombination 'Strg + Alt + {currentHotkey}' konnte nicht reserviert werden.\n\nWahrscheinlich wird sie von einem anderen Programm blockiert.\nWähle in den Programmeinstellungen einen anderen Buchstaben.",
+                        TaskDialogIcon.Warning
+                    );
+                });
+                //}
+            }
+            else { _lastFailedHotkey = string.Empty; }  // Bei erfolgreicher Registrierung den Tracker zurücksetzen
+        }
+        else { _lastFailedHotkey = string.Empty; }  // Falls der Hotkey deaktiviert wurde, Tracker ebenfalls zurücksetzen
+    }
+    private void UnregisterGlobalHotkey()
+    {
+        if (IsHandleCreated) { NativeMethods.UnregisterHotKey(Handle, NativeMethods.HOTKEY_ID); }
+    }
+
     private void OnStateChanged(object? sender, EntityStateChangedEventArgs e) => UpdateSaveButton();
 
     private void PopulateMemberships()
@@ -3196,8 +3240,9 @@ public partial class FrmAdressen : Form
             DisplayPlaceholderText(_settings.ShowPlaceholderText);
             SetColorScheme();
             ApplyFileWatcherSettings();
-            InitFritzMonitor();          // ← neu: Monitor bei geänderten Fritz-Settings neu starten
-            await CheckFritzBoxReachabilityAsync();  // ← nach InitFritzMonitor, vor SaveConfiguration
+            RegisterGlobalHotkey();
+            InitFritzMonitor();
+            await CheckFritzBoxReachabilityAsync();  // nach InitFritzMonitor, vor SaveConfiguration
             SaveConfiguration();  // Einstellungen dauerhaft speichern
         }  // Bei "Abbrechen" passiert gar nichts.'tempSettings' wird verworfen und _settings bleibt, wie es war.
     }
@@ -4281,9 +4326,11 @@ public partial class FrmAdressen : Form
         var bevorstehendeGeburtstage = Utils.CalculateUpcomingBirthdays(source, _settings.BirthdayRemindAfter, _settings.BirthdayRemindLimit);
         if (bevorstehendeGeburtstage.Count > 0 || showIfEmpty)
         {
+            _lastBirthdayReminderDate = DateOnly.FromDateTime(DateTime.Today);  // Datum merken
             using var frm = new FrmBirthdays(_settings, bevorstehendeGeburtstage, isLocal);
             if (frm.ShowDialog(this) == DialogResult.OK)
             {
+                tabControl.SelectedTab = isLocal ? addressTabPage : contactTabPage;  // erforderlich wenn beim Programmstart Reminder für Adressen und Kontakte angezeigt wird
                 SettingsManager.Save(_settings, _settingsPath);
                 if (frm.SelectionIndex >= 0)
                 {
@@ -4293,12 +4340,21 @@ public partial class FrmAdressen : Form
                     {
                         bs.Position = bs.IndexOf(item);
                         if (dgv.CurrentRow != null) { dgv.FirstDisplayedScrollingRowIndex = dgv.CurrentRow.Index; }
-                        //if (!isLocal && contactBindingSource.Current is Contact selectedContact) { ShowPhotoInPictureBox(selectedContact); }
                     }
                 }
             }
             searchTSTextBox.Focus();
         }
+    }
+
+    private void CheckBirthdayReminderDaily()
+    {
+        if (!_settings.BirthdayRemindDaily) { return; }
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        if (_lastBirthdayReminderDate >= today) { return; }
+        _lastBirthdayReminderDate = today;  // Datum vor den Aufrufen setzen – verhindert Mehrfachanzeige
+        if (_settings.BirthdayAddressShow && _context != null) { BirthdayReminder(addressDGV); }
+        if (_settings.BirthdayContactShow && _allGoogleContacts != null) { BirthdayReminder(contactDGV); }
     }
 
     private void AddressDGV_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
@@ -6695,7 +6751,22 @@ public partial class FrmAdressen : Form
 
     protected override void WndProc(ref Message m)
     {
-        if (m.Msg == NativeMethods.WM_TRAY_RESTORE)  // Wenn AutoHotkey unseren geheimen Weckruf sendet
+        if (m.Msg == NativeMethods.WM_HOTKEY && m.WParam.ToInt32() == NativeMethods.HOTKEY_ID)
+        {
+            var activeForm = ActiveForm;  // Prüfen, ob IRGENDEIN Fenster unserer Anwendung gerade aktiv ist 
+            if (activeForm != null)  // Die Anwendung ist aktuell im Vordergrund aktiv (Haupt- oder Child-Fenster)
+            {
+                if (min2TrayTSButton.Visible)
+                {
+                    if (activeForm != this) { activeForm.Close(); }  // z.B. BirthdayReminder schließen
+                    else { HideToTray(); }
+                }
+                else { WindowState = FormWindowState.Minimized; }
+            }
+            else { RestoreFromTray(); }
+            return;
+        }
+        else if (m.Msg == NativeMethods.WM_TRAY_RESTORE)  // Wenn AutoHotkey unseren geheimen Weckruf sendet
         {
             if (!Visible) { RestoreFromTray(); }
             return; // Nachricht exklusiv verarbeitet, Basisklasse wird komplett übersprungen!
@@ -7136,12 +7207,15 @@ public partial class FrmAdressen : Form
     private void HideToTray()
     {
         isSelectionChanging = true;  // verhindert, dass während des Tray-Wechsels die RowValidating-Logik dazwischenfunkt
+        _settings.WindowMaximized = WindowState == FormWindowState.Maximized;  // Zustand merken, bevor das Fenster manipuliert wird
         notifyIcon.Visible = true;
         Hide(); // Versteckt das Fenster komplett
-        ShowInTaskbar = false; // Entfernt es aus der Taskleiste
-        if (_firstTimeNotify && !_startMinToTray)
+        if (_settings.WindowMaximized) { WindowState = FormWindowState.Normal; }
+        ShowInTaskbar = false; // Handle-Recreation jetzt im Normal-Zustand; im maximierten Zustand ShowWindow(SW_SHOWMAXIMIZED)-Fehler
+        if (_firstTimeNotify && _settings.ShowBalloonTipMin2Tray && !_startMinToTray)
         {
-            notifyIcon.ShowBalloonTip(3000, "Adressen & Kontakte", "Das Programm läuft im Hintergrund weiter.", ToolTipIcon.Info);
+            notifyIcon.ShowBalloonTip(3000, "Adressen & Kontakte",
+                "Das Programm wurde ins Tray minimiert.\nAnzeige erfolgt durch Klick auf das Icon.", ToolTipIcon.None);
             _firstTimeNotify = false;
         }
     }
@@ -7156,10 +7230,10 @@ public partial class FrmAdressen : Form
         quickSplash.Show();
         Opacity = 0;
         Show();
-        WindowState = FormWindowState.Normal;
+        WindowState = _settings.WindowMaximized ? FormWindowState.Maximized : FormWindowState.Normal;  // FIX 2: Den korrekten, vorher gemerkten Zustand wiederherstellen
         ShowInTaskbar = true;
-        await Task.Delay(50);  // 50ms ist ein "sicherer" Wert, 20ms ist oft das Minimum für einen Effekt
-        min2TrayTSButton.Enabled = false;  // Trick, damit die Hintergrundfarbe des Buttons zurückgesetzt wird (sonst bleibt er nach dem Klick dunkel)
+        await Task.Delay(50);  // gibt dem Maximize-Übergang genug Zeit, bevor Opacity = 1 greift 
+        min2TrayTSButton.Enabled = false;
         min2TrayTSButton.Enabled = true;
         min2TrayTSButton.BackColor = tableLayoutPanel.BackColor;
         Opacity = 1;
@@ -7168,9 +7242,9 @@ public partial class FrmAdressen : Form
         Activate();
         quickSplash.Close();
         quickSplash.Dispose();
-        isSelectionChanging = false;  // RowValidating einschalten (Kontakte speichern, wenn der User jetzt die Zeile wechselt)
+        isSelectionChanging = false;
+        CheckBirthdayReminderDaily();
     }
-
     private void Min2TrayTSButton_Click(object sender, EventArgs e) => HideToTray();
 
     private void OpenTrayMenuItem_Click(object sender, EventArgs e) => RestoreFromTray();

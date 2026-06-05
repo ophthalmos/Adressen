@@ -1288,7 +1288,7 @@ partial class FrmAdressen
         tsBtnFritzMonitor.Name = "tsBtnFritzMonitor";
         tsBtnFritzMonitor.Size = new Size(169, 20);
         tsBtnFritzMonitor.Text = "FRITZ!Box-Anrufmonitor aktiv";
-        tsBtnFritzMonitor.ToolTipText = "FritzBox-Monitor aktiv";
+        tsBtnFritzMonitor.ToolTipText = "Bei Anruf hier klicken um Suche zu starten";
         tsBtnFritzMonitor.Visible = false;
         tsBtnFritzMonitor.Click += TsBtnFritzMonitor_Click;
         // 
