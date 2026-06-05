@@ -43,12 +43,12 @@ partial class FrmProgSettings
         openFileDialog = new OpenFileDialog();
         btnOK = new Button();
         tpSicherung = new TabPage();
+        gbBackupZip = new GroupBox();
         btnZipArchive = new Button();
-        lblZipArchive = new Label();
-        lblZipText = new Label();
-        lblHorizLine = new Label();
         ckbZipArchive = new CheckBox();
+        lblZipArchive = new Label();
         tbZipArchive = new TextBox();
+        gbBackupDaily = new GroupBox();
         tbBackupFolder = new TextBox();
         lblBackupFolder = new Label();
         btnExplorer = new Button();
@@ -56,6 +56,8 @@ partial class FrmProgSettings
         ckbBackup = new CheckBox();
         btnBackupFolder = new Button();
         tpAskBefore = new TabPage();
+        gbxMin2Tray = new GroupBox();
+        ckbBalloonTipMin2Tray = new CheckBox();
         gbxAskEnvelope = new GroupBox();
         ckbAskPrintEnvelope = new CheckBox();
         gbxAskLocal = new GroupBox();
@@ -63,18 +65,22 @@ partial class FrmProgSettings
         ckbAskBeforeSaveSQLExpander = new CheckBox();
         ckbAskBeforeSaveSQL = new CheckBox();
         tpWatchFolder = new TabPage();
-        lblWatcherInfo = new Label();
-        lblWatchFolder = new Label();
+        gbWatchFolder = new GroupBox();
         ckbWatchFolder = new CheckBox();
-        btnWatchFolder = new Button();
+        lblWatcherInfo = new Label();
         tbWatchFolder = new TextBox();
+        btnWatchFolder = new Button();
         tpAutostart = new TabPage();
-        lblAutostart = new Label();
+        gbBirthdayRemind = new GroupBox();
+        lblBirtdayRemind = new Label();
+        ckbBirthdayRemind = new CheckBox();
         groupBox1 = new GroupBox();
         ckbMin2Tray = new CheckBox();
         ckbAutostart = new CheckBox();
+        lblAutostart = new Label();
         gbxContactsAutoload = new GroupBox();
         ckbContactsAutoload = new CheckBox();
+        labelAutoAdressen = new Label();
         tpAdressen = new TabPage();
         lblToggleDatabase = new Label();
         groupBox = new GroupBox();
@@ -105,18 +111,31 @@ partial class FrmProgSettings
         tpAnrufMon = new TabPage();
         lblFRITZBoxMonitor = new Label();
         gbxIPAddress = new GroupBox();
+        labelCommaSep = new Label();
+        labelMSNs = new Label();
+        tbCalledNumbers = new TextBox();
         ckbFritzPlaySound = new CheckBox();
         ckbMonitorContactsFirst = new CheckBox();
         lblFritzBoxHost = new Label();
         ckbFritzMonitorEnabled = new CheckBox();
         iPv4AddressControl = new Adressen.cls.IPv4AddressControl();
-        labelAutoAdressen = new Label();
+        tpHotkey = new TabPage();
+        gbHotkey = new GroupBox();
+        ckbGlobalHotkey = new CheckBox();
+        lblKeyPrefix = new Label();
+        cbxHotkeyKey = new ComboBox();
+        lblInfo = new Label();
         tpSicherung.SuspendLayout();
+        gbBackupZip.SuspendLayout();
+        gbBackupDaily.SuspendLayout();
         tpAskBefore.SuspendLayout();
+        gbxMin2Tray.SuspendLayout();
         gbxAskEnvelope.SuspendLayout();
         gbxAskLocal.SuspendLayout();
         tpWatchFolder.SuspendLayout();
+        gbWatchFolder.SuspendLayout();
         tpAutostart.SuspendLayout();
+        gbBirthdayRemind.SuspendLayout();
         groupBox1.SuspendLayout();
         gbxContactsAutoload.SuspendLayout();
         tpAdressen.SuspendLayout();
@@ -130,6 +149,8 @@ partial class FrmProgSettings
         tabControl.SuspendLayout();
         tpAnrufMon.SuspendLayout();
         gbxIPAddress.SuspendLayout();
+        tpHotkey.SuspendLayout();
+        gbHotkey.SuspendLayout();
         SuspendLayout();
         // 
         // btnCancel
@@ -166,27 +187,30 @@ partial class FrmProgSettings
         // 
         tpSicherung.BackColor = SystemColors.ControlLightLight;
         tpSicherung.BorderStyle = BorderStyle.FixedSingle;
-        tpSicherung.Controls.Add(btnZipArchive);
-        tpSicherung.Controls.Add(lblZipArchive);
-        tpSicherung.Controls.Add(lblZipText);
-        tpSicherung.Controls.Add(lblHorizLine);
-        tpSicherung.Controls.Add(ckbZipArchive);
-        tpSicherung.Controls.Add(tbZipArchive);
-        tpSicherung.Controls.Add(tbBackupFolder);
-        tpSicherung.Controls.Add(lblBackupFolder);
-        tpSicherung.Controls.Add(btnExplorer);
-        tpSicherung.Controls.Add(lblBackup);
-        tpSicherung.Controls.Add(ckbBackup);
-        tpSicherung.Controls.Add(btnBackupFolder);
+        tpSicherung.Controls.Add(gbBackupZip);
+        tpSicherung.Controls.Add(gbBackupDaily);
         tpSicherung.Location = new Point(114, 4);
         tpSicherung.Name = "tpSicherung";
         tpSicherung.Size = new Size(271, 304);
         tpSicherung.TabIndex = 2;
         tpSicherung.Text = " Sicherung";
         // 
+        // gbBackupZip
+        // 
+        gbBackupZip.Controls.Add(btnZipArchive);
+        gbBackupZip.Controls.Add(ckbZipArchive);
+        gbBackupZip.Controls.Add(lblZipArchive);
+        gbBackupZip.Controls.Add(tbZipArchive);
+        gbBackupZip.Location = new Point(6, 191);
+        gbBackupZip.Name = "gbBackupZip";
+        gbBackupZip.Size = new Size(257, 105);
+        gbBackupZip.TabIndex = 18;
+        gbBackupZip.TabStop = false;
+        gbBackupZip.Text = "Zip-Backup";
+        // 
         // btnZipArchive
         // 
-        btnZipArchive.Location = new Point(220, 223);
+        btnZipArchive.Location = new Point(215, 72);
         btnZipArchive.Name = "btnZipArchive";
         btnZipArchive.Size = new Size(36, 25);
         btnZipArchive.TabIndex = 16;
@@ -194,35 +218,10 @@ partial class FrmProgSettings
         btnZipArchive.UseVisualStyleBackColor = true;
         btnZipArchive.Click += BtnZipArchive_Click;
         // 
-        // lblZipArchive
-        // 
-        lblZipArchive.AutoSize = true;
-        lblZipArchive.Location = new Point(12, 201);
-        lblZipArchive.Name = "lblZipArchive";
-        lblZipArchive.Size = new Size(69, 19);
-        lblZipArchive.TabIndex = 15;
-        lblZipArchive.Text = "Zip-Datei:";
-        // 
-        // lblZipText
-        // 
-        lblZipText.Location = new Point(12, 251);
-        lblZipText.Name = "lblZipText";
-        lblZipText.Size = new Size(250, 41);
-        lblZipText.TabIndex = 14;
-        lblZipText.Text = "Tipp: auf iCloud Drive speichern, für das Öffnen mit iPhone-App 'SQLed'.";
-        // 
-        // lblHorizLine
-        // 
-        lblHorizLine.BorderStyle = BorderStyle.Fixed3D;
-        lblHorizLine.Location = new Point(12, 162);
-        lblHorizLine.Name = "lblHorizLine";
-        lblHorizLine.Size = new Size(244, 2);
-        lblHorizLine.TabIndex = 13;
-        // 
         // ckbZipArchive
         // 
         ckbZipArchive.AutoSize = true;
-        ckbZipArchive.Location = new Point(12, 175);
+        ckbZipArchive.Location = new Point(6, 24);
         ckbZipArchive.Name = "ckbZipArchive";
         ckbZipArchive.Size = new Size(233, 23);
         ckbZipArchive.TabIndex = 11;
@@ -230,27 +229,53 @@ partial class FrmProgSettings
         ckbZipArchive.UseVisualStyleBackColor = true;
         ckbZipArchive.CheckedChanged += CkbZipArchive_CheckedChanged;
         // 
+        // lblZipArchive
+        // 
+        lblZipArchive.AutoSize = true;
+        lblZipArchive.Location = new Point(12, 50);
+        lblZipArchive.Name = "lblZipArchive";
+        lblZipArchive.Size = new Size(69, 19);
+        lblZipArchive.TabIndex = 15;
+        lblZipArchive.Text = "Zip-Datei:";
+        // 
         // tbZipArchive
         // 
-        tbZipArchive.Location = new Point(12, 223);
+        tbZipArchive.BorderStyle = BorderStyle.FixedSingle;
+        tbZipArchive.Location = new Point(6, 72);
         tbZipArchive.Name = "tbZipArchive";
-        tbZipArchive.Size = new Size(202, 25);
+        tbZipArchive.Size = new Size(203, 25);
         tbZipArchive.TabIndex = 9;
         tbZipArchive.TextChanged += TbZipArchive_TextChanged;
         tbZipArchive.Validating += TbZipArchive_Validating;
         // 
+        // gbBackupDaily
+        // 
+        gbBackupDaily.Controls.Add(tbBackupFolder);
+        gbBackupDaily.Controls.Add(lblBackupFolder);
+        gbBackupDaily.Controls.Add(btnExplorer);
+        gbBackupDaily.Controls.Add(lblBackup);
+        gbBackupDaily.Controls.Add(ckbBackup);
+        gbBackupDaily.Controls.Add(btnBackupFolder);
+        gbBackupDaily.Location = new Point(6, 6);
+        gbBackupDaily.Name = "gbBackupDaily";
+        gbBackupDaily.Size = new Size(257, 176);
+        gbBackupDaily.TabIndex = 17;
+        gbBackupDaily.TabStop = false;
+        gbBackupDaily.Text = "Tagessicherung";
+        // 
         // tbBackupFolder
         // 
-        tbBackupFolder.Location = new Point(12, 56);
+        tbBackupFolder.BorderStyle = BorderStyle.FixedSingle;
+        tbBackupFolder.Location = new Point(6, 72);
         tbBackupFolder.Name = "tbBackupFolder";
-        tbBackupFolder.Size = new Size(202, 25);
+        tbBackupFolder.Size = new Size(203, 25);
         tbBackupFolder.TabIndex = 0;
         tbBackupFolder.TextChanged += TbBackupFolder_TextChanged;
         // 
         // lblBackupFolder
         // 
         lblBackupFolder.AutoSize = true;
-        lblBackupFolder.Location = new Point(12, 34);
+        lblBackupFolder.Location = new Point(6, 50);
         lblBackupFolder.Name = "lblBackupFolder";
         lblBackupFolder.Size = new Size(119, 19);
         lblBackupFolder.TabIndex = 8;
@@ -258,9 +283,9 @@ partial class FrmProgSettings
         // 
         // btnExplorer
         // 
-        btnExplorer.Location = new Point(12, 128);
+        btnExplorer.Location = new Point(6, 144);
         btnExplorer.Name = "btnExplorer";
-        btnExplorer.Size = new Size(244, 26);
+        btnExplorer.Size = new Size(245, 26);
         btnExplorer.TabIndex = 7;
         btnExplorer.Text = "Sicherungsordner anzeigen";
         btnExplorer.UseVisualStyleBackColor = true;
@@ -268,16 +293,16 @@ partial class FrmProgSettings
         // 
         // lblBackup
         // 
-        lblBackup.Location = new Point(12, 84);
+        lblBackup.Location = new Point(6, 100);
         lblBackup.Name = "lblBackup";
-        lblBackup.Size = new Size(250, 41);
+        lblBackup.Size = new Size(245, 41);
         lblBackup.TabIndex = 6;
         lblBackup.Text = "Das Backup erfolgt in wochentäglichen Unterordnern mit jeweils einer Kopie.";
         // 
         // ckbBackup
         // 
         ckbBackup.AutoSize = true;
-        ckbBackup.Location = new Point(12, 8);
+        ckbBackup.Location = new Point(6, 24);
         ckbBackup.Name = "ckbBackup";
         ckbBackup.Size = new Size(235, 23);
         ckbBackup.TabIndex = 2;
@@ -287,7 +312,7 @@ partial class FrmProgSettings
         // 
         // btnBackupFolder
         // 
-        btnBackupFolder.Location = new Point(220, 56);
+        btnBackupFolder.Location = new Point(215, 72);
         btnBackupFolder.Name = "btnBackupFolder";
         btnBackupFolder.Size = new Size(36, 25);
         btnBackupFolder.TabIndex = 1;
@@ -299,6 +324,7 @@ partial class FrmProgSettings
         // 
         tpAskBefore.BackColor = SystemColors.ControlLightLight;
         tpAskBefore.BorderStyle = BorderStyle.FixedSingle;
+        tpAskBefore.Controls.Add(gbxMin2Tray);
         tpAskBefore.Controls.Add(gbxAskEnvelope);
         tpAskBefore.Controls.Add(gbxAskLocal);
         tpAskBefore.Location = new Point(114, 4);
@@ -306,6 +332,28 @@ partial class FrmProgSettings
         tpAskBefore.Size = new Size(271, 304);
         tpAskBefore.TabIndex = 5;
         tpAskBefore.Text = " Abfragen";
+        // 
+        // gbxMin2Tray
+        // 
+        gbxMin2Tray.Controls.Add(ckbBalloonTipMin2Tray);
+        gbxMin2Tray.Location = new Point(6, 176);
+        gbxMin2Tray.Name = "gbxMin2Tray";
+        gbxMin2Tray.Size = new Size(257, 50);
+        gbxMin2Tray.TabIndex = 12;
+        gbxMin2Tray.TabStop = false;
+        gbxMin2Tray.Text = "Programm ins Tray minimieren";
+        // 
+        // ckbBalloonTipMin2Tray
+        // 
+        ckbBalloonTipMin2Tray.AutoSize = true;
+        ckbBalloonTipMin2Tray.Checked = true;
+        ckbBalloonTipMin2Tray.CheckState = CheckState.Checked;
+        ckbBalloonTipMin2Tray.Location = new Point(6, 24);
+        ckbBalloonTipMin2Tray.Name = "ckbBalloonTipMin2Tray";
+        ckbBalloonTipMin2Tray.Size = new Size(246, 23);
+        ckbBalloonTipMin2Tray.TabIndex = 6;
+        ckbBalloonTipMin2Tray.Text = "Info zum Wiederherstellen anzeigen";
+        ckbBalloonTipMin2Tray.UseVisualStyleBackColor = true;
         // 
         // gbxAskEnvelope
         // 
@@ -362,7 +410,6 @@ partial class FrmProgSettings
         ckbAskBeforeSaveSQLExpander.TabIndex = 9;
         ckbAskBeforeSaveSQLExpander.Text = "Änderungdetailanzeige ermöglichen";
         ckbAskBeforeSaveSQLExpander.UseVisualStyleBackColor = true;
-        ckbAskBeforeSaveSQLExpander.CheckedChanged += CkbAskBeforeSaveSQLExpander_CheckedChanged;
         // 
         // ckbAskBeforeSaveSQL
         // 
@@ -379,39 +426,30 @@ partial class FrmProgSettings
         // 
         tpWatchFolder.BackColor = SystemColors.ControlLightLight;
         tpWatchFolder.BorderStyle = BorderStyle.FixedSingle;
-        tpWatchFolder.Controls.Add(lblWatcherInfo);
-        tpWatchFolder.Controls.Add(lblWatchFolder);
-        tpWatchFolder.Controls.Add(ckbWatchFolder);
-        tpWatchFolder.Controls.Add(btnWatchFolder);
-        tpWatchFolder.Controls.Add(tbWatchFolder);
+        tpWatchFolder.Controls.Add(gbWatchFolder);
         tpWatchFolder.Location = new Point(114, 4);
         tpWatchFolder.Name = "tpWatchFolder";
         tpWatchFolder.Size = new Size(271, 304);
         tpWatchFolder.TabIndex = 4;
         tpWatchFolder.Text = " Dokumente";
         // 
-        // lblWatcherInfo
+        // gbWatchFolder
         // 
-        lblWatcherInfo.Location = new Point(12, 87);
-        lblWatcherInfo.Name = "lblWatcherInfo";
-        lblWatcherInfo.Size = new Size(250, 211);
-        lblWatcherInfo.TabIndex = 13;
-        lblWatcherInfo.Text = resources.GetString("lblWatcherInfo.Text");
-        // 
-        // lblWatchFolder
-        // 
-        lblWatchFolder.AutoSize = true;
-        lblWatchFolder.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-        lblWatchFolder.Location = new Point(12, 7);
-        lblWatchFolder.Name = "lblWatchFolder";
-        lblWatchFolder.Size = new Size(140, 19);
-        lblWatchFolder.TabIndex = 12;
-        lblWatchFolder.Text = "Dokumentenordner";
+        gbWatchFolder.Controls.Add(ckbWatchFolder);
+        gbWatchFolder.Controls.Add(lblWatcherInfo);
+        gbWatchFolder.Controls.Add(tbWatchFolder);
+        gbWatchFolder.Controls.Add(btnWatchFolder);
+        gbWatchFolder.Location = new Point(6, 6);
+        gbWatchFolder.Name = "gbWatchFolder";
+        gbWatchFolder.Size = new Size(257, 292);
+        gbWatchFolder.TabIndex = 14;
+        gbWatchFolder.TabStop = false;
+        gbWatchFolder.Text = "Dokumentenordner";
         // 
         // ckbWatchFolder
         // 
         ckbWatchFolder.AutoSize = true;
-        ckbWatchFolder.Location = new Point(16, 29);
+        ckbWatchFolder.Location = new Point(6, 24);
         ckbWatchFolder.Name = "ckbWatchFolder";
         ckbWatchFolder.Size = new Size(225, 23);
         ckbWatchFolder.TabIndex = 11;
@@ -419,9 +457,25 @@ partial class FrmProgSettings
         ckbWatchFolder.UseVisualStyleBackColor = true;
         ckbWatchFolder.CheckedChanged += CkbWatchFolder_CheckedChanged;
         // 
+        // lblWatcherInfo
+        // 
+        lblWatcherInfo.Location = new Point(3, 79);
+        lblWatcherInfo.Name = "lblWatcherInfo";
+        lblWatcherInfo.Size = new Size(250, 211);
+        lblWatcherInfo.TabIndex = 13;
+        lblWatcherInfo.Text = resources.GetString("lblWatcherInfo.Text");
+        // 
+        // tbWatchFolder
+        // 
+        tbWatchFolder.BorderStyle = BorderStyle.FixedSingle;
+        tbWatchFolder.Location = new Point(6, 53);
+        tbWatchFolder.Name = "tbWatchFolder";
+        tbWatchFolder.Size = new Size(210, 25);
+        tbWatchFolder.TabIndex = 9;
+        // 
         // btnWatchFolder
         // 
-        btnWatchFolder.Location = new Point(220, 58);
+        btnWatchFolder.Location = new Point(215, 53);
         btnWatchFolder.Name = "btnWatchFolder";
         btnWatchFolder.Size = new Size(36, 25);
         btnWatchFolder.TabIndex = 10;
@@ -429,19 +483,11 @@ partial class FrmProgSettings
         btnWatchFolder.UseVisualStyleBackColor = true;
         btnWatchFolder.Click += BtnWatchFolder_Click;
         // 
-        // tbWatchFolder
-        // 
-        tbWatchFolder.Location = new Point(12, 58);
-        tbWatchFolder.Name = "tbWatchFolder";
-        tbWatchFolder.Size = new Size(202, 25);
-        tbWatchFolder.TabIndex = 9;
-        // 
         // tpAutostart
         // 
         tpAutostart.BackColor = SystemColors.ControlLightLight;
         tpAutostart.BorderStyle = BorderStyle.FixedSingle;
-        tpAutostart.Controls.Add(labelAutoAdressen);
-        tpAutostart.Controls.Add(lblAutostart);
+        tpAutostart.Controls.Add(gbBirthdayRemind);
         tpAutostart.Controls.Add(groupBox1);
         tpAutostart.Controls.Add(gbxContactsAutoload);
         tpAutostart.Location = new Point(114, 4);
@@ -451,22 +497,44 @@ partial class FrmProgSettings
         tpAutostart.TabIndex = 1;
         tpAutostart.Text = " Autostart";
         // 
-        // lblAutostart
+        // gbBirthdayRemind
         // 
-        lblAutostart.AutoSize = true;
-        lblAutostart.Location = new Point(6, 95);
-        lblAutostart.Name = "lblAutostart";
-        lblAutostart.Size = new Size(238, 57);
-        lblAutostart.TabIndex = 8;
-        lblAutostart.Text = "Der automatische Programmstart ist\r\nsinnvoll, wenn der Anrufmonitor oder\r\ndie Briefordnerüberwachung aktiv ist.";
+        gbBirthdayRemind.Controls.Add(lblBirtdayRemind);
+        gbBirthdayRemind.Controls.Add(ckbBirthdayRemind);
+        gbBirthdayRemind.Location = new Point(6, 224);
+        gbBirthdayRemind.Name = "gbBirthdayRemind";
+        gbBirthdayRemind.Size = new Size(257, 72);
+        gbBirthdayRemind.TabIndex = 10;
+        gbBirthdayRemind.TabStop = false;
+        gbBirthdayRemind.Text = "Geburtstagserinnerung";
+        // 
+        // lblBirtdayRemind
+        // 
+        lblBirtdayRemind.AutoSize = true;
+        lblBirtdayRemind.Location = new Point(3, 47);
+        lblBirtdayRemind.Name = "lblBirtdayRemind";
+        lblBirtdayRemind.Size = new Size(251, 19);
+        lblBirtdayRemind.TabIndex = 11;
+        lblBirtdayRemind.Text = "Option greift nur, wenn Reminder aktiv.";
+        // 
+        // ckbBirthdayRemind
+        // 
+        ckbBirthdayRemind.AutoSize = true;
+        ckbBirthdayRemind.Location = new Point(6, 24);
+        ckbBirthdayRemind.Name = "ckbBirthdayRemind";
+        ckbBirthdayRemind.Size = new Size(240, 23);
+        ckbBirthdayRemind.TabIndex = 2;
+        ckbBirthdayRemind.Text = "Liste mind. einmal täglich anzeigen";
+        ckbBirthdayRemind.UseVisualStyleBackColor = true;
         // 
         // groupBox1
         // 
         groupBox1.Controls.Add(ckbMin2Tray);
         groupBox1.Controls.Add(ckbAutostart);
+        groupBox1.Controls.Add(lblAutostart);
         groupBox1.Location = new Point(6, 7);
         groupBox1.Name = "groupBox1";
-        groupBox1.Size = new Size(257, 85);
+        groupBox1.Size = new Size(257, 114);
         groupBox1.TabIndex = 7;
         groupBox1.TabStop = false;
         groupBox1.Text = "Adressen && Kontakte (das Programm)";
@@ -474,7 +542,7 @@ partial class FrmProgSettings
         // ckbMin2Tray
         // 
         ckbMin2Tray.AutoSize = true;
-        ckbMin2Tray.Location = new Point(6, 53);
+        ckbMin2Tray.Location = new Point(6, 48);
         ckbMin2Tray.Name = "ckbMin2Tray";
         ckbMin2Tray.Size = new Size(233, 23);
         ckbMin2Tray.TabIndex = 3;
@@ -493,12 +561,22 @@ partial class FrmProgSettings
         ckbAutostart.UseVisualStyleBackColor = true;
         ckbAutostart.CheckedChanged += CkbAutostart_CheckedChanged;
         // 
+        // lblAutostart
+        // 
+        lblAutostart.AutoSize = true;
+        lblAutostart.Location = new Point(3, 71);
+        lblAutostart.Name = "lblAutostart";
+        lblAutostart.Size = new Size(243, 38);
+        lblAutostart.TabIndex = 8;
+        lblAutostart.Text = "Sinnvoll, wenn Anrufmonitor oder Do-\r\nkumentenordnerüberwachung aktiv.";
+        // 
         // gbxContactsAutoload
         // 
         gbxContactsAutoload.Controls.Add(ckbContactsAutoload);
-        gbxContactsAutoload.Location = new Point(6, 177);
+        gbxContactsAutoload.Controls.Add(labelAutoAdressen);
+        gbxContactsAutoload.Location = new Point(6, 127);
         gbxContactsAutoload.Name = "gbxContactsAutoload";
-        gbxContactsAutoload.Size = new Size(257, 55);
+        gbxContactsAutoload.Size = new Size(257, 91);
         gbxContactsAutoload.TabIndex = 6;
         gbxContactsAutoload.TabStop = false;
         gbxContactsAutoload.Text = "Google Kontakte";
@@ -512,6 +590,15 @@ partial class FrmProgSettings
         ckbContactsAutoload.TabIndex = 2;
         ckbContactsAutoload.Text = "Kontakte bei Programmstart laden";
         ckbContactsAutoload.UseVisualStyleBackColor = true;
+        // 
+        // labelAutoAdressen
+        // 
+        labelAutoAdressen.AutoSize = true;
+        labelAutoAdressen.Location = new Point(3, 47);
+        labelAutoAdressen.Name = "labelAutoAdressen";
+        labelAutoAdressen.Size = new Size(252, 38);
+        labelAutoAdressen.TabIndex = 9;
+        labelAutoAdressen.Text = "Welche lokale Adressdatei automatisch\r\ngeladen wird, ergibt sich bei „Adressen“.";
         // 
         // tpAdressen
         // 
@@ -814,6 +901,7 @@ partial class FrmProgSettings
         tabControl.Controls.Add(tpAutostart);
         tabControl.Controls.Add(tpWatchFolder);
         tabControl.Controls.Add(tpAnrufMon);
+        tabControl.Controls.Add(tpHotkey);
         tabControl.Controls.Add(tpAskBefore);
         tabControl.Controls.Add(tpSicherung);
         tabControl.Dock = DockStyle.Top;
@@ -846,27 +934,56 @@ partial class FrmProgSettings
         lblFRITZBoxMonitor.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point, 0);
         lblFRITZBoxMonitor.Location = new Point(3, 4);
         lblFRITZBoxMonitor.Name = "lblFRITZBoxMonitor";
-        lblFRITZBoxMonitor.Size = new Size(249, 152);
+        lblFRITZBoxMonitor.Size = new Size(249, 114);
         lblFRITZBoxMonitor.TabIndex = 1;
         lblFRITZBoxMonitor.Text = resources.GetString("lblFRITZBoxMonitor.Text");
         // 
         // gbxIPAddress
         // 
+        gbxIPAddress.Controls.Add(labelCommaSep);
+        gbxIPAddress.Controls.Add(labelMSNs);
+        gbxIPAddress.Controls.Add(tbCalledNumbers);
         gbxIPAddress.Controls.Add(ckbFritzPlaySound);
         gbxIPAddress.Controls.Add(ckbMonitorContactsFirst);
         gbxIPAddress.Controls.Add(lblFritzBoxHost);
         gbxIPAddress.Controls.Add(ckbFritzMonitorEnabled);
         gbxIPAddress.Controls.Add(iPv4AddressControl);
-        gbxIPAddress.Location = new Point(3, 160);
+        gbxIPAddress.Location = new Point(3, 120);
         gbxIPAddress.Name = "gbxIPAddress";
-        gbxIPAddress.Size = new Size(263, 132);
+        gbxIPAddress.Size = new Size(263, 179);
         gbxIPAddress.TabIndex = 0;
         gbxIPAddress.TabStop = false;
+        // 
+        // labelCommaSep
+        // 
+        labelCommaSep.AutoSize = true;
+        labelCommaSep.Location = new Point(170, 99);
+        labelCommaSep.Name = "labelCommaSep";
+        labelCommaSep.Size = new Size(87, 19);
+        labelCommaSep.TabIndex = 18;
+        labelCommaSep.Text = "(kommasep.)";
+        // 
+        // labelMSNs
+        // 
+        labelMSNs.AutoSize = true;
+        labelMSNs.Location = new Point(3, 75);
+        labelMSNs.Name = "labelMSNs";
+        labelMSNs.Size = new Size(250, 19);
+        labelMSNs.TabIndex = 17;
+        labelMSNs.Text = "Eigene Rufnummern (leeres Feld = alle):";
+        // 
+        // tbCalledNumbers
+        // 
+        tbCalledNumbers.BorderStyle = BorderStyle.FixedSingle;
+        tbCalledNumbers.Location = new Point(6, 97);
+        tbCalledNumbers.Name = "tbCalledNumbers";
+        tbCalledNumbers.Size = new Size(164, 25);
+        tbCalledNumbers.TabIndex = 16;
         // 
         // ckbFritzPlaySound
         // 
         ckbFritzPlaySound.AutoSize = true;
-        ckbFritzPlaySound.Location = new Point(6, 75);
+        ckbFritzPlaySound.Location = new Point(6, 128);
         ckbFritzPlaySound.Name = "ckbFritzPlaySound";
         ckbFritzPlaySound.Size = new Size(247, 23);
         ckbFritzPlaySound.TabIndex = 15;
@@ -876,7 +993,7 @@ partial class FrmProgSettings
         // ckbMonitorContactsFirst
         // 
         ckbMonitorContactsFirst.AutoSize = true;
-        ckbMonitorContactsFirst.Location = new Point(6, 104);
+        ckbMonitorContactsFirst.Location = new Point(6, 154);
         ckbMonitorContactsFirst.Name = "ckbMonitorContactsFirst";
         ckbMonitorContactsFirst.Size = new Size(255, 23);
         ckbMonitorContactsFirst.TabIndex = 14;
@@ -886,7 +1003,7 @@ partial class FrmProgSettings
         // lblFritzBoxHost
         // 
         lblFritzBoxHost.AutoSize = true;
-        lblFritzBoxHost.Location = new Point(6, 48);
+        lblFritzBoxHost.Location = new Point(3, 46);
         lblFritzBoxHost.Name = "lblFritzBoxHost";
         lblFritzBoxHost.Size = new Size(78, 19);
         lblFritzBoxHost.TabIndex = 13;
@@ -895,7 +1012,7 @@ partial class FrmProgSettings
         // ckbFritzMonitorEnabled
         // 
         ckbFritzMonitorEnabled.AutoSize = true;
-        ckbFritzMonitorEnabled.Location = new Point(6, 17);
+        ckbFritzMonitorEnabled.Location = new Point(6, 15);
         ckbFritzMonitorEnabled.Name = "ckbFritzMonitorEnabled";
         ckbFritzMonitorEnabled.Size = new Size(247, 23);
         ckbFritzMonitorEnabled.TabIndex = 12;
@@ -908,19 +1025,72 @@ partial class FrmProgSettings
         iPv4AddressControl.BackColor = SystemColors.Window;
         iPv4AddressControl.BorderStyle = BorderStyle.FixedSingle;
         iPv4AddressControl.Font = new Font("Consolas", 10F);
-        iPv4AddressControl.Location = new Point(90, 46);
+        iPv4AddressControl.Location = new Point(90, 44);
         iPv4AddressControl.Name = "iPv4AddressControl";
         iPv4AddressControl.Size = new Size(160, 23);
         iPv4AddressControl.TabIndex = 0;
         // 
-        // labelAutoAdressen
+        // tpHotkey
         // 
-        labelAutoAdressen.AutoSize = true;
-        labelAutoAdressen.Location = new Point(6, 245);
-        labelAutoAdressen.Name = "labelAutoAdressen";
-        labelAutoAdressen.Size = new Size(252, 38);
-        labelAutoAdressen.TabIndex = 9;
-        labelAutoAdressen.Text = "Welche lokale Adressdatei automatisch\r\ngeladen wird, ergibt sich bei „Adressen“.";
+        tpHotkey.BackColor = SystemColors.ControlLightLight;
+        tpHotkey.BorderStyle = BorderStyle.FixedSingle;
+        tpHotkey.Controls.Add(gbHotkey);
+        tpHotkey.Controls.Add(lblInfo);
+        tpHotkey.Location = new Point(114, 4);
+        tpHotkey.Name = "tpHotkey";
+        tpHotkey.Size = new Size(271, 304);
+        tpHotkey.TabIndex = 7;
+        tpHotkey.Text = " Hotkey";
+        // 
+        // gbHotkey
+        // 
+        gbHotkey.Controls.Add(ckbGlobalHotkey);
+        gbHotkey.Controls.Add(lblKeyPrefix);
+        gbHotkey.Controls.Add(cbxHotkeyKey);
+        gbHotkey.Location = new Point(6, 140);
+        gbHotkey.Name = "gbHotkey";
+        gbHotkey.Size = new Size(257, 79);
+        gbHotkey.TabIndex = 4;
+        gbHotkey.TabStop = false;
+        // 
+        // ckbGlobalHotkey
+        // 
+        ckbGlobalHotkey.AutoSize = true;
+        ckbGlobalHotkey.Location = new Point(6, 17);
+        ckbGlobalHotkey.Name = "ckbGlobalHotkey";
+        ckbGlobalHotkey.Size = new Size(193, 23);
+        ckbGlobalHotkey.TabIndex = 3;
+        ckbGlobalHotkey.Text = "Globalen Hotkey aktivieren";
+        ckbGlobalHotkey.UseVisualStyleBackColor = true;
+        ckbGlobalHotkey.CheckedChanged += CkbGlobalHotkey_CheckedChanged;
+        // 
+        // lblKeyPrefix
+        // 
+        lblKeyPrefix.AutoSize = true;
+        lblKeyPrefix.Location = new Point(2, 49);
+        lblKeyPrefix.Name = "lblKeyPrefix";
+        lblKeyPrefix.Size = new Size(193, 19);
+        lblKeyPrefix.TabIndex = 1;
+        lblKeyPrefix.Text = "Tastenkombination: Strg+Alt+";
+        // 
+        // cbxHotkeyKey
+        // 
+        cbxHotkeyKey.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbxHotkeyKey.FormattingEnabled = true;
+        cbxHotkeyKey.Items.AddRange(new object[] { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Z" });
+        cbxHotkeyKey.Location = new Point(195, 46);
+        cbxHotkeyKey.Name = "cbxHotkeyKey";
+        cbxHotkeyKey.Size = new Size(56, 25);
+        cbxHotkeyKey.TabIndex = 2;
+        // 
+        // lblInfo
+        // 
+        lblInfo.AutoSize = true;
+        lblInfo.Location = new Point(3, 4);
+        lblInfo.Name = "lblInfo";
+        lblInfo.Size = new Size(266, 133);
+        lblInfo.TabIndex = 0;
+        lblInfo.Text = resources.GetString("lblInfo.Text");
         // 
         // FrmProgSettings
         // 
@@ -940,16 +1110,23 @@ partial class FrmProgSettings
         Text = "Programmeinstellungen";
         FormClosing += FrmProgSettings_FormClosing;
         tpSicherung.ResumeLayout(false);
-        tpSicherung.PerformLayout();
+        gbBackupZip.ResumeLayout(false);
+        gbBackupZip.PerformLayout();
+        gbBackupDaily.ResumeLayout(false);
+        gbBackupDaily.PerformLayout();
         tpAskBefore.ResumeLayout(false);
+        gbxMin2Tray.ResumeLayout(false);
+        gbxMin2Tray.PerformLayout();
         gbxAskEnvelope.ResumeLayout(false);
         gbxAskEnvelope.PerformLayout();
         gbxAskLocal.ResumeLayout(false);
         gbxAskLocal.PerformLayout();
         tpWatchFolder.ResumeLayout(false);
-        tpWatchFolder.PerformLayout();
+        gbWatchFolder.ResumeLayout(false);
+        gbWatchFolder.PerformLayout();
         tpAutostart.ResumeLayout(false);
-        tpAutostart.PerformLayout();
+        gbBirthdayRemind.ResumeLayout(false);
+        gbBirthdayRemind.PerformLayout();
         groupBox1.ResumeLayout(false);
         groupBox1.PerformLayout();
         gbxContactsAutoload.ResumeLayout(false);
@@ -972,6 +1149,10 @@ partial class FrmProgSettings
         tpAnrufMon.PerformLayout();
         gbxIPAddress.ResumeLayout(false);
         gbxIPAddress.PerformLayout();
+        tpHotkey.ResumeLayout(false);
+        tpHotkey.PerformLayout();
+        gbHotkey.ResumeLayout(false);
+        gbHotkey.PerformLayout();
         ResumeLayout(false);
     }
 
@@ -983,8 +1164,6 @@ partial class FrmProgSettings
     private TabPage tpSicherung;
     private Button btnZipArchive;
     private Label lblZipArchive;
-    private Label lblZipText;
-    private Label lblHorizLine;
     private CheckBox ckbZipArchive;
     private TextBox tbZipArchive;
     private TextBox tbBackupFolder;
@@ -1000,7 +1179,6 @@ partial class FrmProgSettings
     private CheckBox ckbAskPrintEnvelope;
     private TabPage tpWatchFolder;
     private Label lblWatcherInfo;
-    private Label lblWatchFolder;
     private CheckBox ckbWatchFolder;
     private Button btnWatchFolder;
     private TextBox tbWatchFolder;
@@ -1049,4 +1227,21 @@ partial class FrmProgSettings
     private CheckBox ckbMin2Tray;
     private Label lblAutostart;
     private Label labelAutoAdressen;
+    private GroupBox gbxMin2Tray;
+    private CheckBox ckbBalloonTipMin2Tray;
+    private Label labelMSNs;
+    private TextBox tbCalledNumbers;
+    private Label labelCommaSep;
+    private TabPage tpHotkey;
+    private Label lblInfo;
+    private CheckBox ckbGlobalHotkey;
+    private ComboBox cbxHotkeyKey;
+    private Label lblKeyPrefix;
+    private GroupBox gbHotkey;
+    private GroupBox gbBirthdayRemind;
+    private CheckBox ckbBirthdayRemind;
+    private Label lblBirtdayRemind;
+    private GroupBox gbWatchFolder;
+    private GroupBox gbBackupZip;
+    private GroupBox gbBackupDaily;
 }

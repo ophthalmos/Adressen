@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text;
 
 namespace Adressen.cls;
 
@@ -250,10 +251,23 @@ public class Adresse : IContactEntity
         {
             if (_searchTextCache == null)
             {
-                // Wir bauen den String erst lokal zusammen
-                var fullText = $"{Vorname} {Nachname} {Unternehmen} {Position} {Ort} {PLZ} {Strasse} {Nickname} {Telefon1} {Telefon2} {Mobil} {Mail1} {Mail2} {Notizen} {Internet}".ToLowerInvariant();
-                // Und weisen ihn dann erst dem Feld zu. Das ist zwar nicht 100% atomar (dafür bräuchte man ein lock), verhindert aber seltsame Zwischenzustände beim Auslesen.
-                _searchTextCache = fullText;
+                var sb = new StringBuilder();
+                sb.Append(Vorname).Append(' ').Append(Nachname).Append(' ');
+                sb.Append(Unternehmen).Append(' ').Append(Position).Append(' ');
+                sb.Append(Ort).Append(' ').Append(PLZ).Append(' ').Append(Strasse).Append(' ');
+                sb.Append(Nickname).Append(' ');
+                // Telefonnummern: roh (für Teilsuche) + normalisiert (für Fritz-Monitor-Treffer)
+                foreach (var num in new[] { Telefon1, Telefon2, Mobil, Fax })
+                {
+                    if (!string.IsNullOrWhiteSpace(num))
+                    {
+                        sb.Append(num).Append(' ');
+                        sb.Append(Utils.NormalizePhoneNumber(num)).Append(' ');
+                    }
+                }
+                sb.Append(Mail1).Append(' ').Append(Mail2).Append(' ');
+                sb.Append(Notizen).Append(' ').Append(Internet);
+                _searchTextCache = sb.ToString().ToLowerInvariant();
             }
             return _searchTextCache;
         }

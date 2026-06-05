@@ -123,8 +123,11 @@ public class AppSettings
 
     public bool FritzMonitorEnabled { get; set; } = false;
     public string FritzBoxHost { get; set; } = "192.168.178.1";
+    public string FritzCalledNumbers { get; set; } = string.Empty;  // leer = alle
     public bool FritzContactsFirst { get; set; } = true;
     public bool FritzMonitorPlaySound { get; set; } = true;
+    public bool ShowBalloonTipMin2Tray { get; set; } = true;
+    public bool BirthdayRemindDaily { get; set; } = true;
 
     public int CopyPatternIndex { get; set; } = 0;
     public string[] CopyPattern1 { get; set; } = ["[Praefix_Vorname_Nachname], [Ort]"];
@@ -136,6 +139,9 @@ public class AppSettings
 
     public int SplitterPosition { get; set; } = 500;
     public bool WindowMaximized { get; set; } = false;
+
+    public bool GlobalHotkeyEnabled { get; set; } = true;
+    public string GlobalHotkeyKey { get; set; } = "A"; // Standard ist A
 
     public int BirthdayRemindLimit { get; set; } = 14;
     public int BirthdayRemindAfter { get; set; } = 0;

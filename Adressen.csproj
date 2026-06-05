@@ -11,8 +11,8 @@
     <SourceRevisionId>build$([System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss"))</SourceRevisionId>
     <NeutralLanguage>de</NeutralLanguage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion>1.2.4</AssemblyVersion>
-    <FileVersion>1.2.4</FileVersion>
+    <AssemblyVersion>1.2.5</AssemblyVersion>
+    <FileVersion>1.2.5</FileVersion>
     <StartupObject>Adressen.Program</StartupObject>
     <Product>$(AssemblyName) &amp; Kontakte</Product>
     <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>

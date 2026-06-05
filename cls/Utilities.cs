@@ -21,12 +21,12 @@ internal static partial class Utils
 {
     [GeneratedRegex(@"[^\d+]")]
     private static partial Regex NonDigitOrPlusRegex();
+    private const string runLocation = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
     public static void MsgTaskDlg(nint hwnd, string heading, string message, TaskDialogIcon? icon = null)
     {
         TaskDialog.ShowDialog(hwnd, new TaskDialogPage() { Caption = Application.ProductName, SizeToContent = true, Heading = heading, Text = message, Icon = icon ?? TaskDialogIcon.None, AllowCancel = true, Buttons = { TaskDialogButton.OK } });
     }
-    private const string runLocation = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
     public static void ErrTaskDlg(nint? hwnd, Exception error)
     {
@@ -97,30 +97,6 @@ internal static partial class Utils
         using var key = Registry.CurrentUser.CreateSubKey(runLocation);
         key?.SetValue(appName, $"{assemblyLocation} {commandLineArgs}".Trim());
     }
-
-    //internal static void SetAutoStart(string? appName, string assemblyLocation, bool enable, bool withMin2Tray = false)
-    //{
-    //    using var key = Registry.CurrentUser.OpenSubKey(runLocation, writable: true);
-    //    if (key == null) { return; }
-    //    if (enable)
-    //    {
-    //        var value = withMin2Tray ? $"{assemblyLocation} -min2Tray" : assemblyLocation;
-    //        key.SetValue(appName, value);
-    //    }
-    //    else
-    //    {
-    //        key.DeleteValue(appName, throwOnMissingValue: false);
-    //    }
-    //}
-
-    //internal static bool IsAutoStartEnabled(string? appName, string assemblyLocation)
-    //{
-    //    using var key = Registry.CurrentUser.OpenSubKey(runLocation);
-    //    if (key == null) { return false; }
-    //    var value = key.GetValue(appName) as string;
-    //    return !string.IsNullOrEmpty(value) && string.Equals(value, assemblyLocation, StringComparison.OrdinalIgnoreCase);
-    //}
-
 
     internal static (bool IsEnabled, bool HasMin2Tray) IsAutoStartEnabled(string? appName, string assemblyLocation)
     {
@@ -742,13 +718,19 @@ internal static partial class Utils
         return clean;
     }
 
-    internal static string NormalizePhoneNumber(string input)
+    internal static string NormalizePhoneNumber(string? input)
     {
         if (string.IsNullOrWhiteSpace(input)) { return string.Empty; }
-        var cleaned = NonDigitOrPlusRegex().Replace(input, string.Empty);  // Leerzeichen, Klammern, Bindestriche etc. entfernen
-        if (cleaned.StartsWith("+49")) { cleaned = "0" + cleaned[3..]; }  // Ländercode für Deutschland standardisieren (+49 oder 0049 -> 0)
+        var cleaned = NonDigitOrPlusRegex().Replace(input, string.Empty);  // Alle Zeichen außer Ziffern und das Plus entfernen
+        if (cleaned.StartsWith('+')) { cleaned = "00" + cleaned[1..]; }  // Führendes '+' vereinheitlichen zu '00'
+        // DACH-Länderpräfixe in nationale 0-Vorwahl umwandeln. Dabei fehlerhafte Formate wie +49(0)... direkt korrigieren
+        if (cleaned.StartsWith("00490")) { cleaned = "0" + cleaned[5..]; }
         else if (cleaned.StartsWith("0049")) { cleaned = "0" + cleaned[4..]; }
-        return cleaned;
+        else if (cleaned.StartsWith("00430")) { cleaned = "0" + cleaned[5..]; }
+        else if (cleaned.StartsWith("0043")) { cleaned = "0" + cleaned[4..]; }
+        else if (cleaned.StartsWith("00410")) { cleaned = "0" + cleaned[5..]; }
+        else if (cleaned.StartsWith("0041")) { cleaned = "0" + cleaned[4..]; }
+        return new string([.. cleaned.Where(char.IsDigit)]);  // Sicherstellen, dass absolut keine Fremdzeichen (z.B. verbliebene '+') enthalten sind
     }
 
     internal static void PlayIncomingCallSound(string appPath)

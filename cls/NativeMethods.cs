@@ -29,6 +29,10 @@ internal static partial class NativeMethods
     internal const uint SWP_NOSIZE = 0x0001;
     internal const uint SWP_NOMOVE = 0x0002;
     internal const uint SWP_NOACTIVATE = 0x0010;
+    internal const int WM_HOTKEY = 0x0312;
+    internal const int HOTKEY_ID = 0x0314;
+    internal const int MOD_ALT = 0x0001;
+    internal const int MOD_CONTROL = 0x0002;
     internal const int WM_TRAY_RESTORE = 0x8001; // Eigener Weckruf für AHK
     internal const int WM_TRAY_MINIMIZE = 0x8002; // Befehl von AHK: "Minimiere mich (intelligent)"
 
@@ -40,6 +44,14 @@ internal static partial class NativeMethods
         public int Right;
         public int Bottom;
     }
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool RegisterHotKey(nint hWnd, int id, int fsModifiers, int vk);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool UnregisterHotKey(nint hWnd, int id);
 
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

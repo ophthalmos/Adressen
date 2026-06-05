@@ -256,7 +256,15 @@ public class Contact : ICloneable, IContactEntity
                 sb.Append(Unternehmen).Append(' ').Append(Position).Append(' ');
                 sb.Append(Ort).Append(' ').Append(PLZ).Append(' ').Append(Strasse).Append(' ');
                 sb.Append(Nickname).Append(' ');
-                sb.Append(Telefon1).Append(' ').Append(Telefon2).Append(' ').Append(Mobil).Append(' ');
+                // Telefonnummern: roh + normalisiert (für Fritz-Monitor-Treffer)
+                foreach (var num in new[] { Telefon1, Telefon2, Mobil, Fax })
+                {
+                    if (!string.IsNullOrWhiteSpace(num))
+                    {
+                        sb.Append(num).Append(' ');
+                        sb.Append(Utils.NormalizePhoneNumber(num)).Append(' ');
+                    }
+                }
                 sb.Append(Mail1).Append(' ').Append(Mail2).Append(' ');
                 sb.Append(Notizen).Append(' ').Append(Internet);
                 _searchTextCache = sb.ToString().ToLowerInvariant();
