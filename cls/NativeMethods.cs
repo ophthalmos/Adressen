@@ -5,6 +5,8 @@ namespace Adressen.cls;
 internal static partial class NativeMethods
 {
     private const uint GW_HWNDNEXT = 2;
+    internal const int SW_RESTORE = 9;
+    internal const int SW_HIDE = 0;
     internal const int EC_LEFTMARGIN = 1;
     internal const int EC_RIGHTMARGIN = 2;
     internal const int EM_SETRECT = 0x00B3;
@@ -16,6 +18,7 @@ internal static partial class NativeMethods
     internal const int EM_SETCUEBANNER = 0x1501;
     internal const int WM_SETTINGCHANGE = 0x001A;
     internal const int WM_LBUTTONDBLCLK = 0x0203;
+    internal const int WM_LBUTTONDOWN = 0x0201;
     internal const int EM_GETRECT = 0x00B2;
     internal const uint WM_SETREDRAW = 0x000B; // Typ auf uint geändert, passend zur Signatur
     internal const int WM_PAINT = 0x000F;
@@ -25,7 +28,10 @@ internal static partial class NativeMethods
     internal const int PRF_ERASEBKGND = 0x08;
     internal const int VK_UP = 0x26;
     internal const int VK_DOWN = 0x28;
+    internal const int VK_RETURN = 0x0D;
+    internal const int KEY_PRESSED = 0x8000;
     internal static readonly nint HWND_TOPMOST = -1;
+    internal static readonly nint HWND_BOTTOM  = 1;
     internal const uint SWP_NOSIZE = 0x0001;
     internal const uint SWP_NOMOVE = 0x0002;
     internal const uint SWP_NOACTIVATE = 0x0010;
@@ -44,6 +50,10 @@ internal static partial class NativeMethods
         public int Right;
         public int Bottom;
     }
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool ShowWindow(nint hWnd, int nCmdShow);
 
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -97,6 +107,13 @@ internal static partial class NativeMethods
     [LibraryImport("user32.dll")]
     private static partial nint GetTopWindow(nint hWnd);
 
+    [LibraryImport("user32.dll", EntryPoint = "FindWindowExW", StringMarshalling = StringMarshalling.Utf16)]
+    internal static partial nint FindWindowEx(nint hwndParent, nint hwndChildAfter, string lpszClass, string? lpszWindow);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool IsWindowVisible(nint hWnd);
+
     [LibraryImport("user32.dll")]
     private static partial nint GetWindow(nint hWnd, uint uCmd);
 
@@ -126,4 +143,19 @@ internal static partial class NativeMethods
         }
         return nint.Zero;
     }
+
+    public static bool IsAutoCompleteDropdownOpen()
+    {
+        var hwnd = FindWindowEx(nint.Zero, nint.Zero, "Auto-Suggest Dropdown", null);
+        return hwnd != nint.Zero && IsWindowVisible(hwnd);
+    }
+
+    public static void HideAutoCompleteDropdown()
+    {
+        var hwnd = FindWindowEx(nint.Zero, nint.Zero, "Auto-Suggest Dropdown", null);
+        if (hwnd != nint.Zero) { ShowWindow(hwnd, SW_HIDE); }
+    }
+
+    public static bool IsPhysicalEnterPressed() => (GetAsyncKeyState(VK_RETURN) & KEY_PRESSED) != 0;  //Ein synthetisches Enter, das AutoComplete nach einem Mausklick sendet, ergibt hier false.
+
 }

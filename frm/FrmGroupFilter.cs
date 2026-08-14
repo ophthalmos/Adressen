@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using Windows.Devices.Enumeration;
 
 namespace Adressen.frm;
 
@@ -9,11 +10,12 @@ public partial class FrmGroupFilter : Form
     public List<string> ExcludedGroups { get; private set; } = [];
     public bool RefineExistingFilter => chckBxRefine.Checked;
 
-    public FrmGroupFilter(SortedSet<string> groupList, bool isFilterActive)
+    public FrmGroupFilter(SortedSet<string> groupList, bool isFilterActive, string colorScheme = "")
     {
         InitializeComponent();
         chckBxRefine.Enabled = isFilterActive;
         if (isFilterActive) { chckBxRefine.Checked = true; }
+        SetColorScheme(colorScheme);
         tableLayoutPanel.SuspendLayout();
         tableLayoutPanel.RowCount = 0; // Bestehende Zeilen entfernen
         tableLayoutPanel.RowStyles.Clear();
@@ -44,6 +46,18 @@ public partial class FrmGroupFilter : Form
         _ = tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // machte alle Zeilen davor so klein wie nötig (AutoSize), füllt den Rest des Platzes auf
         tableLayoutPanel.ResumeLayout();
     }
+
+    private void SetColorScheme(string colorScheme)
+    {
+        labelHeader.BackColor = colorScheme switch
+        {
+            "blue" => SystemColors.InactiveBorder,
+            "pale" => SystemColors.ControlLightLight,
+            "dark" => SystemColors.Control,
+            _ => SystemColors.ButtonFace,
+        };
+    }
+
 
     private void ButtonFilter_Click(object sender, EventArgs e)
     {

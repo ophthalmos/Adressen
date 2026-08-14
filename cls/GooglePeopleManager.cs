@@ -12,7 +12,12 @@ internal record LoadContactsResult(List<Contact> Contacts, Dictionary<string, st
 
 internal class GooglePeopleManager(string secretPath, string tokenDir)
 {
-    private static PeopleServiceService? _cachedService;
+    private static volatile PeopleServiceService? _cachedService;  // ohne volatile auf Multi-Core-Systemen nicht korrekt
+
+    internal const string TokenFileName = "Google.Apis.Auth.OAuth2.Responses.TokenResponse-user";
+
+    // true, wenn bei der Autorisierung eine Browser-Anmeldung stattgefunden hat (statt stillem Token-Laden).
+    internal bool LastAuthorizationWasInteractive { get; private set; }
     private static readonly SemaphoreSlim _serviceLock = new(1, 1);
     // _allKnownPhoneTypes muss nicht zwangsläufig alle von Google unterstützten Typen enthalten, sondern nur die, die wir mit dem Fallback-Mechanismus auf bestimmte Felder verteilen.
     private static readonly HashSet<string> _allKnownPhoneTypes = new(StringComparer.OrdinalIgnoreCase) {
@@ -74,10 +79,9 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         catch (TokenResponseException ex) { throw new UnauthorizedAccessException("Google Token abgelaufen", ex); }
     }
 
-    //public async Task<Contact> CreateContactAsync(Contact contact, Image? profileImage, CancellationToken token = default)
     public async Task<Contact> CreateContactAsync(Contact contact, Image? profileImage, ImageFormat? photoFormat, CancellationToken token = default)
-
     {
+        contact.TrimStrings();
         var service = await GetServiceAsync(token);
         var personToCreate = new Person
         {
@@ -151,6 +155,7 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
 
     public async Task<Contact> UpdateContactAsync(Contact contact, List<string> changedFields, Dictionary<string, string> groupMap, Contact? originalContactSnapshot, bool checkEmptyGroups = false, CancellationToken token = default)
     {
+        contact.TrimStrings();
         var service = await GetServiceAsync(token);
 
         var personToUpdate = contact.RawGooglePerson != null
@@ -445,7 +450,13 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
 
             var scopes = new[] { PeopleServiceService.Scope.Contacts };
             using var stream = new FileStream(secretPath, FileMode.Open, FileAccess.Read);
+
+            // Browser-Anmeldung erkennen: geschieht immer wenn kein gespeichertes Token vorhanden ist; andernfalls verrät die Dauer der Interaktion, ob ein Browser-Login nötig war.
+            var tokenExisted = File.Exists(Path.Combine(tokenDir, TokenFileName));
+            var authWatch = System.Diagnostics.Stopwatch.StartNew();
             var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(GoogleClientSecrets.FromStream(stream).Secrets, scopes, "user", token, new FileDataStore(tokenDir, true));
+            authWatch.Stop();
+            LastAuthorizationWasInteractive = !tokenExisted || authWatch.ElapsedMilliseconds > 3000;
 
             _cachedService = new PeopleServiceService(new BaseClientService.Initializer()
             {
@@ -484,7 +495,11 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Warnung: Kontaktgruppen konnten nicht geladen werden: {ex.Message}");
+            // map bleibt leer — Aufrufer muss entscheiden, ob das akzeptabel ist; Alle Gruppen aller Kontakte gehen beim nächsten Sync verloren
+        }
         return map;
     }
 

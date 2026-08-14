@@ -51,7 +51,7 @@ partial class FrmCopyScheme
         panelRight = new Panel();
         statusStrip = new StatusStrip();
         lblSpring = new ToolStripStatusLabel();
-        lblGoogleSearch = new ToolStripStatusLabel();
+        tsbGoogleSearch = new ToolStripButton();
         tabControl.SuspendLayout();
         tabPage1.SuspendLayout();
         tabPage2.SuspendLayout();
@@ -311,7 +311,8 @@ partial class FrmCopyScheme
         statusStrip.AutoSize = false;
         statusStrip.BackColor = Color.Transparent;
         statusStrip.BackgroundImageLayout = ImageLayout.None;
-        statusStrip.Items.AddRange(new ToolStripItem[] { lblSpring, lblGoogleSearch });
+        statusStrip.Font = new Font("Segoe UI", 10F);
+        statusStrip.Items.AddRange(new ToolStripItem[] { lblSpring, tsbGoogleSearch });
         statusStrip.Location = new Point(0, 194);
         statusStrip.Name = "statusStrip";
         statusStrip.Size = new Size(562, 22);
@@ -322,20 +323,18 @@ partial class FrmCopyScheme
         // lblSpring
         // 
         lblSpring.Name = "lblSpring";
-        lblSpring.Size = new Size(323, 17);
+        lblSpring.Size = new Size(281, 17);
         lblSpring.Spring = true;
         // 
-        // lblGoogleSearch
+        // tsbGoogleSearch
         // 
-        lblGoogleSearch.AutoSize = false;
-        lblGoogleSearch.Font = new Font("Segoe UI", 10F);
-        lblGoogleSearch.IsLink = true;
-        lblGoogleSearch.Margin = new Padding(0, 0, 0, 2);
-        lblGoogleSearch.Name = "lblGoogleSearch";
-        lblGoogleSearch.Size = new Size(224, 20);
-        lblGoogleSearch.Text = "Text für Google-Suche verwenden";
-        lblGoogleSearch.TextAlign = ContentAlignment.MiddleLeft;
-        lblGoogleSearch.Click += LblGoogleSearch_Click;
+        tsbGoogleSearch.Image = Properties.Resources.Google16;
+        tsbGoogleSearch.Margin = new Padding(0, 0, 0, 2);
+        tsbGoogleSearch.Name = "tsbGoogleSearch";
+        tsbGoogleSearch.Size = new Size(235, 20);
+        tsbGoogleSearch.Text = "Text für Google-Suche verwenden";
+        tsbGoogleSearch.TextAlign = ContentAlignment.MiddleLeft;
+        tsbGoogleSearch.Click += TsbGoogleSearch_Click;
         // 
         // FrmCopyScheme
         // 
@@ -402,5 +401,5 @@ partial class FrmCopyScheme
     private Panel panelRight;
     private StatusStrip statusStrip;
     private ToolStripStatusLabel lblSpring;
-    private ToolStripStatusLabel lblGoogleSearch;
+    private ToolStripButton tsbGoogleSearch;
 }

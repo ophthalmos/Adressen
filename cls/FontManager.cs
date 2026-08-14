@@ -7,7 +7,7 @@ public static class FontManager
 
     public static void StartPreloading() => _preloadTask ??= Task.Run(LoadFonts);
 
-    public static List<string> GetValidFonts()
+    public static List<string> GetValidFonts()  // wird im Konstruktor von FrmProgSettings aufgerufen, daher synchron
     {
         if (_preloadTask == null) { StartPreloading(); }
         return _preloadTask!.Result;
@@ -16,7 +16,6 @@ public static class FontManager
     public static Font GetDisplayFont(string? fontName)
     {
         if (string.IsNullOrWhiteSpace(fontName)) { fontName = "Segoe UI"; }
-
         if (!_fontCache.TryGetValue(fontName, out var displayFont))
         {
             try { displayFont = new Font(fontName, 10f, FontStyle.Regular, GraphicsUnit.Point); }

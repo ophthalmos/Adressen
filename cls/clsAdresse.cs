@@ -100,7 +100,7 @@ public class Adresse : IContactEntity
     }
 
     [MaxLength(150)]
-    [DisplayName("Straße")]
+    [DisplayName("Adresse")]
     public string? Strasse
     {
         get; set;
@@ -212,7 +212,7 @@ public class Adresse : IContactEntity
 
     // --- 2. Ausgeblendete Navigation Properties ---
 
-    //[Browsable(false)]
+    //[Browsable(false)]  // auskommentiert lassen — bricht DataBinding; stattdessen: if (dgvAdressen.Columns["Reminder"] is DataGridViewColumn col) col.Visible = false;
     public bool Reminder { get; set; } = true; // Standardmäßig aktivieren wir die Erinnerung für bestehende/neue Adressen
 
     [Browsable(false)]
@@ -373,5 +373,34 @@ public class Adresse : IContactEntity
                 break;
             default: break; // Unbekannte Spalten einfach ignorieren
         }
+    }
+
+    public void TrimStrings()  // Trimming vor dem Speichern
+    {
+        Anrede = Anrede?.Trim();
+        Praefix = Praefix?.Trim();
+        Nachname = Nachname?.Trim();
+        Vorname = Vorname?.Trim();
+        Zwischenname = Zwischenname?.Trim();
+        Nickname = Nickname?.Trim();
+        Suffix = Suffix?.Trim();
+        Unternehmen = Unternehmen?.Trim();
+        Position = Position?.Trim();
+        Strasse = Strasse?.Trim();
+        PLZ = PLZ?.Trim();
+        Ort = Ort?.Trim();
+        Postfach = Postfach?.Trim();
+        Land = Land?.Trim();
+        Betreff = Betreff?.Trim();
+        Grussformel = Grussformel?.Trim();
+        Schlussformel = Schlussformel?.Trim();
+        Mail1 = Mail1?.Trim();
+        Mail2 = Mail2?.Trim();
+        Telefon1 = Telefon1?.Trim();
+        Telefon2 = Telefon2?.Trim();
+        Mobil = Mobil?.Trim();
+        Fax = Fax?.Trim();
+        Internet = Internet?.Trim();
+        Notizen = Notizen?.Trim();
     }
 }

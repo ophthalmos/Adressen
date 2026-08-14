@@ -102,7 +102,9 @@ public partial class FrmPrintSetting : Form
                     if (selectedSource != null) { printDocument.DefaultPageSettings.PaperSource = selectedSource; }
                 }
                 cbPapersize.Items.Clear();  // Papierformate laden
-                foreach (PaperSize ps in printDocument.PrinterSettings.PaperSizes) { if (ps.Kind != PaperKind.Custom) { cbPapersize.Items.Add(ps.PaperName); } }
+                // Standardformate sowie benannte benutzerdefinierte Formate mit gültigen Maßen aufnehmen
+                // (leere generische "Custom"-Platzhalter mit Maß 0 bleiben außen vor).
+                foreach (PaperSize ps in printDocument.PrinterSettings.PaperSizes) { if (!string.IsNullOrWhiteSpace(ps.PaperName) && (ps.Kind != PaperKind.Custom || (ps.Width > 0 && ps.Height > 0))) { cbPapersize.Items.Add(ps.PaperName); } }
                 Utils.AdjustComboBoxDropDownWidth(cbPapersize);
                 printDocument.DefaultPageSettings.Landscape = _settings.PrintLandscape;  // Initial Landscape setzen für Preview
                 if (!string.IsNullOrEmpty(_settings.PrintFormat))  // Papierformat im PrintDocument setzen (wichtig für Preview)
@@ -120,13 +122,15 @@ public partial class FrmPrintSetting : Form
         }
         else
         {
-            if (string.IsNullOrEmpty(_settings.PrintDevice)) { Utils.MsgTaskDlg(Handle, "Druckerfehler", $"Es wurde noch kein Drucker ausgewählt."); }
+            if (string.IsNullOrEmpty(_settings.PrintDevice)) { Utils.MsgTaskDlg(Handle, "Es wurde kein Drucker ausgewählt.", "Füll bitte die leeren Felder auf allen Tabs aus."); }
             else { Utils.MsgTaskDlg(Handle, "Druckerfehler", $"Der Drucker '{_settings.PrintDevice}' ist nicht verfügbar."); }
         }
     }
 
     private void UpdateUiState()
     {
+        var hasPostfach = _recipientDict.TryGetValue("Postfach", out var postfach) && postfach.Any(char.IsDigit);  // Postfach ist rein numerisch; reiner Begleittext ohne Ziffer zählt nicht
+        var hasAdresse = _recipientDict.TryGetValue("Adresse", out var adresse) && !string.IsNullOrWhiteSpace(adresse);
         ckbAnredeOberhalb.Enabled = ckbAnredePrint.Checked;
         var landActive = ckbLandPrint.Checked;
         lblLandGapFactor.Enabled = landActive;
@@ -174,7 +178,7 @@ public partial class FrmPrintSetting : Form
             else if (checkBox.Checked) { _settings.AskPrintEnvelope = true; }
         }
         printDocument.Print();  // wird nur erreicht, wenn die Abfrage aus war ODER "Drucken" gewählt wurde
-        DialogResult = DialogResult.OK;
+        //DialogResult = DialogResult.OK;  // würde das Fenster schließen, aber wir wollen es offen lassen
     }
 
     private void GenericControl_ValueChanged(object sender, EventArgs e)
@@ -226,7 +230,8 @@ public partial class FrmPrintSetting : Form
         cbPapersize.Items.Clear();  // Papierformate neu laden für gewählten Drucker
         foreach (PaperSize ps in printDocument.PrinterSettings.PaperSizes)
         {
-            if (ps.Kind != PaperKind.Custom) { cbPapersize.Items.Add(ps.PaperName); }
+            // Standardformate + benannte benutzerdefinierte Formate mit gültigen Maßen (s. o.).
+            if (!string.IsNullOrWhiteSpace(ps.PaperName) && (ps.Kind != PaperKind.Custom || (ps.Width > 0 && ps.Height > 0))) { cbPapersize.Items.Add(ps.PaperName); }
         }
         cbSources.Items.Clear();  // Papierschächte neu laden
         foreach (PaperSource ps in printDocument.PrinterSettings.PaperSources) { cbSources.Items.Add(ps.SourceName); }
@@ -342,17 +347,24 @@ public partial class FrmPrintSetting : Form
             var recipXPos = e.MarginBounds.Left + (e.MarginBounds.Width / 2) + (float)_settings.RecipientOffsetX;
             var recipYPos = e.MarginBounds.Top + (e.MarginBounds.Height / 2) + (float)_settings.RecipientOffsetY;
             var recipientLines = new string[6];
-            var line1 = string.Empty;
-            if (_settings.PrintRecipientSalutation && _recipientDict.TryGetValue("Anrede", out var anrede) && !string.IsNullOrEmpty(anrede)) { line1 += anrede; }
-            if (_recipientDict.TryGetValue("Titel", out var titel) && !string.IsNullOrEmpty(titel)) { line1 += (line1.Length > 0 ? " " : "") + titel; }
-            recipientLines[0] = line1.Trim();
+            // Logik wie bei "EmpfaengerAlles" (FillWordProcessingDictionary): leere Zeilen entfallen
+            // (die Druck-Schleife unten überspringt sie), dadurch rückt z. B. bei reinen
+            // Firmen-Adressen das Unternehmen automatisch in die erste Zeile.
+            var anrede = _recipientDict.TryGetValue("Anrede", out var anredeVal) ? anredeVal.Trim() : string.Empty;
+            if (string.Equals(anrede, "Herr", StringComparison.OrdinalIgnoreCase)) { anrede = "Herrn"; }
+            recipientLines[0] = _settings.PrintRecipientSalutation ? anrede : string.Empty;
             var line2 = string.Empty;
             if (_recipientDict.TryGetValue("Praefix", out var praefix) && !string.IsNullOrEmpty(praefix)) { line2 += praefix + " "; }
             if (_recipientDict.TryGetValue("Vorname", out var vorname) && !string.IsNullOrEmpty(vorname)) { line2 += vorname + " "; }
             if (_recipientDict.TryGetValue("Nachname", out var nachname) && !string.IsNullOrEmpty(nachname)) { line2 += nachname; }
             recipientLines[1] = line2.Trim();
-            recipientLines[2] = _recipientDict.TryGetValue("Firma", out var firma) && !string.IsNullOrEmpty(firma) ? firma : string.Empty;
-            recipientLines[3] = _recipientDict.TryGetValue("Strasse", out var strasse) && !string.IsNullOrEmpty(strasse) ? strasse : string.Empty;
+            recipientLines[2] = _recipientDict.TryGetValue("Unternehmen", out var firma) && !string.IsNullOrEmpty(firma) ? firma : string.Empty;
+            // Postfach ist eigentlich rein numerisch; evtl. vom Anwender miteingegebenen Text (z. B. "Postfach", "PF", ":") herausfiltern,
+            // damit nicht z. B. "Postfach Postfach 1234" gedruckt wird.
+            var postfachDigits = _recipientDict.TryGetValue("Postfach", out var postfach) && !string.IsNullOrEmpty(postfach) ? new string([.. postfach.Where(char.IsDigit)]) : string.Empty;
+            var hasPostfach = !string.IsNullOrEmpty(postfachDigits);  // Nur nutzbar, wenn Postfach vorhanden UND keine Straße (vermeidet falsche PLZ-Kombination)
+            var hasAdresse = _recipientDict.TryGetValue("Adresse", out var strasse) && !string.IsNullOrEmpty(strasse);
+            recipientLines[3] = hasPostfach && !hasAdresse ? $"Postfach {postfachDigits}" : hasAdresse ? strasse! : string.Empty;  // Nicht-Null-Garantie durch hasAdresse logisch sichergestellt
             var line5 = string.Empty;
             if (_recipientDict.TryGetValue("PLZ", out var plz) && !string.IsNullOrEmpty(plz)) { line5 += plz + " "; }
             if (_recipientDict.TryGetValue("Ort", out var ort) && !string.IsNullOrEmpty(ort)) { line5 += ort; }

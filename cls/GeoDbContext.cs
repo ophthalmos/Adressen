@@ -3,7 +3,7 @@
 namespace Adressen.cls;
 
 
-public class GeoDbContext : DbContext
+internal class GeoDbContext : DbContext
 {
     public static readonly string DbPath = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath) ?? AppDomain.CurrentDomain.BaseDirectory, "streetdata.db");
 
@@ -19,7 +19,7 @@ public class GeoDbContext : DbContext
     }
 }
 
-public class GeoStrasse
+internal class GeoStrasse
 {
     public int Id
     {

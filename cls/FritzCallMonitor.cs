@@ -31,7 +31,7 @@ public sealed class FritzCallEvent
     public bool IsAnonymous => string.IsNullOrWhiteSpace(CallerNumber) || CallerNumber.Equals("anonymous", StringComparison.OrdinalIgnoreCase);
 }
 
-public sealed class FritzCallMonitor(string host = "192.168.30.1", int port = 1012, TimeSpan? reconnectDelay = null) : IAsyncDisposable
+public sealed class FritzCallMonitor(string host = "192.168.30.1", int port = 1012, TimeSpan? reconnectDelay = null) : IDisposable, IAsyncDisposable
 {
     private readonly string _host = host;
     private readonly int _port = port;

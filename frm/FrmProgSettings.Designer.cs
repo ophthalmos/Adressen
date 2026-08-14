@@ -56,6 +56,8 @@ partial class FrmProgSettings
         ckbBackup = new CheckBox();
         btnBackupFolder = new Button();
         tpAskBefore = new TabPage();
+        gbxAskSerienbrief = new GroupBox();
+        ckbShowWordMailMergeHint = new CheckBox();
         gbxMin2Tray = new GroupBox();
         ckbBalloonTipMin2Tray = new CheckBox();
         gbxAskEnvelope = new GroupBox();
@@ -129,6 +131,7 @@ partial class FrmProgSettings
         gbBackupZip.SuspendLayout();
         gbBackupDaily.SuspendLayout();
         tpAskBefore.SuspendLayout();
+        gbxAskSerienbrief.SuspendLayout();
         gbxMin2Tray.SuspendLayout();
         gbxAskEnvelope.SuspendLayout();
         gbxAskLocal.SuspendLayout();
@@ -324,6 +327,7 @@ partial class FrmProgSettings
         // 
         tpAskBefore.BackColor = SystemColors.ControlLightLight;
         tpAskBefore.BorderStyle = BorderStyle.FixedSingle;
+        tpAskBefore.Controls.Add(gbxAskSerienbrief);
         tpAskBefore.Controls.Add(gbxMin2Tray);
         tpAskBefore.Controls.Add(gbxAskEnvelope);
         tpAskBefore.Controls.Add(gbxAskLocal);
@@ -332,6 +336,26 @@ partial class FrmProgSettings
         tpAskBefore.Size = new Size(271, 304);
         tpAskBefore.TabIndex = 5;
         tpAskBefore.Text = " Abfragen";
+        // 
+        // gbxAskSerienbrief
+        // 
+        gbxAskSerienbrief.Controls.Add(ckbShowWordMailMergeHint);
+        gbxAskSerienbrief.Location = new Point(6, 232);
+        gbxAskSerienbrief.Name = "gbxAskSerienbrief";
+        gbxAskSerienbrief.Size = new Size(257, 50);
+        gbxAskSerienbrief.TabIndex = 12;
+        gbxAskSerienbrief.TabStop = false;
+        gbxAskSerienbrief.Text = "Serienbrief";
+        // 
+        // ckbShowWordMailMergeHint
+        // 
+        ckbShowWordMailMergeHint.AutoSize = true;
+        ckbShowWordMailMergeHint.Location = new Point(6, 24);
+        ckbShowWordMailMergeHint.Name = "ckbShowWordMailMergeHint";
+        ckbShowWordMailMergeHint.Size = new Size(249, 23);
+        ckbShowWordMailMergeHint.TabIndex = 13;
+        ckbShowWordMailMergeHint.Text = "Vor Word-Seriendruck Info anzeigen";
+        ckbShowWordMailMergeHint.UseVisualStyleBackColor = true;
         // 
         // gbxMin2Tray
         // 
@@ -816,11 +840,11 @@ partial class FrmProgSettings
         // rbLibreOffice
         // 
         rbLibreOffice.AutoSize = true;
-        rbLibreOffice.Location = new Point(30, 52);
+        rbLibreOffice.Location = new Point(30, 50);
         rbLibreOffice.Name = "rbLibreOffice";
-        rbLibreOffice.Size = new Size(96, 23);
+        rbLibreOffice.Size = new Size(134, 23);
         rbLibreOffice.TabIndex = 1;
-        rbLibreOffice.Text = "Libre Office";
+        rbLibreOffice.Text = "LibreOffice Writer";
         rbLibreOffice.UseVisualStyleBackColor = true;
         // 
         // rbMSWord
@@ -995,9 +1019,9 @@ partial class FrmProgSettings
         ckbMonitorContactsFirst.AutoSize = true;
         ckbMonitorContactsFirst.Location = new Point(6, 154);
         ckbMonitorContactsFirst.Name = "ckbMonitorContactsFirst";
-        ckbMonitorContactsFirst.Size = new Size(255, 23);
+        ckbMonitorContactsFirst.Size = new Size(249, 23);
         ckbMonitorContactsFirst.TabIndex = 14;
-        ckbMonitorContactsFirst.Text = "Erst Kontakte, dann Adressen suchen";
+        ckbMonitorContactsFirst.Text = "Kontakte vor Adressen durchsuchen";
         ckbMonitorContactsFirst.UseVisualStyleBackColor = true;
         // 
         // lblFritzBoxHost
@@ -1115,6 +1139,8 @@ partial class FrmProgSettings
         gbBackupDaily.ResumeLayout(false);
         gbBackupDaily.PerformLayout();
         tpAskBefore.ResumeLayout(false);
+        gbxAskSerienbrief.ResumeLayout(false);
+        gbxAskSerienbrief.PerformLayout();
         gbxMin2Tray.ResumeLayout(false);
         gbxMin2Tray.PerformLayout();
         gbxAskEnvelope.ResumeLayout(false);
@@ -1213,6 +1239,8 @@ partial class FrmProgSettings
     private TabControl tabControl;
     private GroupBox gbxAskLocal;
     private GroupBox gbxAskEnvelope;
+    private GroupBox gbxAskSerienbrief;
+    private CheckBox ckbShowWordMailMergeHint;
     private CheckBox ckbPlaceholderText;
     private TabPage tpAnrufMon;
     private GroupBox gbxIPAddress;

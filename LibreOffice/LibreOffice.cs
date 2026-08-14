@@ -25,7 +25,7 @@ internal class Program
             XWindowPeer xWindowPeer = null;
             try
             {
-                //var receivedData = new Dictionary<string, string> { { "Anrede", "Fräulein" }, { "PLZ_Ort", "12345 Entenhausen" } };
+                //var receivedData = new Dictionary<string, string> { { "Anrede", "Frau" }, { "PLZ_Ort", "12345 Entenhausen" } };
                 var receivedData = JsonConvert.DeserializeObject<Dictionary<string, string>>(args[0]);
                 var xContext = Bootstrap.bootstrap();
                 var xServiceManager = (XMultiServiceFactory)xContext.getServiceManager();
@@ -61,7 +61,7 @@ internal class Program
                                 var bookmarkObj = xBookmarks.getByName(bookmark);
                                 var xBookmark = (XTextContent)bookmarkObj.Value;
                                 var xTextRange = xBookmark.getAnchor();
-                                xTextRange.setString(entry.Value);
+                                xTextRange.setString(entry.Value.Replace('\v', '\n'));  // \v (Word-Zeilenumbruch) kennt setString nicht → als Absatz einfügen
                             }
                         }
                         break;

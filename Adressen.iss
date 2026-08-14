@@ -1,6 +1,6 @@
 #define MyAppLong "Adressen & Kontakte"
 #define MyAppName "Adressen"
-#define MyAppVersion "1.2.5"
+#define MyAppVersion "1.2.8"
 
 [Setup]
 AppName={#MyAppName}
@@ -45,6 +45,7 @@ Source: "bin\x64\Release\net10.0-windows10.0.19041.0\{#MyAppName}.dll"; DestDir:
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\{#MyAppName}.runtimeconfig.json"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "AdressenKontakte.pdf"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "Lizenzvereinbarung.txt"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
+Source: "LesezeichenBeispiel.odt"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Google.Apis.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\Google.Apis.Auth.dll"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
@@ -85,6 +86,7 @@ Source: "bin\x64\Release\net10.0-windows10.0.19041.0\streetdata_ch.db"; DestDir:
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\client_secret.json"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion  
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\adb_file.ico"; DestDir: "{app}"; Permissions: users-modify; Flags: ignoreversion
 Source: "bin\x64\Release\net10.0-windows10.0.19041.0\LibreHelper\*.*"; DestDir: "{app}\LibreHelper"; Permissions: users-modify; Flags: ignoreversion  
+Source: "img\isdonate.bmp"; Flags: dontcopy
 
 [Icons]
 Name: "{autodesktop}\{#MyAppLong}"; Filename: "{app}\{#MyAppName}.exe"; Tasks: desktopicon
@@ -101,7 +103,7 @@ Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppName}.exe\SupportedType
 Name: fileassoc; Description: {cm:AssocFileExtension,{#MyAppName},.adb}
 Name: desktopicon; Description: {cm:CreateDesktopIcon}
 Name: streetde; Description: "Deutschland"; GroupDescription: "{cm:StreetGroupDesc}"; Flags: exclusive
-Name: streetat; Description: "Österreich"; GroupDescription: "{cm:StreetGroupDesc}"; Flags: exclusive unchecked
+Name: streetat; Description: "Ã–sterreich"; GroupDescription: "{cm:StreetGroupDesc}"; Flags: exclusive unchecked
 Name: streetch; Description: "Schweiz"; GroupDescription: "{cm:StreetGroupDesc}"; Flags: exclusive unchecked
 Name: streetno; Description: "Keines"; GroupDescription: "{cm:StreetGroupDesc}"; Flags: exclusive unchecked
 
@@ -116,14 +118,15 @@ Filename: "{app}\{#MyAppName}.exe"; Description: "Starte Adressen && Kontakte"; 
 
 [Messages]
 BeveledLabel=
-WinVersionTooLowError=Das Programm erfordert eine höhere Windowsversion.
-ConfirmUninstall=Möchtest du '%1' von deinem PC entfernen? Eine Deinstallation ist vor einem Update nicht erforderlich.
+WinVersionTooLowError=Das Programm erfordert eine hÃ¶here Windowsversion.
+ConfirmUninstall=MÃ¶chtest du '%1' von deinem PC entfernen? Eine Deinstallation ist vor einem Update nicht erforderlich.
 
 [CustomMessages]
-RemoveSettings=Möchtest du die Einstellungsdateien ebenfalls entfernen?
+RemoveSettings=MÃ¶chtest du die Einstellungsdateien ebenfalls entfernen?
 Description=Adressen-Datenbank
-;Eintrag für die Tasks-Seite mit vorangestelltem Zeilenumbruch:
-StreetGroupDesc=%nWelches Straßenverzeichnis soll installiert werden?
+;Eintrag fÃ¼r die Tasks-Seite mit vorangestelltem Zeilenumbruch:
+StreetGroupDesc=%nWelches StraÃŸenverzeichnis soll installiert werden?
+IsDonateHint=Support NetRadio - Thank you!
 
 [Code]
 procedure CurUninstallStepChanged (CurUninstallStep: TUninstallStep);
@@ -171,15 +174,31 @@ begin
   end;
 end;
 
-// procedure InitializeWizard;
-// var
-  // StaticText: TNewStaticText;
-// begin
-  // StaticText := TNewStaticText.Create(WizardForm);
-  // StaticText.Parent := WizardForm.FinishedPage;
-  // StaticText.Left := WizardForm.FinishedLabel.Left;
-  // StaticText.Top := WizardForm.FinishedLabel.Top + 120;
-  // StaticText.Font.Style := [fsBold];
-  // StaticText.Caption := 'Ein Zugang zu Google-Kontakten ist derzeit nur'#13'mit eigenen OAuth-Developer-Key möglich.'#13#13 + 
-// 'Speichern Sie die Datei mit folgendem Pfadnamen:'#13'''…\AppData\Roaming\Adressen\client_secret.json''';
-// end;
+procedure DonateImageOnClick(Sender: TObject);
+var
+  ErrorCode: Integer;
+begin
+  ShellExecAsOriginalUser('open', 'https://www.paypal.com/donate/?hosted_button_id=3HRQZCUW37BQ6', '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
+end;
+
+procedure InitializeWizard;
+var
+  ImageFileName: String;
+  DonateImage: TBitmapImage;
+  BevelTop: Integer;
+begin
+  ImageFileName := ExpandConstant('{tmp}\isdonate.bmp');
+  ExtractTemporaryFile(ExtractFileName(ImageFileName));
+  DonateImage := TBitmapImage.Create(WizardForm);
+  DonateImage.AutoSize := True;
+  DonateImage.Bitmap.LoadFromFile(ImageFileName);
+  DonateImage.Hint := CustomMessage('IsDonateHint');
+  DonateImage.ShowHint := True;
+  DonateImage.Anchors := [akLeft, akBottom];
+  BevelTop := WizardForm.Bevel.Top;
+  DonateImage.Top := BevelTop + (WizardForm.ClientHeight - BevelTop - DonateImage.Bitmap.Height) div 2;
+  DonateImage.Left := DonateImage.Top - BevelTop;
+  DonateImage.Cursor := crHand;
+  DonateImage.OnClick := @DonateImageOnClick;
+  DonateImage.Parent := WizardForm;
+end; 

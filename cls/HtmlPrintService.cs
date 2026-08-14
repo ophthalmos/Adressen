@@ -20,7 +20,7 @@ internal class HtmlPrintService
         html.AppendLine("@media print { .no-print { display: none; } button { display: none; } .footer { position: fixed; bottom: 0; left: 0; right: 0; border: none; background-color: white; } }");
         html.AppendLine("@media print { .no-print { display: none; } button { display: none; } }");
         html.AppendLine("</style></head><body>");
-        html.AppendLine($"<h2>{title}</h2>");
+        html.AppendLine($"<h2>{System.Net.WebUtility.HtmlEncode(title)}</h2>");
         html.AppendLine($"<p>Erstellt am: {DateTime.Now:dd.MM.yyyy HH:mm}</p>");
         html.AppendLine("<button onclick='window.print()' style='padding: 10px 20px; background-color: #0071ca; color: white; border-radius: 12px; cursor: pointer;' class='no-print'>Drucken / Als PDF speichern</button>");
         var visibleColumns = dgv.Columns.Cast<DataGridViewColumn>().Where(c => c.Visible).OrderBy(c => c.DisplayIndex).ToList();  // nur sichtbare Spalten, sortiert nach Anzeige
@@ -127,7 +127,7 @@ internal class HtmlPrintService
                 foreach (var col in otherCols)
                 {
                     var val = row.Cells[col.Index].Value?.ToString() ?? string.Empty;
-                    html.AppendLine($"<td>{val.Replace("\n", "<br>")}</td>");
+                    html.AppendLine($"<td>{System.Net.WebUtility.HtmlEncode(val).Replace("\n", "<br>")}</td>");
                 }
 
                 html.AppendLine("</tr>");
@@ -145,7 +145,7 @@ internal class HtmlPrintService
                 foreach (var col in visibleColumns)
                 {
                     var val = row.Cells[col.Index].Value?.ToString() ?? string.Empty;
-                    html.AppendLine($"<td>{val.Replace("\n", "<br>")}</td>");
+                    html.AppendLine($"<td>{System.Net.WebUtility.HtmlEncode(val).Replace("\n", "<br>")}</td>");
                 }
                 html.AppendLine("</tr>");
             }

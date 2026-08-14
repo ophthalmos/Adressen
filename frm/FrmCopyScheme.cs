@@ -155,6 +155,7 @@ public partial class FrmCopyScheme : Form
                 if (_addBookDict.TryGetValue(key, out var value)) { return value ?? string.Empty; }  // Falls der Wert null ist, leeren String zurückgeben, damit keine "null"-Strings im Text landen.
                 return match.Value;
             });
+            line = line.Replace("\v", Environment.NewLine);  // \v (Word-Zeilenumbruch, z.B. in EmpfaengerAlles) für TextBox/Zwischenablage in normale Umbrüche wandeln
             line = Regex.Replace(line, @"(,\s*){2,}", ", ");  // Mehrfache Kommas (auch getrennt durch Leerzeichen) zu einem einzigen Komma zusammenfassen
             line = Regex.Replace(line, @" {2,}", " ");  // Mehrfache aufeinanderfolgende normale Leerzeichen zu einem einzigen zusammenfassen
             line = line.Trim(' ', ',');  // Führende und nachfolgende Leerzeichen sowie Kommas entfernen (z.B. wenn das erste Feld leer war)
@@ -204,7 +205,7 @@ public partial class FrmCopyScheme : Form
         e.Graphics.FillRectangle(brush, 0, 0, splitX, strip.Height);  // Wir füllen das Rechteck von (0,0) bis (splitX, Höhe)
     }
 
-    private void LblGoogleSearch_Click(object sender, EventArgs e)
+    private void TsbGoogleSearch_Click(object sender, EventArgs e)
     {
         var searchText = tbResult.Text.Replace("\r", " ").Replace("\n", " ").Trim();
         if (string.IsNullOrWhiteSpace(searchText)) { return; }
@@ -213,6 +214,5 @@ public partial class FrmCopyScheme : Form
         Utils.StartLink(Handle, url);
         BtnCopy_Click(sender, e);
         DialogResult = DialogResult.OK;
-        //Close();
     }
 }
