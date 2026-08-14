@@ -39,6 +39,7 @@ public partial class FrmProgSettings : Form
         ckbAskBeforeSaveSQL.Checked = _settings.AskBeforeSaveSQL;
         ckbAskBeforeSaveSQLExpander.Checked = _settings.AskBeforeSaveSQLExpander;
         ckbAskPrintEnvelope.Checked = _settings.AskPrintEnvelope;
+        ckbShowWordMailMergeHint.Checked = _settings.ShowWordMailMergeHint;
         ckbPlaceholderText.Checked = _settings.ShowPlaceholderText;
         ckbFritzMonitorEnabled.Checked = _settings.FritzMonitorEnabled;
         ckbMonitorContactsFirst.Checked = _settings.FritzContactsFirst;
@@ -69,7 +70,8 @@ public partial class FrmProgSettings : Form
         {
             case "dark": rbtnDark.Checked = true; break;
             case "pale": rbtnPale.Checked = true; break;
-            default: rbtnBlue.Checked = true; break; // Fallback & "blue"
+            case "grey": rbtnGrey.Checked = true; break;
+            default:     rbtnBlue.Checked = true; break; // Fallback & "blue"
         }
 
         // RadioButtons: Textverarbeitung (bool?)
@@ -99,6 +101,7 @@ public partial class FrmProgSettings : Form
         _settings.AskBeforeSaveSQL = ckbAskBeforeSaveSQL.Checked;
         _settings.AskBeforeSaveSQLExpander = ckbAskBeforeSaveSQLExpander.Checked;
         _settings.AskPrintEnvelope = ckbAskPrintEnvelope.Checked;
+        _settings.ShowWordMailMergeHint = ckbShowWordMailMergeHint.Checked;
         _settings.ShowPlaceholderText = ckbPlaceholderText.Checked;
         _settings.FritzMonitorEnabled = ckbFritzMonitorEnabled.Checked;
         _settings.FritzContactsFirst = ckbMonitorContactsFirst.Checked;
@@ -134,9 +137,10 @@ public partial class FrmProgSettings : Form
         }
 
         // Farbschema
-        if (rbtnDark.Checked) { _settings.ColorScheme = "dark"; }
-        else if (rbtnPale.Checked) { _settings.ColorScheme = "pale"; }
-        else { _settings.ColorScheme = "blue"; }
+        if (rbtnDark.Checked)       { _settings.ColorScheme = "dark"; }
+        else if (rbtnPale.Checked)  { _settings.ColorScheme = "pale"; }
+        else if (rbtnGrey.Checked)  { _settings.ColorScheme = "grey"; }
+        else                        { _settings.ColorScheme = "blue"; }
 
         _settings.AppFontName = cbxFontName.SelectedItem?.ToString() ?? "Segoe UI";
         _settings.AppFontSize = (float)nudFontSize.Value;
@@ -454,7 +458,7 @@ public partial class FrmProgSettings : Form
         {
             if (ckbAutostart.Checked)
             {
-                Utils.SetAutoStart(Application.ProductName, Application.ExecutablePath, ckbMin2Tray.Checked ? "-min2Tray" : "");
+                Utils.SetAutoStart(Application.ProductName, Application.ExecutablePath, ckbMin2Tray.Checked ? "-min" : "");
                 ckbMin2Tray.Enabled = true;
             }
             else
@@ -469,7 +473,7 @@ public partial class FrmProgSettings : Form
     {
         if (ckbMin2Tray.Focused)
         {
-            if (ckbMin2Tray.Checked && ckbAutostart.Checked) { Utils.SetAutoStart(Application.ProductName, Application.ExecutablePath, "-min2Tray"); }
+            if (ckbMin2Tray.Checked && ckbAutostart.Checked) { Utils.SetAutoStart(Application.ProductName, Application.ExecutablePath, "-min"); }
             else if (ckbAutostart.Checked) { Utils.SetAutoStart(Application.ProductName, Application.ExecutablePath, ""); }  // Autostart bleibt aktiv, aber ohne Parameter
         }
     }

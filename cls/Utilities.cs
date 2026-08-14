@@ -105,7 +105,7 @@ internal static partial class Utils
         var value = key.GetValue(appName) as string;
         if (string.IsNullOrEmpty(value)) { return (false, false); }
         var isEnabled = value.StartsWith(assemblyLocation, StringComparison.OrdinalIgnoreCase);
-        var hasMin2Tray = isEnabled && value.Contains("-min2Tray", StringComparison.OrdinalIgnoreCase);
+        var hasMin2Tray = isEnabled && value.Contains("-min", StringComparison.OrdinalIgnoreCase);
         return (isEnabled, hasMin2Tray);
     }
 
@@ -743,99 +743,63 @@ internal static partial class Utils
         else { SystemSounds.Asterisk.Play(); }  // Windows-Systemton, immer verfügbar
     }
 
-    internal static (bool askBefore, bool deleteNow) AskBeforeDeleteContact(nint handle, IContactEntity contact, bool askBeforeDelete, bool showVerification = true)
+    internal static (bool askBefore, bool deleteNow) AskBeforeDelete(nint hwnd, string displayName, string additionalInfo, bool askBeforeDelete, bool showVerification = true)
     {
         var deleteNow = false;
         try
         {
-            var details = contact.DisplayName;  // Wir holen die Daten direkt vom Objekt, nicht aus den Grid-Zellen. Das ist viel schneller und weniger fehleranfällig
-            var zusatzInfo = "";
-            if (contact is Contact c) { zusatzInfo = $"\n{c.Unternehmen}\n{c.Strasse}\n{c.PLZ} {c.Ort}"; }
-            else if (contact is Adresse a) { zusatzInfo = $"\n{a.Unternehmen}\n{a.Strasse}\n{a.PLZ} {a.Ort}"; }
-            using var customIcon = Properties.Resources.question32;         // Beide Instanzen sauber kapseln,
-            using var questionDialogIcon = new TaskDialogIcon(customIcon);  // damit keine GDI-Leaks entstehen
+            using var customIcon = Properties.Resources.question32;
+            using var questionDialogIcon = new TaskDialogIcon(customIcon);
+            var deleteButton = new TaskDialogButton("&Löschen");
+            var keepButton = new TaskDialogButton("&Behalten");
             var page = new TaskDialogPage()
             {
                 Heading = "Möchtest du den Datensatz löschen?",
-                Text = (details + zusatzInfo).Trim(),
+                Text = $"{displayName}\n{additionalInfo}".Trim(),
                 Caption = Application.ProductName,
                 Icon = questionDialogIcon,
                 AllowCancel = true,
                 SizeToContent = true,
                 Verification = showVerification ? new TaskDialogVerificationCheckBox() { Text = "Immer fragen" } : null,
-                Buttons = { TaskDialogButton.Yes, TaskDialogButton.No },
+                Buttons = { deleteButton, keepButton },
             };
-            if (page.Verification is TaskDialogVerificationCheckBox check) { check.Checked = askBeforeDelete; }
-            var resultButton = TaskDialog.ShowDialog(handle, page);
-
-            // Logik für die Checkbox
-            if (page.Verification is TaskDialogVerificationCheckBox finalCheck)
+            if (page.Verification is TaskDialogVerificationCheckBox check)
             {
-                if (askBeforeDelete && !finalCheck.Checked)
+                check.Checked = askBeforeDelete;
+                // Rückmeldung sofort beim Deaktivieren der CheckBox – nicht erst nach Dialogbestätigung.
+                check.CheckedChanged += (s, e) =>
                 {
-                    MsgTaskDlg(page.BoundDialog?.Handle ?? 0, "Hinweis", "Du kannst die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.", new(Properties.Resources.info32));
-                    askBeforeDelete = false;
-                }
-                else if (finalCheck.Checked) { askBeforeDelete = true; }
+                    if (!check.Checked)
+                    {
+                        MsgTaskDlg(page.BoundDialog?.Handle ?? hwnd, "Hinweis",
+                            "Du kannst die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.",
+                            new(Properties.Resources.info32));
+                    }
+                };
             }
-            if (resultButton == TaskDialogButton.Yes) { deleteNow = true; }
-        }
-        catch (Exception ex) { ErrTaskDlg(handle, ex); }
-        return (askBeforeDelete, deleteNow);
-    }
-
-    internal static (bool askBefore, bool deleteNow) AskBeforeDeleteAddress(nint hwnd, Adresse adresse, bool askBeforeDelete, bool showVerification = true)
-    {
-        var deleteNow = false;
-        try
-        {
-            var vorname = adresse.Vorname ?? string.Empty;
-            var nachname = adresse.Nachname ?? string.Empty;
-            var unternehmen = adresse.Unternehmen ?? string.Empty;
-            var strasse = adresse.Strasse ?? string.Empty;
-            var plz = adresse.PLZ ?? string.Empty;
-            var ort = adresse.Ort ?? string.Empty;
-            using var customIcon = Properties.Resources.question32;         // Beide Instanzen sauber kapseln,
-            using var questionDialogIcon = new TaskDialogIcon(customIcon);  // damit keine GDI-Leaks entstehen
-
-            var page = new TaskDialogPage()
-            {
-                Heading = "Möchtest du den Datensatz löschen?",
-                Text = $"{vorname} {nachname}\n{unternehmen}\n{strasse}\n{plz} {ort}".Trim(),
-                Caption = Application.ProductName,
-                Icon = questionDialogIcon,
-                AllowCancel = true,
-                SizeToContent = true,
-                Verification = showVerification ? new TaskDialogVerificationCheckBox() { Text = "Immer fragen" } : null, // Korrigiert: null statt ""
-                Buttons = { TaskDialogButton.Yes, TaskDialogButton.No },
-            };
-
-            // Korrigiert: Sicherer Null-Check für die Zuweisung
-            if (page.Verification is TaskDialogVerificationCheckBox check) { check.Checked = askBeforeDelete; }
             var resultButton = TaskDialog.ShowDialog(hwnd, page);
-
-            // Korrigiert: Sicheres Auslesen des Ergebnisses
             if (page.Verification is TaskDialogVerificationCheckBox finalCheck)
             {
-                if (askBeforeDelete && !finalCheck.Checked)
-                {
-                    MsgTaskDlg(hwnd, "Hinweis", "Du kannst die Sicherheitsabfrage in\nden Einstellungen wieder einschalten.", new(Properties.Resources.info32));
-                    askBeforeDelete = false;
-                }
+                if (askBeforeDelete && !finalCheck.Checked) { askBeforeDelete = false; }
                 else if (finalCheck.Checked) { askBeforeDelete = true; }
             }
-            if (resultButton == TaskDialogButton.Yes) { deleteNow = true; }
+            if (resultButton == deleteButton) { deleteNow = true; }
         }
         catch (Exception ex) { ErrTaskDlg(hwnd, ex); }
         return (askBeforeDelete, deleteNow);
     }
 
+    internal static (bool, bool) AskBeforeDeleteAddress(nint hwnd, Adresse a, bool ask, bool showVerification = true)
+        => AskBeforeDelete(hwnd, a.DisplayName, $"{a.Unternehmen}\n{a.Strasse}\n{a.PLZ} {a.Ort}".Trim(), ask, showVerification);
+
+    internal static (bool, bool) AskBeforeDeleteContact(nint handle, IContactEntity c, bool ask, bool showVerification = true)
+        => AskBeforeDelete(handle, c.DisplayName,
+            c is Contact co ? $"{co.Unternehmen}\n{co.Strasse}\n{co.PLZ} {co.Ort}".Trim() : string.Empty,
+            ask, showVerification);
+
     internal static bool TryParseInput(string? text, out DateTime date) => DateTime.TryParseExact(text?.Trim(), ["d.M.yy", "dd.MM.yyyy", "d.M.yyyy", "dd.MM.yy"], CultureInfo.GetCultureInfo("de-DE"), DateTimeStyles.None, out date);
 
-    internal struct DateDiff
-    {
-        public int years, months, days;
-    }
+    internal readonly record struct DateDiff(int Years, int Months, int Days);
 
     internal static DateDiff CalcDateDiff(DateTime d1, DateTime d2)
     {// toDate muss immer vor fromDate liegen (toDate < fromDate), ansonsten liefert die Funktion falsche Werte!
@@ -854,9 +818,7 @@ internal static partial class Utils
         dt = dt.AddMonths(months);
         if (months == 1) { dt = dt.AddMonths(-1); months = 0; } // 30.8.20 neu eingefügt
         days = (d2 - dt).Days;
-        DateDiff ddf;
-        ddf.years = years; ddf.months = months; ddf.days = days;
-        return ddf;
+        return new DateDiff(years, months, days);
     }
 
     internal static bool IsInnoSetupValid(string appPath)
@@ -1059,6 +1021,16 @@ internal static partial class Utils
         Cursor.Position = screenCenter;
     }
 
+    // Holt eine bereits geöffnete LibreOffice-(Writer-)Instanz in den Vordergrund, ohne sie neu zu starten.
+    // Liefert true, wenn ein Fenster gefunden und aktiviert wurde.
+    internal static bool TryFocusOpenWriter()
+    {
+        var writerDoc = NativeMethods.GetLastVisibleHandleByTitleEnd("– LibreOffice Writer");
+        if (writerDoc == IntPtr.Zero) { writerDoc = NativeMethods.GetLastVisibleHandleByTitleEnd("LibreOffice"); }
+        if (writerDoc != IntPtr.Zero) { NativeMethods.SetForegroundWindow(writerDoc); return true; }
+        return false;
+    }
+
     internal static Bitmap CreateIconFromText(string text, Font font, Color textColor, Size imageSize)
     {
         var bitmap = new Bitmap(imageSize.Width, imageSize.Height);
@@ -1077,4 +1049,12 @@ internal static partial class Utils
         return bitmap;
     }
 
+}
+
+/// <summary>Hilfs-Extensions für String-Konvertierungen.</summary>
+internal static class StringExtensions
+{
+    /// <summary>Gibt null zurück, wenn der String leer oder nur Whitespace enthält, sonst den getrimmten Wert.</summary>
+    internal static string? AsNullIfEmpty(this string s) =>
+        string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 }

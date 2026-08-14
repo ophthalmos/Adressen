@@ -92,7 +92,6 @@
     <PreBuildEvent>powershell -Command "if (Get-Process -Name '$(AssemblyName)' -ErrorAction SilentlyContinue) { Stop-Process -Name '$(AssemblyName)' -Force }"</PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>xcopy "$(TargetDir)*.exe" "E:\OneDrive\Code\CSharp\Adressen\bin\x64\Release\net8.0-windows7.0\LibreHelper\" /y
-xcopy "$(ProjectDir)$(TargetName).cs" "E:\OneDrive\Code\CSharp\Adressen\$(TargetName).cs.txt" /y</PostBuildEvent>
+    <PostBuildEvent>xcopy "$(TargetDir)*.exe" "E:\Code\CSharp\Adressen11\bin\x64\Release\net10.0-windows10.0.19041.0\LibreHelper\" /y</PostBuildEvent>
   </PropertyGroup>
 </Project>

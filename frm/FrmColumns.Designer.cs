@@ -37,7 +37,7 @@ partial class FrmColumns
         var listViewItem7 = new ListViewItem("Suffix");
         var listViewItem8 = new ListViewItem("Unternehmen");
         var listViewItem9 = new ListViewItem("Position");
-        var listViewItem10 = new ListViewItem("Straße");
+        var listViewItem10 = new ListViewItem("Adresse");
         var listViewItem11 = new ListViewItem("PLZ");
         var listViewItem12 = new ListViewItem("Ort");
         var listViewItem13 = new ListViewItem("Postfach");

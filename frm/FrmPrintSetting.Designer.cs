@@ -639,9 +639,9 @@ partial class FrmPrintSetting
         recipientPage.Controls.Add(ckbAnredeOberhalb);
         recipientPage.Controls.Add(ckbAnredePrint);
         recipientPage.Controls.Add(ckbLandPrint);
-        recipientPage.Location = new Point(4, 24);
+        recipientPage.Location = new Point(4, 26);
         recipientPage.Name = "recipientPage";
-        recipientPage.Size = new Size(316, 173);
+        recipientPage.Size = new Size(316, 171);
         recipientPage.TabIndex = 4;
         recipientPage.Text = "Empfänger";
         recipientPage.UseVisualStyleBackColor = true;
@@ -852,9 +852,9 @@ partial class FrmPrintSetting
         tuningPage.Controls.Add(lblRecipOffsetX);
         tuningPage.Controls.Add(lblAddressOffset);
         tuningPage.Controls.Add(nudRecipOffsetX);
-        tuningPage.Location = new Point(4, 26);
+        tuningPage.Location = new Point(4, 24);
         tuningPage.Name = "tuningPage";
-        tuningPage.Size = new Size(316, 171);
+        tuningPage.Size = new Size(316, 173);
         tuningPage.TabIndex = 2;
         tuningPage.Text = "Tuning";
         // 

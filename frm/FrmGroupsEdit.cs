@@ -5,7 +5,8 @@ namespace Adressen.frm;
 
 public partial class FrmGroupsEdit : Form
 {
-    public Dictionary<string, string> groupNameMap = [];
+    //public Dictionary<string, string> groupNameMap = [];
+    public Dictionary<string, string> GroupNameMap { get; } = [];
     private record GroupItemData(string Name, int Count);
 
     public FrmGroupsEdit(Dictionary<string, int> groupDict)
@@ -13,7 +14,7 @@ public partial class FrmGroupsEdit : Form
         InitializeComponent();
         listBox.ItemHeight = listBox.Font.Height + 4;
         var sortedGroups = groupDict.OrderByDescending(kvp => kvp.Key == "★").ThenByDescending(kvp => kvp.Value).ToList();
-        groupNameMap = sortedGroups.ToDictionary(kvp => kvp.Key, kvp => kvp.Key);
+        GroupNameMap = sortedGroups.ToDictionary(kvp => kvp.Key, kvp => kvp.Key);
         foreach (var kvp in sortedGroups) { listBox.Items.Add(new GroupItemData(kvp.Key, kvp.Value)); } // Daten direkt als Objekte hinzufügen
         UpdateStatusCount();
     }
@@ -23,7 +24,7 @@ public partial class FrmGroupsEdit : Form
         if (listBox.SelectedItem is GroupItemData selectedData)
         {
             if (selectedData.Name == "★") { return; }
-            groupNameMap[selectedData.Name] = string.Empty;
+            GroupNameMap[selectedData.Name] = string.Empty;
             listBox.Items.Remove(selectedData); // Einfach das Objekt entfernen
             UpdateStatusCount();
             btnClose.Enabled = true;
@@ -42,7 +43,7 @@ public partial class FrmGroupsEdit : Form
                 var newName = frm.GetText();
                 if (!string.IsNullOrEmpty(newName))
                 {
-                    groupNameMap[oldData.Name] = newName; // 1. Dictionary aktualisieren
+                    GroupNameMap[oldData.Name] = newName; // 1. Dictionary aktualisieren
                     var index = listBox.SelectedIndex; // 2. Element in der ListBox austauschen
                     listBox.Items[index] = new GroupItemData(newName, oldData.Count);
                     UpdateStatusCount();

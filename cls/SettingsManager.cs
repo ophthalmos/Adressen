@@ -9,6 +9,8 @@ public class AppSettings
     public const int DatabaseSchemaVersion = 5; // v5: zuletzt "LastModified" hinzugefügt
     public const int MaxRecentFiles = 10;   // Wird für JSON-Speicherung nicht verwendet, da es sich um eine Konstante handelt      
     public const char TextBoxPaddingChar = ' '; // schmales Leerzeichen // '\u200B'; ' '; kein JsonIgnore erforderlich
+    public const int PictBoxWidth = 150; // Breite des Bildes in FrmAdressen (keine JSON-Speicherung weil Konstante)
+    public const int GooglePhotoWidth = 250; // Breite, auf die Fotos für Google-Kontakte gebracht werden (Schwelle UND Zielbreite)
 
     [JsonIgnore]
     public static readonly int[] DefaultColumnWidths =
@@ -115,7 +117,7 @@ public class AppSettings
     public bool AddZipBackup { get; set; } = false;
     public bool WatchFolder { get; set; } = false;
     public bool BackupSuccess { get; set; } = true;
-    public decimal SuccessDuration { get; set; } = 2500;
+    public int SuccessDuration { get; set; } = 2500;
     public string BackupDirectory { get; set; } = string.Empty;
     public string AddZipDirectory { get; set; } = string.Empty;
     public string DocumentFolder { get; set; } = string.Empty;
@@ -130,11 +132,11 @@ public class AppSettings
     public bool BirthdayRemindDaily { get; set; } = true;
 
     public int CopyPatternIndex { get; set; } = 0;
-    public string[] CopyPattern1 { get; set; } = ["[Praefix_Vorname_Nachname], [Ort]"];
-    public string[] CopyPattern2 { get; set; } = ["[Anrede]", "[Praefix_Vorname_Zwischenname_Nachname]", "[Strasse]", "[PLZ_Ort]"];
-    public string[] CopyPattern3 { get; set; } = ["Tel. 1:\t[Telefon1]", "Tel. 2.:\t[Telefon2]", "Mobil:\t[Mobil]", "Fax:\t[Fax]"];
-    public string[] CopyPattern4 { get; set; } = ["[Mail1]", "[Mail2]", "[Internet]"]; 
-    public string[] CopyPattern5 { get; set; } = [];
+    public string[] CopyPattern1 { get; set; } = ["[NAMEN], [Ort]"];
+    public string[] CopyPattern2 { get; set; } = ["[EMPFAENGER]"];
+    public string[] CopyPattern3 { get; set; } = ["[ANSCHRIFT]"];
+    public string[] CopyPattern4 { get; set; } = ["Tel. 1:\t[Telefon1]", "Tel. 2.:\t[Telefon2]", "Mobil:\t[Mobil]", "Fax:\t[Fax]"]; 
+    public string[] CopyPattern5 { get; set; } = ["[Mail1]", "[Mail2]", "[Internet]"];
     public string[] CopyPattern6 { get; set; } = [];
 
     public int SplitterPosition { get; set; } = 500;
@@ -150,6 +152,8 @@ public class AppSettings
 
     public List<string> RecentFiles { get; set; } = [];
     public bool? WordProcessorProgram { get; set; } = null;
+    public string MailMergeTemplatePath { get; set; } = string.Empty; // zuletzt gewählte Serienbrief-Vorlage
+    public bool ShowWordMailMergeHint { get; set; } = true; // Hinweis-Dialog vor dem Word-Seriendruck anzeigen
 
     public string AppFontName { get; set; } = "Segoe UI";
     public float AppFontSize { get; set; } = 10f;
@@ -176,13 +180,6 @@ public class AppSettings
         var json = JsonSerializer.Serialize(this);
         return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
     }
-
-    // Stellt sicher, dass keine leeren Arrays existieren (wichtig nach dem Laden)
-    //public void ValidateAndCorrect()
-    //{
-    //    if (ColumnWidths == null || ColumnWidths.Length == 0) { ColumnWidths = (int[])DefaultColumnWidths.Clone(); }
-    //    if (HideColumnArr == null || HideColumnArr.Length == 0) { HideColumnArr = (bool[])DefaultHideColumns.Clone(); }
-    //}
 
     public void ValidateAndCorrect()
     {

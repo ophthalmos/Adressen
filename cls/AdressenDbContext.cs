@@ -8,9 +8,7 @@ internal class AdressenDbContext(string dbPath) : DbContext
     public DbSet<Gruppe> Gruppen { get; set; } = null!;
     public DbSet<Dokument> Dokumente { get; set; } = null!;
 
-    private readonly string _dbPath = dbPath;
-
-    protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlite($"Data Source={_dbPath}");
+    protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlite($"Data Source={dbPath}");
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) => configurationBuilder.Properties<string>().UseCollation("NOCASE"); // Setzt 'NOCASE' global für alle string-Eigenschaften im gesamten Modell
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -96,6 +94,10 @@ internal class AdressenDbContext(string dbPath) : DbContext
                 if (addr != null) { changedAddresses.Add(addr); }
             }
         }
-        foreach (var adresse in changedAddresses) { adresse.LastModified = DateTime.UtcNow; }
+        foreach (var adresse in changedAddresses)
+        {
+            adresse.LastModified = DateTime.UtcNow;
+            adresse.TrimStrings();
+        }
     }
 }

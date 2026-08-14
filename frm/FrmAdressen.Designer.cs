@@ -46,9 +46,10 @@ partial class FrmAdressen
         googleToolStripMenuItem = new ToolStripMenuItem();
         importToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator8 = new ToolStripSeparator();
+        serienbriefToolStripMenuItem = new ToolStripMenuItem();
+        printToolStripMenuItem = new ToolStripMenuItem();
         saveSelectionToolStripMenuItem = new ToolStripMenuItem();
         exportToolStripMenuItem = new ToolStripMenuItem();
-        printToolStripMenuItem = new ToolStripMenuItem();
         googlebackupToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator6 = new ToolStripSeparator();
         exitToolStripMenuItem = new ToolStripMenuItem();
@@ -59,6 +60,7 @@ partial class FrmAdressen
         duplicateToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator7 = new ToolStripSeparator();
         deleteToolStripMenuItem = new ToolStripMenuItem();
+        hideToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator13 = new ToolStripSeparator();
         copyToOtherDGVTSMenuItem = new ToolStripMenuItem();
         toolStripSeparator16 = new ToolStripSeparator();
@@ -137,6 +139,7 @@ partial class FrmAdressen
         updateCheckToolStripMenuItem = new ToolStripMenuItem();
         websiteToolStripMenuItem = new ToolStripMenuItem();
         githubToolStripMenuItem = new ToolStripMenuItem();
+        pWAToolStripMenuItem = new ToolStripMenuItem();
         toolStripSeparator5 = new ToolStripSeparator();
         aboutToolStripMenuItem = new ToolStripMenuItem();
         filterRemoveToolStripMenuItem = new ToolStripMenuItem();
@@ -148,6 +151,7 @@ partial class FrmAdressen
         toolStripSeparator2 = new ToolStripSeparator();
         searchTSTextBox = new ToolStripTextBox();
         tsClearLabel = new ToolStripLabel();
+        searchTSButton = new ToolStripButton();
         toolStripSeparator = new ToolStripSeparator();
         newTSButton = new ToolStripButton();
         copyTSButton = new ToolStripButton();
@@ -209,7 +213,7 @@ partial class FrmAdressen
         tbFirma = new PaddedTextBox();
         strasseLabel = new Label();
         plzortLabel = new Label();
-        tbStraße = new PaddedTextBox();
+        tbStrasse = new PaddedTextBox();
         cbPLZ = new PaddedTextBox();
         cbOrt = new PaddedTextBox();
         landLabel = new Label();
@@ -296,6 +300,7 @@ partial class FrmAdressen
         openTrayMenuItem = new ToolStripMenuItem();
         trayMenuSeparator = new ToolStripSeparator();
         exitTrayMenuItem = new ToolStripMenuItem();
+        detailTimer = new System.Windows.Forms.Timer(components);
         menuStrip.SuspendLayout();
         toolStrip.SuspendLayout();
         statusStrip.SuspendLayout();
@@ -345,7 +350,7 @@ partial class FrmAdressen
         // 
         // fileToolStripMenuItem
         // 
-        fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newDBToolStripMenuItem, toolStripSeparator10, openToolStripMenuItem, recentToolStripMenuItem, googleToolStripMenuItem, importToolStripMenuItem, toolStripSeparator8, saveSelectionToolStripMenuItem, exportToolStripMenuItem, printToolStripMenuItem, googlebackupToolStripMenuItem, toolStripSeparator6, exitToolStripMenuItem });
+        fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newDBToolStripMenuItem, toolStripSeparator10, openToolStripMenuItem, recentToolStripMenuItem, googleToolStripMenuItem, importToolStripMenuItem, toolStripSeparator8, serienbriefToolStripMenuItem, printToolStripMenuItem, saveSelectionToolStripMenuItem, exportToolStripMenuItem, googlebackupToolStripMenuItem, toolStripSeparator6, exitToolStripMenuItem });
         fileToolStripMenuItem.Name = "fileToolStripMenuItem";
         fileToolStripMenuItem.Size = new Size(46, 20);
         fileToolStripMenuItem.Text = "Datei";
@@ -355,92 +360,99 @@ partial class FrmAdressen
         // newDBToolStripMenuItem
         // 
         newDBToolStripMenuItem.Name = "newDBToolStripMenuItem";
-        newDBToolStripMenuItem.Size = new Size(229, 22);
+        newDBToolStripMenuItem.Size = new Size(233, 22);
         newDBToolStripMenuItem.Text = "&Neue Datenbank erstellen";
         newDBToolStripMenuItem.Click += NewDBToolStripMenuItem_Click;
         // 
         // toolStripSeparator10
         // 
         toolStripSeparator10.Name = "toolStripSeparator10";
-        toolStripSeparator10.Size = new Size(226, 6);
+        toolStripSeparator10.Size = new Size(230, 6);
         // 
         // openToolStripMenuItem
         // 
         openToolStripMenuItem.Name = "openToolStripMenuItem";
-        openToolStripMenuItem.Size = new Size(229, 22);
+        openToolStripMenuItem.Size = new Size(233, 22);
         openToolStripMenuItem.Text = "Lokale &Datenbank öffnen";
         openToolStripMenuItem.Click += OpenToolStripMenuItem_Click;
         // 
         // recentToolStripMenuItem
         // 
         recentToolStripMenuItem.Name = "recentToolStripMenuItem";
-        recentToolStripMenuItem.Size = new Size(229, 22);
+        recentToolStripMenuItem.Size = new Size(233, 22);
         recentToolStripMenuItem.Text = "Zu&letzt geöffnet…";
         recentToolStripMenuItem.DropDownOpening += RecentToolStripMenuItem_DropDownOpening;
         // 
         // googleToolStripMenuItem
         // 
         googleToolStripMenuItem.Name = "googleToolStripMenuItem";
-        googleToolStripMenuItem.Size = new Size(229, 22);
+        googleToolStripMenuItem.Size = new Size(233, 22);
         googleToolStripMenuItem.Text = "&Google-Kontakte laden";
         googleToolStripMenuItem.Click += GoogleToolStripMenuItem_ClickAsync;
         // 
         // importToolStripMenuItem
         // 
         importToolStripMenuItem.Name = "importToolStripMenuItem";
-        importToolStripMenuItem.Size = new Size(229, 22);
+        importToolStripMenuItem.Size = new Size(233, 22);
         importToolStripMenuItem.Text = "&CSV-Datei lokal importieren…";
         importToolStripMenuItem.Click += ImportToolStripMenuItem_Click;
         // 
         // toolStripSeparator8
         // 
         toolStripSeparator8.Name = "toolStripSeparator8";
-        toolStripSeparator8.Size = new Size(226, 6);
+        toolStripSeparator8.Size = new Size(230, 6);
+        // 
+        // serienbriefToolStripMenuItem
+        // 
+        serienbriefToolStripMenuItem.Name = "serienbriefToolStripMenuItem";
+        serienbriefToolStripMenuItem.Size = new Size(233, 22);
+        serienbriefToolStripMenuItem.Text = "&Serienbrief (Word/LibreOffice)";
+        serienbriefToolStripMenuItem.Click += SerienbriefToolStripMenuItem_Click;
+        // 
+        // printToolStripMenuItem
+        // 
+        printToolStripMenuItem.Name = "printToolStripMenuItem";
+        printToolStripMenuItem.Size = new Size(233, 22);
+        printToolStripMenuItem.Text = "&HTML-Export (Drucken/PDF)";
+        printToolStripMenuItem.Click += PrintToolStripMenuItem_Click;
         // 
         // saveSelectionToolStripMenuItem
         // 
         saveSelectionToolStripMenuItem.Name = "saveSelectionToolStripMenuItem";
-        saveSelectionToolStripMenuItem.Size = new Size(229, 22);
-        saveSelectionToolStripMenuItem.Text = "Auswahl lokal speichern…";
+        saveSelectionToolStripMenuItem.Size = new Size(233, 22);
+        saveSelectionToolStripMenuItem.Text = "&Auswahl lokal speichern…";
         saveSelectionToolStripMenuItem.Click += SaveSelectionToolStripMenuItem_Click;
         // 
         // exportToolStripMenuItem
         // 
         exportToolStripMenuItem.Name = "exportToolStripMenuItem";
-        exportToolStripMenuItem.Size = new Size(229, 22);
+        exportToolStripMenuItem.Size = new Size(233, 22);
         exportToolStripMenuItem.Text = "&Export der lokalen Adressen";
         exportToolStripMenuItem.Click += ExportToolStripMenuItem_Click;
-        // 
-        // printToolStripMenuItem
-        // 
-        printToolStripMenuItem.Name = "printToolStripMenuItem";
-        printToolStripMenuItem.Size = new Size(229, 22);
-        printToolStripMenuItem.Text = "HTML-Export (Drucken/PDF)";
-        printToolStripMenuItem.Click += PrintToolStripMenuItem_Click;
         // 
         // googlebackupToolStripMenuItem
         // 
         googlebackupToolStripMenuItem.Enabled = false;
         googlebackupToolStripMenuItem.Name = "googlebackupToolStripMenuItem";
-        googlebackupToolStripMenuItem.Size = new Size(229, 22);
-        googlebackupToolStripMenuItem.Text = "&Backup der Google-Kontakte";
+        googlebackupToolStripMenuItem.Size = new Size(233, 22);
+        googlebackupToolStripMenuItem.Text = "Backup der Google-&Kontakte";
         googlebackupToolStripMenuItem.Click += GooglebackupToolStripMenuItem_Click;
         // 
         // toolStripSeparator6
         // 
         toolStripSeparator6.Name = "toolStripSeparator6";
-        toolStripSeparator6.Size = new Size(226, 6);
+        toolStripSeparator6.Size = new Size(230, 6);
         // 
         // exitToolStripMenuItem
         // 
         exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-        exitToolStripMenuItem.Size = new Size(229, 22);
+        exitToolStripMenuItem.Size = new Size(233, 22);
         exitToolStripMenuItem.Text = "&Beenden";
         exitToolStripMenuItem.Click += ExitToolStripMenuItem_Click;
         // 
         // editToolStripMenuItem
         // 
-        editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { clipboardTSMenuItem, toolStripSeparator14, newToolStripMenuItem, duplicateToolStripMenuItem, toolStripSeparator7, deleteToolStripMenuItem, toolStripSeparator13, copyToOtherDGVTSMenuItem, toolStripSeparator16, globalSearchToolStripMenuItem, rejectChangesToolStripMenuItem, vcardTSSeparator, vcardImportToolStripMenuItem, vcardExportToolStripMenuItem, toolStripSeparator1, wordToolStripMenuItem, envelopeToolStripMenuItem, toolStripSeparator21, mailWriteToolStripMenuItem, printSingleToolStripMenuItem });
+        editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { clipboardTSMenuItem, toolStripSeparator14, newToolStripMenuItem, duplicateToolStripMenuItem, toolStripSeparator7, deleteToolStripMenuItem, hideToolStripMenuItem, toolStripSeparator13, copyToOtherDGVTSMenuItem, toolStripSeparator16, globalSearchToolStripMenuItem, rejectChangesToolStripMenuItem, vcardTSSeparator, vcardImportToolStripMenuItem, vcardExportToolStripMenuItem, toolStripSeparator1, wordToolStripMenuItem, envelopeToolStripMenuItem, toolStripSeparator21, mailWriteToolStripMenuItem, printSingleToolStripMenuItem });
         editToolStripMenuItem.Name = "editToolStripMenuItem";
         editToolStripMenuItem.Size = new Size(75, 20);
         editToolStripMenuItem.Text = "Bearbeiten";
@@ -492,6 +504,15 @@ partial class FrmAdressen
         deleteToolStripMenuItem.Text = "Adresse &löschen";
         deleteToolStripMenuItem.Click += DeleteToolStripMenuItem_Click;
         // 
+        // hideToolStripMenuItem
+        // 
+        hideToolStripMenuItem.Enabled = false;
+        hideToolStripMenuItem.Name = "hideToolStripMenuItem";
+        hideToolStripMenuItem.ShortcutKeyDisplayString = "Strg+−";
+        hideToolStripMenuItem.Size = new Size(282, 22);
+        hideToolStripMenuItem.Text = "Adresse ausblenden";
+        hideToolStripMenuItem.Click += HideToolStripMenuItem_Click;
+        // 
         // toolStripSeparator13
         // 
         toolStripSeparator13.Name = "toolStripSeparator13";
@@ -516,7 +537,7 @@ partial class FrmAdressen
         globalSearchToolStripMenuItem.Name = "globalSearchToolStripMenuItem";
         globalSearchToolStripMenuItem.ShortcutKeyDisplayString = "Shift+Strg+F";
         globalSearchToolStripMenuItem.Size = new Size(282, 22);
-        globalSearchToolStripMenuItem.Text = "Adresse suchen";
+        globalSearchToolStripMenuItem.Text = "Erweiterte &Suche…";
         globalSearchToolStripMenuItem.Click += GlobalSearchToolStripMenuItem_Click;
         // 
         // rejectChangesToolStripMenuItem
@@ -544,7 +565,7 @@ partial class FrmAdressen
         // 
         vcardExportToolStripMenuItem.Name = "vcardExportToolStripMenuItem";
         vcardExportToolStripMenuItem.Size = new Size(282, 22);
-        vcardExportToolStripMenuItem.Text = "Als vCard-Datei &speichern…";
+        vcardExportToolStripMenuItem.Text = "Als v&Card-Datei speichern…";
         vcardExportToolStripMenuItem.Click += VcardExportToolStripMenuItem_Click;
         // 
         // toolStripSeparator1
@@ -578,7 +599,7 @@ partial class FrmAdressen
         mailWriteToolStripMenuItem.Name = "mailWriteToolStripMenuItem";
         mailWriteToolStripMenuItem.ShortcutKeyDisplayString = "Strg+M";
         mailWriteToolStripMenuItem.Size = new Size(282, 22);
-        mailWriteToolStripMenuItem.Text = "E-Mail schreiben…";
+        mailWriteToolStripMenuItem.Text = "&E-Mail schreiben…";
         mailWriteToolStripMenuItem.Click += MailWriteToolStripMenuItem_Click;
         // 
         // printSingleToolStripMenuItem
@@ -586,7 +607,7 @@ partial class FrmAdressen
         printSingleToolStripMenuItem.Name = "printSingleToolStripMenuItem";
         printSingleToolStripMenuItem.ShortcutKeyDisplayString = "Strg+P";
         printSingleToolStripMenuItem.Size = new Size(282, 22);
-        printSingleToolStripMenuItem.Text = "Aktuelle Adresse drucken…";
+        printSingleToolStripMenuItem.Text = "&Aktuelle Adresse drucken…";
         printSingleToolStripMenuItem.Click += PrintSingleToolStripMenuItem_Click;
         // 
         // viewToolStripMenuItem
@@ -646,7 +667,7 @@ partial class FrmAdressen
         groupFilterToolStripMenuItem.Name = "groupFilterToolStripMenuItem";
         groupFilterToolStripMenuItem.ShortcutKeyDisplayString = "F9";
         groupFilterToolStripMenuItem.Size = new Size(251, 22);
-        groupFilterToolStripMenuItem.Text = "Nach Gruppenzugehörigkeit…";
+        groupFilterToolStripMenuItem.Text = "Nach &Gruppenzugehörigkeit…";
         groupFilterToolStripMenuItem.Click += GroupFilterToolStripMenuItem_Click;
         // 
         // manageGroupsToolStripMenuItem
@@ -655,7 +676,7 @@ partial class FrmAdressen
         manageGroupsToolStripMenuItem.Name = "manageGroupsToolStripMenuItem";
         manageGroupsToolStripMenuItem.ShortcutKeyDisplayString = "Strg+F9";
         manageGroupsToolStripMenuItem.Size = new Size(251, 22);
-        manageGroupsToolStripMenuItem.Text = "Gruppen bearbeiten…";
+        manageGroupsToolStripMenuItem.Text = "Gruppen &bearbeiten…";
         manageGroupsToolStripMenuItem.Click += ManageGroupsToolStripMenuItem_Click;
         // 
         // toolStripSeparator9
@@ -920,9 +941,9 @@ partial class FrmAdressen
         // optionsToolStripMenuItem
         // 
         optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
-        optionsToolStripMenuItem.ShortcutKeyDisplayString = "Strg+T";
+        optionsToolStripMenuItem.ShortcutKeyDisplayString = "Strg+E";
         optionsToolStripMenuItem.Size = new Size(263, 22);
-        optionsToolStripMenuItem.Text = "Eins&tellungen…";
+        optionsToolStripMenuItem.Text = "&Einstellungen…";
         optionsToolStripMenuItem.Click += OptionsToolStripMenuItem_Click;
         // 
         // toolStripSeparator3
@@ -947,7 +968,7 @@ partial class FrmAdressen
         // 
         // helpToolStripMenuItem
         // 
-        helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { helpdokuTSMenuItem, wordHelpToolStripMenuItem, toolStripSeparator12, termsofuseToolStripMenuItem, privacypolicyToolStripMenuItem, licenseTxtToolStripMenuItem, toolStripSeparator19, updateCheckToolStripMenuItem, websiteToolStripMenuItem, githubToolStripMenuItem, toolStripSeparator5, aboutToolStripMenuItem });
+        helpToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { helpdokuTSMenuItem, wordHelpToolStripMenuItem, toolStripSeparator12, termsofuseToolStripMenuItem, privacypolicyToolStripMenuItem, licenseTxtToolStripMenuItem, toolStripSeparator19, updateCheckToolStripMenuItem, websiteToolStripMenuItem, githubToolStripMenuItem, pWAToolStripMenuItem, toolStripSeparator5, aboutToolStripMenuItem });
         helpToolStripMenuItem.Name = "helpToolStripMenuItem";
         helpToolStripMenuItem.Size = new Size(44, 20);
         helpToolStripMenuItem.Text = "Hilfe";
@@ -959,7 +980,7 @@ partial class FrmAdressen
         helpdokuTSMenuItem.Name = "helpdokuTSMenuItem";
         helpdokuTSMenuItem.ShortcutKeyDisplayString = "F1";
         helpdokuTSMenuItem.Size = new Size(261, 22);
-        helpdokuTSMenuItem.Text = "Hilfe und Dokumentation";
+        helpdokuTSMenuItem.Text = "&Hilfe und Dokumentation";
         helpdokuTSMenuItem.Click += HelpdokuTSMenuItem_Click;
         // 
         // wordHelpToolStripMenuItem
@@ -967,7 +988,7 @@ partial class FrmAdressen
         wordHelpToolStripMenuItem.Name = "wordHelpToolStripMenuItem";
         wordHelpToolStripMenuItem.ShortcutKeyDisplayString = "F11";
         wordHelpToolStripMenuItem.Size = new Size(261, 22);
-        wordHelpToolStripMenuItem.Text = "&Hilfe zu Microsoft Word";
+        wordHelpToolStripMenuItem.Text = "Hilfe für die &Briefschreibung";
         wordHelpToolStripMenuItem.Click += WordHelpToolStripMenuItem_Click;
         // 
         // toolStripSeparator12
@@ -979,21 +1000,21 @@ partial class FrmAdressen
         // 
         termsofuseToolStripMenuItem.Name = "termsofuseToolStripMenuItem";
         termsofuseToolStripMenuItem.Size = new Size(261, 22);
-        termsofuseToolStripMenuItem.Text = "Nutzungsbedingungen";
+        termsofuseToolStripMenuItem.Text = "&Nutzungsbedingungen";
         termsofuseToolStripMenuItem.Click += TermsofuseToolStripMenuItem_Click;
         // 
         // privacypolicyToolStripMenuItem
         // 
         privacypolicyToolStripMenuItem.Name = "privacypolicyToolStripMenuItem";
         privacypolicyToolStripMenuItem.Size = new Size(261, 22);
-        privacypolicyToolStripMenuItem.Text = "Datenschutzbestimmungen";
+        privacypolicyToolStripMenuItem.Text = "&Datenschutzbestimmungen";
         privacypolicyToolStripMenuItem.Click += PrivacypolicyToolStripMenuItem_Click;
         // 
         // licenseTxtToolStripMenuItem
         // 
         licenseTxtToolStripMenuItem.Name = "licenseTxtToolStripMenuItem";
         licenseTxtToolStripMenuItem.Size = new Size(261, 22);
-        licenseTxtToolStripMenuItem.Text = "Lizenzvereinbarung";
+        licenseTxtToolStripMenuItem.Text = "&Lizenzvereinbarung";
         licenseTxtToolStripMenuItem.Click += LicenseTxtToolStripMenuItem_Click;
         // 
         // toolStripSeparator19
@@ -1012,15 +1033,22 @@ partial class FrmAdressen
         // 
         websiteToolStripMenuItem.Name = "websiteToolStripMenuItem";
         websiteToolStripMenuItem.Size = new Size(261, 22);
-        websiteToolStripMenuItem.Text = "Projekthomepage";
+        websiteToolStripMenuItem.Text = "&Projekthomepage";
         websiteToolStripMenuItem.Click += WebsiteToolStripMenuItem_Click;
         // 
         // githubToolStripMenuItem
         // 
         githubToolStripMenuItem.Name = "githubToolStripMenuItem";
         githubToolStripMenuItem.Size = new Size(261, 22);
-        githubToolStripMenuItem.Text = "Sourcecode bei GitHub";
+        githubToolStripMenuItem.Text = "Sourcecode bei &GitHub";
         githubToolStripMenuItem.Click += GithubToolStripMenuItem_Click;
+        // 
+        // pWAToolStripMenuItem
+        // 
+        pWAToolStripMenuItem.Name = "pWAToolStripMenuItem";
+        pWAToolStripMenuItem.Size = new Size(261, 22);
+        pWAToolStripMenuItem.Text = " &Mobilapp für lokale Adressen";
+        pWAToolStripMenuItem.Click += PWAToolStripMenuItem_Click;
         // 
         // toolStripSeparator5
         // 
@@ -1041,9 +1069,10 @@ partial class FrmAdressen
         filterRemoveToolStripMenuItem.BackColor = Color.IndianRed;
         filterRemoveToolStripMenuItem.ForeColor = Color.White;
         filterRemoveToolStripMenuItem.Name = "filterRemoveToolStripMenuItem";
-        filterRemoveToolStripMenuItem.ShortcutKeyDisplayString = "F9";
-        filterRemoveToolStripMenuItem.Size = new Size(139, 20);
-        filterRemoveToolStripMenuItem.Text = "Filter zurücksetzen (F9)";
+        filterRemoveToolStripMenuItem.ShortcutKeyDisplayString = "F10";
+        filterRemoveToolStripMenuItem.Size = new Size(145, 20);
+        filterRemoveToolStripMenuItem.Text = "Filter zurücksetzen (F10)";
+        filterRemoveToolStripMenuItem.ToolTipText = "F10 oder Strg++";
         filterRemoveToolStripMenuItem.Visible = false;
         filterRemoveToolStripMenuItem.Click += FilterRemoveToolStripMenuItem_Click;
         // 
@@ -1051,12 +1080,13 @@ partial class FrmAdressen
         // 
         toolStrip.GripStyle = ToolStripGripStyle.Hidden;
         toolStrip.ImageScalingSize = new Size(24, 24);
-        toolStrip.Items.AddRange(new ToolStripItem[] { openTSButton, googleTSButton, toolStripSeparator4, saveTSButton, toolStripSeparator2, searchTSTextBox, tsClearLabel, toolStripSeparator, newTSButton, copyTSButton, detailSeparator1, deleteTSButton, detailSeparator2, clipboardTSButton, wordTSButton, envelopeTSButton, dokuPlusTSButton, dokuSeparator1, dokuMinusTSButton, dokuSeparator2, dokuShowTSButton, min2TrayTSButton });
+        toolStrip.Items.AddRange(new ToolStripItem[] { openTSButton, googleTSButton, toolStripSeparator4, saveTSButton, toolStripSeparator2, searchTSTextBox, tsClearLabel, searchTSButton, toolStripSeparator, newTSButton, copyTSButton, detailSeparator1, deleteTSButton, detailSeparator2, clipboardTSButton, wordTSButton, envelopeTSButton, dokuPlusTSButton, dokuSeparator1, dokuMinusTSButton, dokuSeparator2, dokuShowTSButton, min2TrayTSButton });
         toolStrip.Location = new Point(0, 24);
         toolStrip.Name = "toolStrip";
         toolStrip.Size = new Size(1237, 25);
         toolStrip.TabIndex = 1;
         toolStrip.Paint += ToolStrip_Paint;
+        toolStrip.Resize += ToolStrip_Resize;
         // 
         // openTSButton
         // 
@@ -1116,6 +1146,17 @@ partial class FrmAdressen
         tsClearLabel.Text = "🗙";
         tsClearLabel.Click += TsClearLabel_Click;
         tsClearLabel.VisibleChanged += TsClearLabel_VisibleChanged;
+        // 
+        // searchTSButton
+        // 
+        searchTSButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
+        searchTSButton.ImageTransparentColor = Color.Magenta;
+        searchTSButton.Margin = new Padding(2, 1, 0, 2);
+        searchTSButton.Name = "searchTSButton";
+        searchTSButton.Size = new Size(23, 22);
+        searchTSButton.Text = "Suche";
+        searchTSButton.ToolTipText = "Erweiterte Suche (Shift+Strg+F)";
+        searchTSButton.Click += SearchTSButton_Click;
         // 
         // toolStripSeparator
         // 
@@ -1184,8 +1225,8 @@ partial class FrmAdressen
         // 
         envelopeTSButton.Enabled = false;
         envelopeTSButton.Name = "envelopeTSButton";
-        envelopeTSButton.Size = new Size(72, 22);
-        envelopeTSButton.Text = "Adressieren";
+        envelopeTSButton.Size = new Size(110, 22);
+        envelopeTSButton.Text = "Umschlag drucken";
         envelopeTSButton.ToolTipText = "Umschlag drucken (Strg+U)";
         envelopeTSButton.Click += EnvelopeTSButton_Click;
         // 
@@ -1314,6 +1355,7 @@ partial class FrmAdressen
         // 
         splitContainer.Panel1.BackColor = SystemColors.ControlDark;
         splitContainer.Panel1.Controls.Add(tabControl);
+        splitContainer.Panel1MinSize = 410;
         // 
         // splitContainer.Panel2
         // 
@@ -1487,7 +1529,8 @@ partial class FrmAdressen
         tabulation.ShowToolTips = true;
         tabulation.Size = new Size(574, 743);
         tabulation.SizeMode = TabSizeMode.Fixed;
-        tabulation.TabIndex = 24;
+        tabulation.TabIndex = 0;
+        tabulation.TabStop = false;
         tabulation.SelectedIndexChanged += Tabulation_SelectedIndexChanged;
         tabulation.Selecting += Tabulation_Selecting;
         // 
@@ -1533,8 +1576,8 @@ partial class FrmAdressen
         // 
         tableLayoutPanel.BackColor = SystemColors.ButtonFace;
         tableLayoutPanel.ColumnCount = 7;
-        tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 51F));
-        tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 50F));
+        tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 76F));
+        tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 75F));
         tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
         tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
         tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 18F));
@@ -1556,7 +1599,7 @@ partial class FrmAdressen
         tableLayoutPanel.Controls.Add(tbFirma, 2, 3);
         tableLayoutPanel.Controls.Add(strasseLabel, 0, 4);
         tableLayoutPanel.Controls.Add(plzortLabel, 0, 5);
-        tableLayoutPanel.Controls.Add(tbStraße, 2, 4);
+        tableLayoutPanel.Controls.Add(tbStrasse, 2, 4);
         tableLayoutPanel.Controls.Add(cbPLZ, 2, 5);
         tableLayoutPanel.Controls.Add(cbOrt, 3, 5);
         tableLayoutPanel.Controls.Add(landLabel, 0, 6);
@@ -1620,10 +1663,11 @@ partial class FrmAdressen
         tbPostfach.BorderStyle = BorderStyle.FixedSingle;
         tbPostfach.ContextMenuStrip = contextTextBox;
         tbPostfach.Dock = DockStyle.Fill;
-        tbPostfach.Location = new Point(104, 201);
+        tbPostfach.Location = new Point(154, 201);
         tbPostfach.Name = "tbPostfach";
-        tbPostfach.Size = new Size(106, 25);
+        tbPostfach.Size = new Size(93, 25);
         tbPostfach.TabIndex = 13;
+        tbPostfach.Tag = "Postfach";
         tbPostfach.TextChanged += TextBox_TextChanged;
         tbPostfach.Enter += TextBox_Enter;
         tbPostfach.KeyDown += TextBox_KeyDown;
@@ -1728,10 +1772,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(tbPosition, 3);
         tbPosition.ContextMenuStrip = contextTextBox;
         tbPosition.Dock = DockStyle.Fill;
-        tbPosition.Location = new Point(328, 105);
+        tbPosition.Location = new Point(352, 105);
         tbPosition.Name = "tbPosition";
-        tbPosition.Size = new Size(219, 25);
+        tbPosition.Size = new Size(195, 25);
         tbPosition.TabIndex = 9;
+        tbPosition.Tag = "Position";
         tbPosition.TextChanged += TextBox_TextChanged;
         tbPosition.Enter += TextBox_Enter;
         tbPosition.KeyDown += TextBox_KeyDown;
@@ -1742,10 +1787,11 @@ partial class FrmAdressen
         tbNickname.BorderStyle = BorderStyle.FixedSingle;
         tbNickname.ContextMenuStrip = contextTextBox;
         tbNickname.Dock = DockStyle.Fill;
-        tbNickname.Location = new Point(448, 41);
+        tbNickname.Location = new Point(458, 41);
         tbNickname.Name = "tbNickname";
-        tbNickname.Size = new Size(99, 25);
+        tbNickname.Size = new Size(89, 25);
         tbNickname.TabIndex = 5;
+        tbNickname.Tag = "Nickname";
         tbNickname.TextChanged += TextBox_TextChanged;
         tbNickname.Enter += TextBox_Enter;
         tbNickname.KeyDown += TextBox_KeyDown;
@@ -1757,10 +1803,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(tbZwischenname, 2);
         tbZwischenname.ContextMenuStrip = contextTextBox;
         tbZwischenname.Dock = DockStyle.Fill;
-        tbZwischenname.Location = new Point(328, 41);
+        tbZwischenname.Location = new Point(352, 41);
         tbZwischenname.Name = "tbZwischenname";
-        tbZwischenname.Size = new Size(114, 25);
+        tbZwischenname.Size = new Size(100, 25);
         tbZwischenname.TabIndex = 4;
+        tbZwischenname.Tag = "Zwischenname";
         tbZwischenname.TextChanged += TextBox_TextChanged;
         tbZwischenname.Enter += TextBox_Enter;
         tbZwischenname.KeyDown += TextBox_KeyDown;
@@ -1773,9 +1820,9 @@ partial class FrmAdressen
         anredetitelLabel.Location = new Point(3, 6);
         anredetitelLabel.Name = "anredetitelLabel";
         anredetitelLabel.Padding = new Padding(0, 0, 0, 3);
-        anredetitelLabel.Size = new Size(95, 32);
+        anredetitelLabel.Size = new Size(145, 32);
         anredetitelLabel.TabIndex = 0;
-        anredetitelLabel.Text = "Anrede/Titel";
+        anredetitelLabel.Text = "Anrede / Titel";
         anredetitelLabel.TextAlign = ContentAlignment.MiddleRight;
         // 
         // cbAnrede
@@ -1786,10 +1833,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(cbAnrede, 2);
         cbAnrede.ContextMenuStrip = contextTextBox;
         cbAnrede.Dock = DockStyle.Fill;
-        cbAnrede.Location = new Point(104, 9);
+        cbAnrede.Location = new Point(154, 9);
         cbAnrede.Name = "cbAnrede";
-        cbAnrede.Size = new Size(218, 25);
+        cbAnrede.Size = new Size(192, 25);
         cbAnrede.TabIndex = 1;
+        cbAnrede.Tag = "Anrede";
         cbAnrede.TextChanged += TextBox_TextChanged;
         cbAnrede.Enter += TextBox_Enter;
         cbAnrede.KeyDown += TextBox_KeyDown;
@@ -1803,10 +1851,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(cbPraefix, 3);
         cbPraefix.ContextMenuStrip = contextTextBox;
         cbPraefix.Dock = DockStyle.Fill;
-        cbPraefix.Location = new Point(328, 9);
+        cbPraefix.Location = new Point(352, 9);
         cbPraefix.Name = "cbPraefix";
-        cbPraefix.Size = new Size(219, 25);
+        cbPraefix.Size = new Size(195, 25);
         cbPraefix.TabIndex = 2;
+        cbPraefix.Tag = "Titel";
         cbPraefix.TextChanged += TextBox_TextChanged;
         cbPraefix.Enter += TextBox_Enter;
         cbPraefix.KeyDown += TextBox_KeyDown;
@@ -1819,7 +1868,7 @@ partial class FrmAdressen
         vornameLabel.Location = new Point(3, 38);
         vornameLabel.Name = "vornameLabel";
         vornameLabel.Padding = new Padding(0, 0, 0, 3);
-        vornameLabel.Size = new Size(95, 32);
+        vornameLabel.Size = new Size(145, 32);
         vornameLabel.TabIndex = 2;
         vornameLabel.Text = "Vorname:";
         vornameLabel.TextAlign = ContentAlignment.MiddleRight;
@@ -1830,10 +1879,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(tbVorname, 2);
         tbVorname.ContextMenuStrip = contextTextBox;
         tbVorname.Dock = DockStyle.Fill;
-        tbVorname.Location = new Point(104, 41);
+        tbVorname.Location = new Point(154, 41);
         tbVorname.Name = "tbVorname";
-        tbVorname.Size = new Size(218, 25);
+        tbVorname.Size = new Size(192, 25);
         tbVorname.TabIndex = 3;
+        tbVorname.Tag = "Vorname";
         tbVorname.TextChanged += TextBox_TextChanged;
         tbVorname.Enter += TextBox_Enter;
         tbVorname.KeyDown += TextBox_KeyDown;
@@ -1846,7 +1896,7 @@ partial class FrmAdressen
         nachnameLabel.Location = new Point(3, 70);
         nachnameLabel.Name = "nachnameLabel";
         nachnameLabel.Padding = new Padding(0, 0, 0, 3);
-        nachnameLabel.Size = new Size(95, 32);
+        nachnameLabel.Size = new Size(145, 32);
         nachnameLabel.TabIndex = 4;
         nachnameLabel.Text = "Nachname:";
         nachnameLabel.TextAlign = ContentAlignment.MiddleRight;
@@ -1857,10 +1907,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(tbNachname, 3);
         tbNachname.ContextMenuStrip = contextTextBox;
         tbNachname.Dock = DockStyle.Fill;
-        tbNachname.Location = new Point(104, 73);
+        tbNachname.Location = new Point(154, 73);
         tbNachname.Name = "tbNachname";
-        tbNachname.Size = new Size(298, 25);
+        tbNachname.Size = new Size(263, 25);
         tbNachname.TabIndex = 6;
+        tbNachname.Tag = "Nachname";
         tbNachname.TextChanged += TextBox_TextChanged;
         tbNachname.Enter += TextBox_Enter;
         tbNachname.KeyDown += TextBox_KeyDown;
@@ -1872,10 +1923,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(tbSuffix, 2);
         tbSuffix.ContextMenuStrip = contextTextBox;
         tbSuffix.Dock = DockStyle.Fill;
-        tbSuffix.Location = new Point(408, 73);
+        tbSuffix.Location = new Point(423, 73);
         tbSuffix.Name = "tbSuffix";
-        tbSuffix.Size = new Size(139, 25);
+        tbSuffix.Size = new Size(124, 25);
         tbSuffix.TabIndex = 7;
+        tbSuffix.Tag = "Suffix";
         tbSuffix.TextChanged += TextBox_TextChanged;
         tbSuffix.Enter += TextBox_Enter;
         tbSuffix.KeyDown += TextBox_KeyDown;
@@ -1888,9 +1940,9 @@ partial class FrmAdressen
         firmaLabel.Location = new Point(3, 102);
         firmaLabel.Name = "firmaLabel";
         firmaLabel.Padding = new Padding(0, 0, 0, 3);
-        firmaLabel.Size = new Size(95, 32);
+        firmaLabel.Size = new Size(145, 32);
         firmaLabel.TabIndex = 6;
-        firmaLabel.Text = "Untern./Pos.:";
+        firmaLabel.Text = "Untern. / Position:";
         firmaLabel.TextAlign = ContentAlignment.MiddleRight;
         // 
         // tbFirma
@@ -1899,10 +1951,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(tbFirma, 2);
         tbFirma.ContextMenuStrip = contextTextBox;
         tbFirma.Dock = DockStyle.Fill;
-        tbFirma.Location = new Point(104, 105);
+        tbFirma.Location = new Point(154, 105);
         tbFirma.Name = "tbFirma";
-        tbFirma.Size = new Size(218, 25);
+        tbFirma.Size = new Size(192, 25);
         tbFirma.TabIndex = 8;
+        tbFirma.Tag = "Unternehmen";
         tbFirma.TextChanged += TextBox_TextChanged;
         tbFirma.Enter += TextBox_Enter;
         tbFirma.KeyDown += TextBox_KeyDown;
@@ -1915,9 +1968,9 @@ partial class FrmAdressen
         strasseLabel.Location = new Point(3, 134);
         strasseLabel.Name = "strasseLabel";
         strasseLabel.Padding = new Padding(0, 0, 0, 3);
-        strasseLabel.Size = new Size(95, 32);
+        strasseLabel.Size = new Size(145, 32);
         strasseLabel.TabIndex = 8;
-        strasseLabel.Text = "Straße, Nr.:";
+        strasseLabel.Text = "Adresse:";
         strasseLabel.TextAlign = ContentAlignment.MiddleRight;
         // 
         // plzortLabel
@@ -1927,27 +1980,28 @@ partial class FrmAdressen
         plzortLabel.Location = new Point(3, 166);
         plzortLabel.Name = "plzortLabel";
         plzortLabel.Padding = new Padding(0, 0, 0, 3);
-        plzortLabel.Size = new Size(95, 32);
+        plzortLabel.Size = new Size(145, 32);
         plzortLabel.TabIndex = 10;
-        plzortLabel.Text = "PLZ/Ort:";
+        plzortLabel.Text = "PLZ / Ort:";
         plzortLabel.TextAlign = ContentAlignment.MiddleRight;
         // 
-        // tbStraße
+        // tbStrasse
         // 
-        tbStraße.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
-        tbStraße.AutoCompleteSource = AutoCompleteSource.CustomSource;
-        tbStraße.BorderStyle = BorderStyle.FixedSingle;
-        tableLayoutPanel.SetColumnSpan(tbStraße, 5);
-        tbStraße.ContextMenuStrip = contextTextBox;
-        tbStraße.Dock = DockStyle.Fill;
-        tbStraße.Location = new Point(104, 137);
-        tbStraße.Name = "tbStraße";
-        tbStraße.Size = new Size(443, 25);
-        tbStraße.TabIndex = 10;
-        tbStraße.TextChanged += TextBox_TextChanged;
-        tbStraße.Enter += TextBox_Enter;
-        tbStraße.KeyDown += TextBox_KeyDown;
-        tbStraße.Leave += TextBox_Leave;
+        tbStrasse.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+        tbStrasse.AutoCompleteSource = AutoCompleteSource.CustomSource;
+        tbStrasse.BorderStyle = BorderStyle.FixedSingle;
+        tableLayoutPanel.SetColumnSpan(tbStrasse, 5);
+        tbStrasse.ContextMenuStrip = contextTextBox;
+        tbStrasse.Dock = DockStyle.Fill;
+        tbStrasse.Location = new Point(154, 137);
+        tbStrasse.Name = "tbStrasse";
+        tbStrasse.Size = new Size(393, 25);
+        tbStrasse.TabIndex = 10;
+        tbStrasse.Tag = "Adresse";
+        tbStrasse.TextChanged += TextBox_TextChanged;
+        tbStrasse.Enter += TextBox_Enter;
+        tbStrasse.KeyDown += TextBox_KeyDown;
+        tbStrasse.Leave += TextBox_Leave;
         // 
         // cbPLZ
         // 
@@ -1956,10 +2010,11 @@ partial class FrmAdressen
         cbPLZ.BorderStyle = BorderStyle.FixedSingle;
         cbPLZ.ContextMenuStrip = contextTextBox;
         cbPLZ.Dock = DockStyle.Fill;
-        cbPLZ.Location = new Point(104, 169);
+        cbPLZ.Location = new Point(154, 169);
         cbPLZ.Name = "cbPLZ";
-        cbPLZ.Size = new Size(106, 25);
+        cbPLZ.Size = new Size(93, 25);
         cbPLZ.TabIndex = 11;
+        cbPLZ.Tag = "PLZ";
         cbPLZ.TextChanged += TextBox_TextChanged;
         cbPLZ.Enter += TextBox_Enter;
         cbPLZ.KeyDown += TextBox_KeyDown;
@@ -1973,10 +2028,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(cbOrt, 4);
         cbOrt.ContextMenuStrip = contextTextBox;
         cbOrt.Dock = DockStyle.Fill;
-        cbOrt.Location = new Point(216, 169);
+        cbOrt.Location = new Point(253, 169);
         cbOrt.Name = "cbOrt";
-        cbOrt.Size = new Size(331, 25);
+        cbOrt.Size = new Size(294, 25);
         cbOrt.TabIndex = 12;
+        cbOrt.Tag = "Ort";
         cbOrt.TextChanged += TextBox_TextChanged;
         cbOrt.Enter += TextBox_Enter;
         cbOrt.KeyDown += TextBox_KeyDown;
@@ -1989,9 +2045,9 @@ partial class FrmAdressen
         landLabel.Location = new Point(3, 198);
         landLabel.Name = "landLabel";
         landLabel.Padding = new Padding(0, 0, 0, 3);
-        landLabel.Size = new Size(95, 32);
+        landLabel.Size = new Size(145, 32);
         landLabel.TabIndex = 12;
-        landLabel.Text = "Postf./Land:";
+        landLabel.Text = "Postfach / Land:";
         landLabel.TextAlign = ContentAlignment.MiddleRight;
         // 
         // cbLand
@@ -2002,10 +2058,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(cbLand, 4);
         cbLand.ContextMenuStrip = contextTextBox;
         cbLand.Dock = DockStyle.Fill;
-        cbLand.Location = new Point(216, 201);
+        cbLand.Location = new Point(253, 201);
         cbLand.Name = "cbLand";
-        cbLand.Size = new Size(331, 25);
+        cbLand.Size = new Size(294, 25);
         cbLand.TabIndex = 14;
+        cbLand.Tag = "Land";
         cbLand.TextChanged += TextBox_TextChanged;
         cbLand.Enter += TextBox_Enter;
         cbLand.KeyDown += TextBox_KeyDown;
@@ -2018,7 +2075,7 @@ partial class FrmAdressen
         labelBetreff.Location = new Point(3, 230);
         labelBetreff.Name = "labelBetreff";
         labelBetreff.Padding = new Padding(0, 0, 0, 3);
-        labelBetreff.Size = new Size(95, 32);
+        labelBetreff.Size = new Size(145, 32);
         labelBetreff.TabIndex = 50;
         labelBetreff.Text = "Betreff:";
         labelBetreff.TextAlign = ContentAlignment.MiddleRight;
@@ -2029,10 +2086,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(tbBetreff, 5);
         tbBetreff.ContextMenuStrip = contextTextBox;
         tbBetreff.Dock = DockStyle.Fill;
-        tbBetreff.Location = new Point(104, 233);
+        tbBetreff.Location = new Point(154, 233);
         tbBetreff.Name = "tbBetreff";
-        tbBetreff.Size = new Size(443, 25);
+        tbBetreff.Size = new Size(393, 25);
         tbBetreff.TabIndex = 15;
+        tbBetreff.Tag = "Betreff";
         tbBetreff.TextChanged += TextBox_TextChanged;
         tbBetreff.Enter += TextBox_Enter;
         tbBetreff.KeyDown += TextBox_KeyDown;
@@ -2045,7 +2103,7 @@ partial class FrmAdressen
         GrussformelLabel.Location = new Point(3, 262);
         GrussformelLabel.Name = "GrussformelLabel";
         GrussformelLabel.Padding = new Padding(0, 0, 0, 3);
-        GrussformelLabel.Size = new Size(95, 32);
+        GrussformelLabel.Size = new Size(145, 32);
         GrussformelLabel.TabIndex = 14;
         GrussformelLabel.Text = "Grußformel:";
         GrussformelLabel.TextAlign = ContentAlignment.MiddleRight;
@@ -2058,10 +2116,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(cbGrussformel, 5);
         cbGrussformel.ContextMenuStrip = contextTextBox;
         cbGrussformel.Dock = DockStyle.Fill;
-        cbGrussformel.Location = new Point(104, 265);
+        cbGrussformel.Location = new Point(154, 265);
         cbGrussformel.Name = "cbGrussformel";
-        cbGrussformel.Size = new Size(443, 25);
+        cbGrussformel.Size = new Size(393, 25);
         cbGrussformel.TabIndex = 16;
+        cbGrussformel.Tag = "Grußformel";
         cbGrussformel.TextChanged += TextBox_TextChanged;
         cbGrussformel.KeyDown += TextBox_KeyDown;
         cbGrussformel.Leave += TextBox_Leave;
@@ -2073,7 +2132,7 @@ partial class FrmAdressen
         schlussformelLabel.Location = new Point(3, 294);
         schlussformelLabel.Name = "schlussformelLabel";
         schlussformelLabel.Padding = new Padding(0, 0, 0, 3);
-        schlussformelLabel.Size = new Size(95, 32);
+        schlussformelLabel.Size = new Size(145, 32);
         schlussformelLabel.TabIndex = 22;
         schlussformelLabel.Text = "Schlussformel:";
         schlussformelLabel.TextAlign = ContentAlignment.MiddleRight;
@@ -2086,10 +2145,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(cbSchlussformel, 5);
         cbSchlussformel.ContextMenuStrip = contextTextBox;
         cbSchlussformel.Dock = DockStyle.Fill;
-        cbSchlussformel.Location = new Point(104, 297);
+        cbSchlussformel.Location = new Point(154, 297);
         cbSchlussformel.Name = "cbSchlussformel";
-        cbSchlussformel.Size = new Size(443, 25);
+        cbSchlussformel.Size = new Size(393, 25);
         cbSchlussformel.TabIndex = 17;
+        cbSchlussformel.Tag = "Schlussformel";
         cbSchlussformel.TextChanged += TextBox_TextChanged;
         cbSchlussformel.Enter += TextBox_Enter;
         cbSchlussformel.KeyDown += TextBox_KeyDown;
@@ -2102,7 +2162,7 @@ partial class FrmAdressen
         geburtstagLabel.Location = new Point(3, 326);
         geburtstagLabel.Name = "geburtstagLabel";
         geburtstagLabel.Padding = new Padding(0, 0, 0, 2);
-        geburtstagLabel.Size = new Size(95, 32);
+        geburtstagLabel.Size = new Size(145, 32);
         geburtstagLabel.TabIndex = 23;
         geburtstagLabel.Text = "Geburtstag:";
         geburtstagLabel.TextAlign = ContentAlignment.MiddleRight;
@@ -2116,8 +2176,8 @@ partial class FrmAdressen
         mail1LinkLabel.Location = new Point(3, 358);
         mail1LinkLabel.Name = "mail1LinkLabel";
         mail1LinkLabel.Padding = new Padding(0, 0, 0, 3);
-        mail1LinkLabel.Size = new Size(45, 32);
-        mail1LinkLabel.TabIndex = 32;
+        mail1LinkLabel.Size = new Size(70, 32);
+        mail1LinkLabel.TabIndex = 0;
         mail1LinkLabel.TabStop = true;
         mail1LinkLabel.Text = "📧";
         mail1LinkLabel.TextAlign = ContentAlignment.MiddleRight;
@@ -2129,11 +2189,11 @@ partial class FrmAdressen
         mail2LinkLabel.Dock = DockStyle.Fill;
         mail2LinkLabel.Enabled = false;
         mail2LinkLabel.LinkBehavior = LinkBehavior.NeverUnderline;
-        mail2LinkLabel.Location = new Point(54, 358);
+        mail2LinkLabel.Location = new Point(79, 358);
         mail2LinkLabel.Name = "mail2LinkLabel";
         mail2LinkLabel.Padding = new Padding(0, 0, 0, 3);
-        mail2LinkLabel.Size = new Size(44, 32);
-        mail2LinkLabel.TabIndex = 33;
+        mail2LinkLabel.Size = new Size(69, 32);
+        mail2LinkLabel.TabIndex = 0;
         mail2LinkLabel.TabStop = true;
         mail2LinkLabel.Text = "📧";
         mail2LinkLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -2141,14 +2201,17 @@ partial class FrmAdressen
         // 
         // tbMail1
         // 
+        tbMail1.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+        tbMail1.AutoCompleteSource = AutoCompleteSource.CustomSource;
         tbMail1.BorderStyle = BorderStyle.FixedSingle;
         tableLayoutPanel.SetColumnSpan(tbMail1, 2);
         tbMail1.ContextMenuStrip = contextTextBox;
         tbMail1.Dock = DockStyle.Fill;
-        tbMail1.Location = new Point(104, 361);
+        tbMail1.Location = new Point(154, 361);
         tbMail1.Name = "tbMail1";
-        tbMail1.Size = new Size(218, 25);
+        tbMail1.Size = new Size(192, 25);
         tbMail1.TabIndex = 20;
+        tbMail1.Tag = "E-Mail-Adresse";
         tbMail1.TextChanged += TextBox_TextChanged;
         tbMail1.Enter += TextBox_Enter;
         tbMail1.KeyDown += TextBox_KeyDown;
@@ -2156,14 +2219,17 @@ partial class FrmAdressen
         // 
         // tbMail2
         // 
+        tbMail2.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+        tbMail2.AutoCompleteSource = AutoCompleteSource.CustomSource;
         tbMail2.BorderStyle = BorderStyle.FixedSingle;
         tableLayoutPanel.SetColumnSpan(tbMail2, 3);
         tbMail2.ContextMenuStrip = contextTextBox;
         tbMail2.Dock = DockStyle.Fill;
-        tbMail2.Location = new Point(328, 361);
+        tbMail2.Location = new Point(352, 361);
         tbMail2.Name = "tbMail2";
-        tbMail2.Size = new Size(219, 25);
+        tbMail2.Size = new Size(195, 25);
         tbMail2.TabIndex = 21;
+        tbMail2.Tag = "E-Mail-Adresse";
         tbMail2.TextChanged += TextBox_TextChanged;
         tbMail2.Enter += TextBox_Enter;
         tbMail2.KeyDown += TextBox_KeyDown;
@@ -2178,8 +2244,8 @@ partial class FrmAdressen
         tel1LinkLabel.Location = new Point(3, 390);
         tel1LinkLabel.Name = "tel1LinkLabel";
         tel1LinkLabel.Padding = new Padding(0, 0, 0, 3);
-        tel1LinkLabel.Size = new Size(45, 32);
-        tel1LinkLabel.TabIndex = 34;
+        tel1LinkLabel.Size = new Size(70, 32);
+        tel1LinkLabel.TabIndex = 0;
         tel1LinkLabel.TabStop = true;
         tel1LinkLabel.Text = "☎";
         tel1LinkLabel.TextAlign = ContentAlignment.MiddleRight;
@@ -2191,11 +2257,11 @@ partial class FrmAdressen
         tel2LinkLabel.Dock = DockStyle.Fill;
         tel2LinkLabel.Enabled = false;
         tel2LinkLabel.LinkBehavior = LinkBehavior.NeverUnderline;
-        tel2LinkLabel.Location = new Point(54, 390);
+        tel2LinkLabel.Location = new Point(79, 390);
         tel2LinkLabel.Name = "tel2LinkLabel";
         tel2LinkLabel.Padding = new Padding(0, 0, 0, 3);
-        tel2LinkLabel.Size = new Size(44, 32);
-        tel2LinkLabel.TabIndex = 35;
+        tel2LinkLabel.Size = new Size(69, 32);
+        tel2LinkLabel.TabIndex = 0;
         tel2LinkLabel.TabStop = true;
         tel2LinkLabel.Text = "☎";
         tel2LinkLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -2207,10 +2273,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(tbTelefon1, 2);
         tbTelefon1.ContextMenuStrip = contextTextBox;
         tbTelefon1.Dock = DockStyle.Fill;
-        tbTelefon1.Location = new Point(104, 393);
+        tbTelefon1.Location = new Point(154, 393);
         tbTelefon1.Name = "tbTelefon1";
-        tbTelefon1.Size = new Size(218, 25);
+        tbTelefon1.Size = new Size(192, 25);
         tbTelefon1.TabIndex = 22;
+        tbTelefon1.Tag = "Telefonnummer";
         tbTelefon1.TextChanged += TextBox_TextChanged;
         tbTelefon1.Enter += TextBox_Enter;
         tbTelefon1.KeyDown += TextBox_KeyDown;
@@ -2222,10 +2289,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(tbTelefon2, 3);
         tbTelefon2.ContextMenuStrip = contextTextBox;
         tbTelefon2.Dock = DockStyle.Fill;
-        tbTelefon2.Location = new Point(328, 393);
+        tbTelefon2.Location = new Point(352, 393);
         tbTelefon2.Name = "tbTelefon2";
-        tbTelefon2.Size = new Size(219, 25);
+        tbTelefon2.Size = new Size(195, 25);
         tbTelefon2.TabIndex = 23;
+        tbTelefon2.Tag = "Telefonnummer";
         tbTelefon2.TextChanged += TextBox_TextChanged;
         tbTelefon2.Enter += TextBox_Enter;
         tbTelefon2.KeyDown += TextBox_KeyDown;
@@ -2240,8 +2308,8 @@ partial class FrmAdressen
         mobilLinkLabel.Location = new Point(3, 422);
         mobilLinkLabel.Name = "mobilLinkLabel";
         mobilLinkLabel.Padding = new Padding(0, 0, 0, 3);
-        mobilLinkLabel.Size = new Size(45, 32);
-        mobilLinkLabel.TabIndex = 36;
+        mobilLinkLabel.Size = new Size(70, 32);
+        mobilLinkLabel.TabIndex = 0;
         mobilLinkLabel.TabStop = true;
         mobilLinkLabel.Text = "📱";
         mobilLinkLabel.TextAlign = ContentAlignment.MiddleRight;
@@ -2250,10 +2318,10 @@ partial class FrmAdressen
         // faxLabel
         // 
         faxLabel.Dock = DockStyle.Fill;
-        faxLabel.Location = new Point(54, 422);
+        faxLabel.Location = new Point(79, 422);
         faxLabel.Name = "faxLabel";
         faxLabel.Padding = new Padding(0, 0, 0, 3);
-        faxLabel.Size = new Size(44, 32);
+        faxLabel.Size = new Size(69, 32);
         faxLabel.TabIndex = 0;
         faxLabel.Text = "℻";
         faxLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -2264,10 +2332,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(tbMobil, 2);
         tbMobil.ContextMenuStrip = contextTextBox;
         tbMobil.Dock = DockStyle.Fill;
-        tbMobil.Location = new Point(104, 425);
+        tbMobil.Location = new Point(154, 425);
         tbMobil.Name = "tbMobil";
-        tbMobil.Size = new Size(218, 25);
+        tbMobil.Size = new Size(192, 25);
         tbMobil.TabIndex = 24;
+        tbMobil.Tag = "Mobilfunknummer";
         tbMobil.TextChanged += TextBox_TextChanged;
         tbMobil.Enter += TextBox_Enter;
         tbMobil.KeyDown += TextBox_KeyDown;
@@ -2279,10 +2348,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(tbFax, 3);
         tbFax.ContextMenuStrip = contextTextBox;
         tbFax.Dock = DockStyle.Fill;
-        tbFax.Location = new Point(328, 425);
+        tbFax.Location = new Point(352, 425);
         tbFax.Name = "tbFax";
-        tbFax.Size = new Size(219, 25);
+        tbFax.Size = new Size(195, 25);
         tbFax.TabIndex = 25;
+        tbFax.Tag = "Fax";
         tbFax.TextChanged += TextBox_TextChanged;
         tbFax.Enter += TextBox_Enter;
         tbFax.KeyDown += TextBox_KeyDown;
@@ -2299,8 +2369,9 @@ partial class FrmAdressen
         btnEditContact.FlatStyle = FlatStyle.Flat;
         btnEditContact.Location = new Point(3, 457);
         btnEditContact.Name = "btnEditContact";
-        btnEditContact.Size = new Size(45, 26);
-        btnEditContact.TabIndex = 31;
+        btnEditContact.Size = new Size(70, 26);
+        btnEditContact.TabIndex = 0;
+        btnEditContact.TabStop = false;
         toolTip.SetToolTip(btnEditContact, "Google-Kontakt bearbeiten (Alt+Enter)");
         btnEditContact.UseVisualStyleBackColor = false;
         btnEditContact.Visible = false;
@@ -2311,11 +2382,11 @@ partial class FrmAdressen
         internetLinkLabel.Dock = DockStyle.Fill;
         internetLinkLabel.Enabled = false;
         internetLinkLabel.LinkBehavior = LinkBehavior.NeverUnderline;
-        internetLinkLabel.Location = new Point(54, 454);
+        internetLinkLabel.Location = new Point(79, 454);
         internetLinkLabel.Name = "internetLinkLabel";
         internetLinkLabel.Padding = new Padding(0, 0, 0, 3);
-        internetLinkLabel.Size = new Size(44, 32);
-        internetLinkLabel.TabIndex = 37;
+        internetLinkLabel.Size = new Size(69, 32);
+        internetLinkLabel.TabIndex = 0;
         internetLinkLabel.TabStop = true;
         internetLinkLabel.Text = "🌐";
         internetLinkLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -2327,10 +2398,11 @@ partial class FrmAdressen
         tableLayoutPanel.SetColumnSpan(tbInternet, 5);
         tbInternet.ContextMenuStrip = contextTextBox;
         tbInternet.Dock = DockStyle.Fill;
-        tbInternet.Location = new Point(104, 457);
+        tbInternet.Location = new Point(154, 457);
         tbInternet.Name = "tbInternet";
-        tbInternet.Size = new Size(443, 25);
+        tbInternet.Size = new Size(393, 25);
         tbInternet.TabIndex = 26;
+        tbInternet.Tag = "Webseite";
         tbInternet.TextChanged += TextBox_TextChanged;
         tbInternet.Enter += TextBox_Enter;
         tbInternet.KeyDown += TbInternet_KeyDown;
@@ -2340,10 +2412,10 @@ partial class FrmAdressen
         // 
         tableLayoutPanel.SetColumnSpan(ageLabel, 3);
         ageLabel.Dock = DockStyle.Fill;
-        ageLabel.Location = new Point(328, 326);
+        ageLabel.Location = new Point(352, 326);
         ageLabel.Name = "ageLabel";
         ageLabel.Padding = new Padding(0, 0, 0, 2);
-        ageLabel.Size = new Size(219, 32);
+        ageLabel.Size = new Size(195, 32);
         ageLabel.TabIndex = 39;
         ageLabel.TextAlign = ContentAlignment.MiddleLeft;
         // 
@@ -2354,16 +2426,16 @@ partial class FrmAdressen
         panelBirthdayContainer.Controls.Add(panelBirthdayTextbox);
         panelBirthdayContainer.Controls.Add(btnCalendar);
         panelBirthdayContainer.Dock = DockStyle.Fill;
-        panelBirthdayContainer.Location = new Point(104, 329);
+        panelBirthdayContainer.Location = new Point(154, 329);
         panelBirthdayContainer.Name = "panelBirthdayContainer";
-        panelBirthdayContainer.Size = new Size(106, 26);
+        panelBirthdayContainer.Size = new Size(93, 26);
         panelBirthdayContainer.TabIndex = 18;
         // 
         // panelVerticalBar
         // 
         panelVerticalBar.BackColor = SystemColors.ControlText;
         panelVerticalBar.Dock = DockStyle.Right;
-        panelVerticalBar.Location = new Point(78, 0);
+        panelVerticalBar.Location = new Point(65, 0);
         panelVerticalBar.Name = "panelVerticalBar";
         panelVerticalBar.Size = new Size(1, 24);
         panelVerticalBar.TabIndex = 3;
@@ -2376,7 +2448,7 @@ partial class FrmAdressen
         panelBirthdayTextbox.Location = new Point(0, 0);
         panelBirthdayTextbox.Name = "panelBirthdayTextbox";
         panelBirthdayTextbox.Padding = new Padding(0, 3, 0, 0);
-        panelBirthdayTextbox.Size = new Size(79, 24);
+        panelBirthdayTextbox.Size = new Size(66, 24);
         panelBirthdayTextbox.TabIndex = 2;
         // 
         // maskedTextBox
@@ -2391,8 +2463,9 @@ partial class FrmAdressen
         maskedTextBox.MinimumSize = new Size(70, 18);
         maskedTextBox.Name = "maskedTextBox";
         maskedTextBox.PromptChar = ' ';
-        maskedTextBox.Size = new Size(79, 18);
+        maskedTextBox.Size = new Size(70, 18);
         maskedTextBox.TabIndex = 18;
+        maskedTextBox.Tag = "Geburtstag (TT.MM.JJJJ)";
         maskedTextBox.TextChanged += MaskedTextBox_TextChanged;
         maskedTextBox.Enter += MaskedTextBox_Enter;
         maskedTextBox.KeyDown += MaskedTextBox_KeyDown;
@@ -2407,11 +2480,11 @@ partial class FrmAdressen
         btnCalendar.FlatAppearance.MouseDownBackColor = SystemColors.GradientActiveCaption;
         btnCalendar.FlatAppearance.MouseOverBackColor = SystemColors.GradientInactiveCaption;
         btnCalendar.FlatStyle = FlatStyle.Flat;
-        btnCalendar.Location = new Point(79, 0);
+        btnCalendar.Location = new Point(66, 0);
         btnCalendar.Margin = new Padding(0);
         btnCalendar.Name = "btnCalendar";
         btnCalendar.Size = new Size(25, 24);
-        btnCalendar.TabIndex = 1;
+        btnCalendar.TabIndex = 0;
         btnCalendar.TabStop = false;
         btnCalendar.UseVisualStyleBackColor = true;
         btnCalendar.Click += BtnCalendar_Click;
@@ -2423,10 +2496,11 @@ partial class FrmAdressen
         flowLayoutPanel.BorderStyle = BorderStyle.FixedSingle;
         tableLayoutPanel.SetColumnSpan(flowLayoutPanel, 5);
         flowLayoutPanel.Dock = DockStyle.Fill;
-        flowLayoutPanel.Location = new Point(104, 489);
+        flowLayoutPanel.Location = new Point(154, 489);
         flowLayoutPanel.Name = "flowLayoutPanel";
-        flowLayoutPanel.Size = new Size(443, 46);
+        flowLayoutPanel.Size = new Size(393, 46);
         flowLayoutPanel.TabIndex = 29;
+        flowLayoutPanel.Tag = "Label";
         flowLayoutPanel.WrapContents = false;
         flowLayoutPanel.MouseDoubleClick += FlowLayoutPanel_MouseDoubleClick;
         // 
@@ -2440,7 +2514,7 @@ partial class FrmAdressen
         tagPanel.Margin = new Padding(3, 0, 3, 0);
         tagPanel.Name = "tagPanel";
         tagPanel.Padding = new Padding(0, 3, 0, 3);
-        tagPanel.Size = new Size(95, 52);
+        tagPanel.Size = new Size(145, 52);
         tagPanel.TabIndex = 27;
         // 
         // tagButton
@@ -2455,8 +2529,9 @@ partial class FrmAdressen
         tagButton.Location = new Point(0, 27);
         tagButton.Margin = new Padding(3, 0, 3, 0);
         tagButton.Name = "tagButton";
-        tagButton.Size = new Size(95, 22);
-        tagButton.TabIndex = 1;
+        tagButton.Size = new Size(145, 22);
+        tagButton.TabIndex = 0;
+        tagButton.TabStop = false;
         tagButton.Text = "Übernehmen";
         tagButton.UseVisualStyleBackColor = false;
         tagButton.Click += TagButton_Click;
@@ -2469,8 +2544,8 @@ partial class FrmAdressen
         tagComboBox.Location = new Point(0, 3);
         tagComboBox.Margin = new Padding(3, 0, 3, 0);
         tagComboBox.Name = "tagComboBox";
-        tagComboBox.Size = new Size(95, 25);
-        tagComboBox.TabIndex = 0;
+        tagComboBox.Size = new Size(145, 25);
+        tagComboBox.TabIndex = 27;
         tagComboBox.TextChanged += TagComboBox_TextChanged;
         tagComboBox.Enter += TagComboBox_Enter;
         tagComboBox.KeyDown += TagComboBox_KeyDown;
@@ -2481,9 +2556,9 @@ partial class FrmAdressen
         panelBirthdayClearRemind.Controls.Add(btnResetDate);
         panelBirthdayClearRemind.Controls.Add(ckbReminding);
         panelBirthdayClearRemind.Dock = DockStyle.Fill;
-        panelBirthdayClearRemind.Location = new Point(216, 329);
+        panelBirthdayClearRemind.Location = new Point(253, 329);
         panelBirthdayClearRemind.Name = "panelBirthdayClearRemind";
-        panelBirthdayClearRemind.Size = new Size(106, 26);
+        panelBirthdayClearRemind.Size = new Size(93, 26);
         panelBirthdayClearRemind.TabIndex = 51;
         panelBirthdayClearRemind.Resize += PanelBirthdayClearRemind_Resize;
         // 
@@ -2494,7 +2569,8 @@ partial class FrmAdressen
         btnResetDate.Margin = new Padding(3, 2, 3, 1);
         btnResetDate.Name = "btnResetDate";
         btnResetDate.Size = new Size(26, 26);
-        btnResetDate.TabIndex = 19;
+        btnResetDate.TabIndex = 0;
+        btnResetDate.TabStop = false;
         toolTip.SetToolTip(btnResetDate, "Datum löschen");
         btnResetDate.UseVisualStyleBackColor = true;
         btnResetDate.Click += BtnResetDate_Click;
@@ -2508,7 +2584,8 @@ partial class FrmAdressen
         ckbReminding.Name = "ckbReminding";
         ckbReminding.Padding = new Padding(0, 2, 0, 0);
         ckbReminding.Size = new Size(71, 26);
-        ckbReminding.TabIndex = 20;
+        ckbReminding.TabIndex = 0;
+        ckbReminding.TabStop = false;
         ckbReminding.Text = "remind";
         toolTip.SetToolTip(ckbReminding, "Datum für Geburtstagserinnerung verwenden");
         ckbReminding.UseVisualStyleBackColor = true;
@@ -2520,9 +2597,9 @@ partial class FrmAdressen
         panelTBNotizenFrame.BorderStyle = BorderStyle.FixedSingle;
         panelTBNotizenFrame.Controls.Add(tbNotizen);
         panelTBNotizenFrame.Dock = DockStyle.Fill;
-        panelTBNotizenFrame.Location = new Point(104, 9);
+        panelTBNotizenFrame.Location = new Point(154, 9);
         panelTBNotizenFrame.Name = "panelTBNotizenFrame";
-        panelTBNotizenFrame.Size = new Size(443, 140);
+        panelTBNotizenFrame.Size = new Size(393, 140);
         panelTBNotizenFrame.TabIndex = 31;
         // 
         // tbNotizen
@@ -2534,8 +2611,9 @@ partial class FrmAdressen
         tbNotizen.Multiline = true;
         tbNotizen.Name = "tbNotizen";
         tbNotizen.ScrollBars = ScrollBars.Vertical;
-        tbNotizen.Size = new Size(441, 138);
-        tbNotizen.TabIndex = 30;
+        tbNotizen.Size = new Size(391, 138);
+        tbNotizen.TabIndex = 28;
+        tbNotizen.Tag = "Notizen";
         tbNotizen.Text = "                                                                                                                                               ";
         tbNotizen.TextChanged += TextBox_TextChanged;
         tbNotizen.Enter += TbNotizen_Enter;
@@ -2544,7 +2622,7 @@ partial class FrmAdressen
         // spacerPanel
         // 
         spacerPanel.Dock = DockStyle.Left;
-        spacerPanel.Location = new Point(100, 9);
+        spacerPanel.Location = new Point(150, 9);
         spacerPanel.Name = "spacerPanel";
         spacerPanel.Size = new Size(4, 140);
         spacerPanel.TabIndex = 25;
@@ -2557,7 +2635,7 @@ partial class FrmAdressen
         panelPictBox.Dock = DockStyle.Left;
         panelPictBox.Location = new Point(0, 9);
         panelPictBox.Name = "panelPictBox";
-        panelPictBox.Size = new Size(100, 140);
+        panelPictBox.Size = new Size(150, 140);
         panelPictBox.TabIndex = 26;
         // 
         // pictboxToolStrip
@@ -2569,10 +2647,9 @@ partial class FrmAdressen
         pictboxToolStrip.Items.AddRange(new ToolStripItem[] { addPictboxToolStripButton, delPictboxToolStripButton });
         pictboxToolStrip.Location = new Point(0, 100);
         pictboxToolStrip.Name = "pictboxToolStrip";
-        pictboxToolStrip.Size = new Size(100, 25);
+        pictboxToolStrip.Size = new Size(150, 25);
         pictboxToolStrip.Stretch = true;
-        pictboxToolStrip.TabIndex = 29;
-        pictboxToolStrip.TabStop = true;
+        pictboxToolStrip.TabIndex = 0;
         // 
         // addPictboxToolStripButton
         // 
@@ -2581,7 +2658,7 @@ partial class FrmAdressen
         addPictboxToolStripButton.ImageTransparentColor = Color.Magenta;
         addPictboxToolStripButton.Name = "addPictboxToolStripButton";
         addPictboxToolStripButton.Overflow = ToolStripItemOverflow.Never;
-        addPictboxToolStripButton.Size = new Size(50, 22);
+        addPictboxToolStripButton.Size = new Size(75, 22);
         addPictboxToolStripButton.ToolTipText = "Bild hinzufügen, falls vorhanden ändern";
         addPictboxToolStripButton.Click += AddPictboxToolStripButton_Click;
         // 
@@ -2593,7 +2670,7 @@ partial class FrmAdressen
         delPictboxToolStripButton.ImageTransparentColor = Color.Magenta;
         delPictboxToolStripButton.Name = "delPictboxToolStripButton";
         delPictboxToolStripButton.Overflow = ToolStripItemOverflow.Never;
-        delPictboxToolStripButton.Size = new Size(49, 22);
+        delPictboxToolStripButton.Size = new Size(74, 22);
         delPictboxToolStripButton.ToolTipText = "Bild löschen";
         delPictboxToolStripButton.Click += DelPictboxToolStripButton_Click;
         // 
@@ -2604,8 +2681,8 @@ partial class FrmAdressen
         topAlignZoomPictureBox.Image = null;
         topAlignZoomPictureBox.Location = new Point(0, 0);
         topAlignZoomPictureBox.Name = "topAlignZoomPictureBox";
-        topAlignZoomPictureBox.Size = new Size(100, 100);
-        topAlignZoomPictureBox.TabIndex = 26;
+        topAlignZoomPictureBox.Size = new Size(150, 100);
+        topAlignZoomPictureBox.TabIndex = 0;
         topAlignZoomPictureBox.TabStop = false;
         topAlignZoomPictureBox.MouseDoubleClick += TopAlignZoomPictureBox_MouseDoubleClick;
         // 
@@ -2636,7 +2713,7 @@ partial class FrmAdressen
         labelLastMod.Font = new Font("Segoe UI", 9F);
         labelLastMod.Location = new Point(0, 125);
         labelLastMod.Name = "labelLastMod";
-        labelLastMod.Size = new Size(100, 15);
+        labelLastMod.Size = new Size(150, 15);
         labelLastMod.TabIndex = 0;
         labelLastMod.TextAlign = ContentAlignment.MiddleCenter;
         toolTip.SetToolTip(labelLastMod, "Zuletzt geändert");
@@ -2717,7 +2794,7 @@ partial class FrmAdressen
         searchPictureBox.Name = "searchPictureBox";
         searchPictureBox.Size = new Size(25, 25);
         searchPictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
-        searchPictureBox.TabIndex = 3;
+        searchPictureBox.TabIndex = 0;
         searchPictureBox.TabStop = false;
         searchPictureBox.Click += StartPictureBox_Click;
         // 
@@ -2899,6 +2976,11 @@ partial class FrmAdressen
         exitTrayMenuItem.Text = "Beenden";
         exitTrayMenuItem.Click += ExitTrayMenuItem_Click;
         // 
+        // detailTimer
+        // 
+        detailTimer.Interval = 200;
+        detailTimer.Tick += DetailTimer_Tick;
+        // 
         // FrmAdressen
         // 
         AutoScaleDimensions = new SizeF(7F, 17F);
@@ -3058,6 +3140,7 @@ partial class FrmAdressen
     private ToolStripMenuItem splitterAutomaticToolStripMenuItem;
     private ToolStripSeparator toolStripSeparator1;
     private ToolStripMenuItem wordToolStripMenuItem;
+    private ToolStripMenuItem serienbriefToolStripMenuItem;
     private ToolStripMenuItem envelopeToolStripMenuItem;
     private ToolStripProgressBar toolStripProgressBar;
     private ToolStripStatusLabel sepTSStatusLabel;
@@ -3151,7 +3234,7 @@ partial class FrmAdressen
     private ToolStripMenuItem updateCheckToolStripMenuItem;
     private ToolStripStatusLabel springSpacer;
     private ToolStripButton btnUpdateAvailable;
-    private cls.PaddedTextBox tbStraße;
+    private cls.PaddedTextBox tbStrasse;
     private cls.PaddedTextBox tbFirma;
     private cls.PaddedTextBox tbNachname;
     private cls.PaddedTextBox tbVorname;
@@ -3189,6 +3272,7 @@ partial class FrmAdressen
     private Panel panelBirthdayClearRemind;
     private CheckBox ckbReminding;
     private ToolStripButton min2TrayTSButton;
+    private ToolStripButton searchTSButton;
     private NotifyIcon notifyIcon;
     private ContextMenuStrip trayMenu;
     private ToolStripMenuItem openTrayMenuItem;
@@ -3235,4 +3319,7 @@ partial class FrmAdressen
     private ToolStripMenuItem faxMinusFilterToolStripMenuItem;
     private ToolStripSeparator faxTSSeparator;
     private ToolStripButton tsBtnFritzMonitor;
+    private ToolStripMenuItem hideToolStripMenuItem;
+    private System.Windows.Forms.Timer detailTimer;
+    private ToolStripMenuItem pWAToolStripMenuItem;
 }

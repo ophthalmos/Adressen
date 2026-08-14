@@ -29,10 +29,9 @@ internal static class DatabaseMigrator
         catch { return 0; }
     }
 
-    internal static bool MigrateLegacyData(AdressenDbContext context)
+    internal static (bool changed, List<string> warnings) MigrateLegacyData(AdressenDbContext context)
     {
-        if (context == null) { return false; }
-        var connectionString = context.Database.GetConnectionString();
+        if (context == null) { return (false, []); }
         var currentDbVersion = 0;
         try
         {
@@ -45,10 +44,10 @@ internal static class DatabaseMigrator
 
         //MessageBox.Show($"User_version = {currentDbVersion}.\nDatabaseSchemaVersion = {AppSettings.DatabaseSchemaVersion}.");
 
-        if (currentDbVersion >= AppSettings.DatabaseSchemaVersion) { return false; }
+        if (currentDbVersion >= AppSettings.DatabaseSchemaVersion) { return (false, []); }
 
         var changesMade = false;
-
+        var warnings = new List<string>();
         using var transaction = context.Database.BeginTransaction();
 
         try
@@ -70,7 +69,7 @@ internal static class DatabaseMigrator
             { "Firma", "Unternehmen" },
             { "Grußformel", "Grussformel" },
             { "Straße", "Strasse" },
-            { "Praefix", "Praefix" }
+            { "Präfix", "Praefix" }
         };
 
             // Spezialfall Firma -> Unternehmen
@@ -132,7 +131,9 @@ internal static class DatabaseMigrator
             // 1.4 Datenmigration (JSON/Datum)
             // Das hier verursachte vorher den Crash, weil SaveChanges() die kaputten FKs prüfte.
             // Jetzt ist FK-Prüfung aus, also läuft es durch.
-            if (LegacyDataCleanup(context, dbColumns)) { changesMade = true; }
+            var (isCleaned, migrationWarnings) = LegacyDataCleanup(context, dbColumns);
+            warnings.AddRange(migrationWarnings);    
+            if (isCleaned) { changesMade = true; }
 
             // ---------------------------------------------------------
             // PHASE 2: Table Rebuild (Hier werden die kaputten Referenzen korrigiert)
@@ -291,12 +292,8 @@ internal static class DatabaseMigrator
 
             transaction.Commit();
 
-            if (changesMade)
-            {
-                context.Database.ExecuteSqlRaw("VACUUM;");
-                return true; // Erfolgsdialog wurde entfernt, machen wir jetzt in ConnectSQLDatabaseAsync
-            }
-            return false;
+            if (changesMade) { context.Database.ExecuteSqlRaw("VACUUM;"); }
+            return (changesMade, warnings);
         }
         catch (Exception ex)
         {
@@ -319,23 +316,9 @@ internal static class DatabaseMigrator
         return columns;
     }
 
-    private static bool LegacyDataCleanup(AdressenDbContext context, HashSet<string> dbColumns)
+    private static (bool cleaned, List<string>) LegacyDataCleanup(AdressenDbContext context, HashSet<string> dbColumns)
     {
-        // ... Hier dein bestehender JSON/Geburtstag Cleanup Code ...
-        // (Ich habe ihn hier gekürzt, da er unverändert bleiben kann, 
-        //  siehe dein Original-Snippet 'Schritt D')
-
-        // WICHTIG: Wenn du hier Spalten droppst (Gruppen, Dokumente), 
-        // dann darfst du sie in Phase 2 im SQL INSERT nicht mehr auflisten!
-        // Da dein Code sie droppt: 
-        // if (hasOldGruppen) { context.Database.ExecuteSqlRaw("ALTER TABLE Adressen DROP COLUMN Gruppen"); }
-        // ist das okay, solange das VOR Phase 2 passiert.
-
-        // Da ich den Aufruf VOR Phase 2 platziert habe, ist alles korrekt.
-
-        // Dummy Return für dieses Snippet:
-        //return false;
-
+        var warnings = new List<string>();
         // --- SCHRITT D: Datenmigration (JSON/Datum) ---
         var hasOldGruppen = dbColumns.Contains("Gruppen");
         var hasOldDokumente = dbColumns.Contains("Dokumente");
@@ -404,7 +387,12 @@ internal static class DatabaseMigrator
                             }
                         }
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        var name = $"{adresse.Vorname} {adresse.Nachname}".Trim();
+                        warnings.Add($"Adresse {adresse.Id} ({name}): Gruppen konnten nicht migriert werden.");
+                        System.Diagnostics.Debug.WriteLine($"[Migration] Adresse {adresse.Id}: {ex.Message}");
+                    }
                 }
 
                 // Dokumente (JSON)
@@ -425,7 +413,12 @@ internal static class DatabaseMigrator
                             }
                         }
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        var name = $"{adresse.Vorname} {adresse.Nachname}".Trim();
+                        warnings.Add($"Adresse {adresse.Id} ({name}): Dokumente konnten nicht migriert werden.");
+                        System.Diagnostics.Debug.WriteLine($"[Migration] Adresse {adresse.Id}: {ex.Message}");
+                    }
                 }
                 if (dataChanged) { context.Entry(adresse).State = EntityState.Modified; }
             }
@@ -433,9 +426,9 @@ internal static class DatabaseMigrator
             context.SaveChanges();
             if (hasOldGruppen) { context.Database.ExecuteSqlRaw("ALTER TABLE Adressen DROP COLUMN Gruppen"); }
             if (hasOldDokumente) { context.Database.ExecuteSqlRaw("ALTER TABLE Adressen DROP COLUMN Dokumente"); }
-            return true;
+            return (true, warnings);
         }
-        return false;
+        return (false, warnings);
 
     }
 }

@@ -11,12 +11,16 @@
     <SourceRevisionId>build$([System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss"))</SourceRevisionId>
     <NeutralLanguage>de</NeutralLanguage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion>1.2.5</AssemblyVersion>
-    <FileVersion>1.2.5</FileVersion>
+    <AssemblyVersion>1.2.8</AssemblyVersion>
+    <FileVersion>1.2.8</FileVersion>
     <StartupObject>Adressen.Program</StartupObject>
     <Product>$(AssemblyName) &amp; Kontakte</Product>
     <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-2m69-gcr7-jv3q" />
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <NoWarn>1701;1702;SYSLIB1045;IDE0028</NoWarn>
@@ -27,7 +31,7 @@
     <NoWarn>1701;1702;SYSLIB1045;IDE0028</NoWarn>
     <WarningLevel>8</WarningLevel>
   </PropertyGroup>
-
+  
   <ItemGroup>
     <Compile Remove="LibreOffice\**" />
     <Compile Remove="lib\**" />
@@ -89,7 +93,7 @@
   <ItemGroup>
     <PackageReference Include="Google.Apis.Oauth2.v2" Version="1.74.0.1869" />
     <PackageReference Include="Google.Apis.PeopleService.v1" Version="1.74.0.3973" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
   </ItemGroup>
 
   <ItemGroup>
@@ -118,6 +122,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Adressen.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="LesezeichenBeispiel.odt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Lizenzvereinbarung.txt">

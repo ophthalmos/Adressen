@@ -15,7 +15,10 @@ public class GoogleFieldAttribute(string category) : Attribute
 public class Contact : ICloneable, IContactEntity
 {
     private string? _searchTextCache;
-    private static readonly ConcurrentDictionary<string, byte[]> _photoCache = new(); // Statischer Cache, der für die gesamte Laufzeit der App existiert
+    private const int MaxPhotoCacheSize = 200;
+    private static readonly ConcurrentDictionary<string, byte[]> _photoCache = new();  // Statischer Cache, der für die gesamte Laufzeit der App existiert
+    private static readonly ConcurrentQueue<string> _photoCacheOrder = new();
+
 
     // ========================================================================
     // 1. EIGENSCHAFTEN MIT MAPPING-ATTRIBUTEN
@@ -87,7 +90,7 @@ public class Contact : ICloneable, IContactEntity
 
     [GoogleField("addresses")]
     [MaxLength(150)]
-    [DisplayName("Straße")]
+    [DisplayName("Adresse")]
     public string? Strasse
     {
         get; set;
@@ -283,16 +286,26 @@ public class Contact : ICloneable, IContactEntity
     {
         if (string.IsNullOrEmpty(PhotoUrl)) { return null; }
 
+        //MessageBox.Show($"PhotoUrl: {PhotoUrl}");  // Debugging-Zwecke
+        var fetchUrl = PhotoUrl;
+        var photoBoxWidth = AppSettings.PictBoxWidth.ToString(); 
+        var index = fetchUrl.LastIndexOf("=s", StringComparison.OrdinalIgnoreCase);
+        if (index > -1) { fetchUrl = fetchUrl[..index] + $"=s{photoBoxWidth}"; }  // Schneidet den String vor dem "=s" ab und hängt das neue Suffix an
+        else { fetchUrl += $"=s{photoBoxWidth}"; }  // Fallback: Falls wider Erwarten gar kein =s-Parameter vorhanden ist
+
         try
         {
             // 1. Prüfen, ob das Bild schon im Speicher liegt
-            if (!_photoCache.TryGetValue(PhotoUrl, out var bytes))
+            if (!_photoCache.TryGetValue(fetchUrl, out var bytes))
             {
                 // 2. Falls nicht: Herunterladen und Token durchreichen!
                 // Der HttpClient bricht den Web-Request bei einem Scroll-Event sofort ab.
-                bytes = await HttpService.Client.GetByteArrayAsync(PhotoUrl, token);
-                _photoCache.TryAdd(PhotoUrl, bytes);
+                bytes = await HttpService.Client.GetByteArrayAsync(fetchUrl, token);
+                _photoCache.TryAdd(fetchUrl, bytes);
+                _photoCacheOrder.Enqueue(fetchUrl);
+                while (_photoCacheOrder.Count > MaxPhotoCacheSize && _photoCacheOrder.TryDequeue(out var oldest)) { _ = _photoCache.TryRemove(oldest, out _); }
             }
+            //else { Console.Beep(); }  // Debugging-Zwecke
 
             // 3. Wenn während des Wartens auf den Cache oder den Stream abgebrochen wurde:
             if (token.IsCancellationRequested) { return null; }
@@ -320,19 +333,39 @@ public class Contact : ICloneable, IContactEntity
     public void CopyFrom(Contact other)
     {
         if (other == null) { return; }
-
-        // 1. Alle Standard-Properties kopieren
-        var props = typeof(Contact).GetProperties();
-        foreach (var prop in props)
-        {
-            // Wir kopieren nur, wenn man schreiben und lesen kann und es keine Liste ist
-            if (prop.CanWrite && prop.CanRead && prop.Name != nameof(GroupNames)) { prop.SetValue(this, prop.GetValue(other)); }
-        }
-
-        // 2. Listen und Spezialfelder manuell behandeln (Deep Copy)
+        Anrede = other.Anrede;
+        Praefix = other.Praefix;
+        Nachname = other.Nachname;
+        Vorname = other.Vorname;
+        Zwischenname = other.Zwischenname;
+        Nickname = other.Nickname;
+        Suffix = other.Suffix;
+        Unternehmen = other.Unternehmen;
+        Position = other.Position;
+        Strasse = other.Strasse;
+        PLZ = other.PLZ;
+        Ort = other.Ort;
+        Postfach = other.Postfach;
+        Land = other.Land;
+        Betreff = other.Betreff;
+        Grussformel = other.Grussformel;
+        Schlussformel = other.Schlussformel;
+        Geburtstag = other.Geburtstag;
+        Mail1 = other.Mail1;
+        Mail2 = other.Mail2;
+        Telefon1 = other.Telefon1;
+        Telefon2 = other.Telefon2;
+        Mobil = other.Mobil;
+        Fax = other.Fax;
+        Internet = other.Internet;
+        Notizen = other.Notizen;
+        ResourceName = other.ResourceName;
+        PhotoUrl = other.PhotoUrl;
+        ETag = other.ETag;
+        LastModified = other.LastModified;
+        // RawGooglePerson bewusst NICHT kopieren (bleibt beim Original)
         GroupNames.Clear();
-        if (other.GroupNames != null) { GroupNames.AddRange(other.GroupNames); }
-
+        GroupNames.AddRange(other.GroupNames);
         ResetSearchCache();
     }
 
@@ -364,5 +397,34 @@ public class Contact : ICloneable, IContactEntity
         //if (PhotoUrl != original.PhotoUrl) { changes.Add("photos"); }
         if (!GroupNames.OrderBy(x => x).SequenceEqual(original.GroupNames.OrderBy(x => x))) { changes.Add("memberships"); }
         return [.. changes];
+    }
+
+    public void TrimStrings()  // Trimming vor dem Speichern
+    {
+        Anrede = Anrede?.Trim();
+        Praefix = Praefix?.Trim();
+        Nachname = Nachname?.Trim();
+        Vorname = Vorname?.Trim();
+        Zwischenname = Zwischenname?.Trim();
+        Nickname = Nickname?.Trim();
+        Suffix = Suffix?.Trim();
+        Unternehmen = Unternehmen?.Trim();
+        Position = Position?.Trim();
+        Strasse = Strasse?.Trim();
+        PLZ = PLZ?.Trim();
+        Ort = Ort?.Trim();
+        Postfach = Postfach?.Trim();
+        Land = Land?.Trim();
+        Betreff = Betreff?.Trim();
+        Grussformel = Grussformel?.Trim();
+        Schlussformel = Schlussformel?.Trim();
+        Mail1 = Mail1?.Trim();
+        Mail2 = Mail2?.Trim();
+        Telefon1 = Telefon1?.Trim();
+        Telefon2 = Telefon2?.Trim();
+        Mobil = Mobil?.Trim();
+        Fax = Fax?.Trim();
+        Internet = Internet?.Trim();
+        Notizen = Notizen?.Trim();
     }
 }

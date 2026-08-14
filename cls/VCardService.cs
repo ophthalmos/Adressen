@@ -52,7 +52,8 @@ internal static class VCardService
         {
             var b64 = Convert.ToBase64String(fotoBytes);
             var chunks = Chunks(b64, 72).ToList();
-            sb.Append("PHOTO;ENCODING=b;TYPE=JPEG:");
+            var imageType = DetectImageType(fotoBytes);
+            sb.Append($"PHOTO;ENCODING=b;TYPE={imageType}:");
             sb.AppendLine(chunks[0]);
             foreach (var chunk in chunks.Skip(1)) { sb.AppendLine(" " + chunk); }
         }
@@ -288,7 +289,7 @@ internal static class VCardService
                     bytes.Add(b);
                     i += 2;
                 }
-                else { bytes.Add((byte)input[i]); } // Fallback, falls kein gültiger Hex-Code
+                bytes.Add(input[i] <= 0xFF ? (byte)input[i] : (byte)'?');  // Bei echtem ASCII-Zeichen das Byte direkt übernehmen, sonst Fragezeichen (Daten sind hier ohnehin defekt)
             }
             else { bytes.Add((byte)input[i]); }
         }
@@ -405,5 +406,13 @@ internal static class VCardService
             }
         }
         return false;
+    }
+
+    private static string DetectImageType(byte[] data)
+    {
+        if (data.Length >= 3 && data[0] == 0xFF && data[1] == 0xD8) { return "JPEG"; }
+        if (data.Length >= 4 && data[0] == 0x89 && data[1] == 0x50) { return "PNG"; }
+        if (data.Length >= 2 && data[0] == 0x42 && data[1] == 0x4D) { return "BMP"; }
+        return "JPEG"; // Fallback
     }
 }

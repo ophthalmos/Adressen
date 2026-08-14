@@ -29,6 +29,7 @@ partial class FrmGroupFilter
     private void InitializeComponent()
     {
         panelBottom = new Panel();
+        chckBxRefine = new CheckBox();
         buttonAll = new Button();
         buttonFilter = new Button();
         buttonCancel = new Button();
@@ -36,7 +37,6 @@ partial class FrmGroupFilter
         labelHeader = new Label();
         tableLayoutPanel = new TableLayoutPanel();
         panelParent = new Panel();
-        chckBxRefine = new CheckBox();
         panelBottom.SuspendLayout();
         panelTop.SuspendLayout();
         panelParent.SuspendLayout();
@@ -52,8 +52,19 @@ partial class FrmGroupFilter
         panelBottom.Dock = DockStyle.Bottom;
         panelBottom.Location = new Point(0, 407);
         panelBottom.Name = "panelBottom";
-        panelBottom.Size = new Size(280, 74);
+        panelBottom.Size = new Size(284, 74);
         panelBottom.TabIndex = 5;
+        // 
+        // chckBxRefine
+        // 
+        chckBxRefine.AutoSize = true;
+        chckBxRefine.Enabled = false;
+        chckBxRefine.Location = new Point(16, 6);
+        chckBxRefine.Name = "chckBxRefine";
+        chckBxRefine.Size = new Size(252, 23);
+        chckBxRefine.TabIndex = 2;
+        chckBxRefine.Text = "Mit vorhandenem Filter kombinieren";
+        chckBxRefine.UseVisualStyleBackColor = true;
         // 
         // buttonAll
         // 
@@ -92,7 +103,7 @@ partial class FrmGroupFilter
         panelTop.Dock = DockStyle.Top;
         panelTop.Location = new Point(0, 0);
         panelTop.Name = "panelTop";
-        panelTop.Size = new Size(280, 33);
+        panelTop.Size = new Size(284, 33);
         panelTop.TabIndex = 0;
         // 
         // labelHeader
@@ -102,7 +113,7 @@ partial class FrmGroupFilter
         labelHeader.Location = new Point(0, 0);
         labelHeader.Name = "labelHeader";
         labelHeader.Padding = new Padding(8, 8, 2, 8);
-        labelHeader.Size = new Size(280, 33);
+        labelHeader.Size = new Size(284, 33);
         labelHeader.TabIndex = 4;
         labelHeader.Text = "Einschluss   Ausschluss";
         labelHeader.TextAlign = ContentAlignment.TopRight;
@@ -125,7 +136,7 @@ partial class FrmGroupFilter
         tableLayoutPanel.RowStyles.Add(new RowStyle());
         tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
         tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
-        tableLayoutPanel.Size = new Size(280, 2);
+        tableLayoutPanel.Size = new Size(284, 2);
         tableLayoutPanel.TabIndex = 2;
         // 
         // panelParent
@@ -135,19 +146,8 @@ partial class FrmGroupFilter
         panelParent.Dock = DockStyle.Fill;
         panelParent.Location = new Point(0, 33);
         panelParent.Name = "panelParent";
-        panelParent.Size = new Size(280, 374);
+        panelParent.Size = new Size(284, 374);
         panelParent.TabIndex = 3;
-        // 
-        // chckBxRefine
-        // 
-        chckBxRefine.AutoSize = true;
-        chckBxRefine.Enabled = false;
-        chckBxRefine.Location = new Point(16, 6);
-        chckBxRefine.Name = "chckBxRefine";
-        chckBxRefine.Size = new Size(252, 23);
-        chckBxRefine.TabIndex = 2;
-        chckBxRefine.Text = "Mit vorhandenem Filter kombinieren";
-        chckBxRefine.UseVisualStyleBackColor = true;
         // 
         // FrmGroupFilter
         // 
@@ -155,13 +155,14 @@ partial class FrmGroupFilter
         AutoScaleDimensions = new SizeF(7F, 17F);
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = buttonCancel;
-        ClientSize = new Size(280, 481);
+        ClientSize = new Size(284, 481);
         Controls.Add(panelParent);
         Controls.Add(panelTop);
         Controls.Add(panelBottom);
         Font = new Font("Segoe UI", 10F);
         MaximizeBox = false;
         MinimizeBox = false;
+        MinimumSize = new Size(300, 178);
         Name = "FrmGroupFilter";
         ShowIcon = false;
         ShowInTaskbar = false;
