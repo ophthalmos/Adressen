@@ -20,7 +20,7 @@ using Microsoft.Win32;
 
 namespace Adressen;
 
-public partial class FrmAdressen : Form
+public partial class FrmAdressen : Form, IMessageFilter
 {
     #region Felder, Konstanten und Zustandsvariablen
 
@@ -165,6 +165,7 @@ public partial class FrmAdressen : Form
         }
 
         InitializeComponent();
+        Application.AddMessageFilter(this); // fängt WM_MOUSEHWHEEL (horizontaler Wheel-Tilt) app-weit ab
         ApplyMenuImages();
         _splashScreen = splashScreen;
         typeof(DataGridView).InvokeMember("DoubleBuffered", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.SetProperty, null, addressDGV, [true]);
@@ -280,12 +281,6 @@ public partial class FrmAdressen : Form
         tbBetreff.PlaceholderText = show ? $"{AppSettings.TextBoxPaddingChar}Betreff" : "";
         cbGrussformel.PlaceholderText = show ? $"{AppSettings.TextBoxPaddingChar}Grußformel" : "";
         cbSchlussformel.PlaceholderText = show ? $"{AppSettings.TextBoxPaddingChar}Schlussformel" : "";
-        tbMail1.PlaceholderText = show ? $"{AppSettings.TextBoxPaddingChar}E-Mail-Adresse" : "";
-        tbMail2.PlaceholderText = show ? $"{AppSettings.TextBoxPaddingChar}E-Mail-Adresse" : "";
-        tbTelefon1.PlaceholderText = show ? $"{AppSettings.TextBoxPaddingChar}Telefonnummer" : "";
-        tbTelefon2.PlaceholderText = show ? $"{AppSettings.TextBoxPaddingChar}Telefonnummer" : "";
-        tbMobil.PlaceholderText = show ? $"{AppSettings.TextBoxPaddingChar}Mobilfunknummer" : "";
-        tbFax.PlaceholderText = show ? $"{AppSettings.TextBoxPaddingChar}Faxnummer" : "";
         tbInternet.PlaceholderText = show ? $"{AppSettings.TextBoxPaddingChar}Webseite" : "";
         tbNotizen.PlaceholderText = show ? $"{AppSettings.TextBoxPaddingChar}Notizen" : "";
         searchTextBox.PlaceholderText = show ? $"{AppSettings.TextBoxPaddingChar}Suche" : "";
@@ -309,17 +304,35 @@ public partial class FrmAdressen : Form
         toolTip.SetToolTip(tbBetreff, show ? "" : "Betreff");
         toolTip.SetToolTip(cbGrussformel, show ? "" : "Grußformel");
         toolTip.SetToolTip(cbSchlussformel, show ? "" : "Schlussformel");
-        toolTip.SetToolTip(tbMail1, show ? "" : "E-Mail-Adresse");
-        toolTip.SetToolTip(tbMail2, show ? "" : "E-Mail-Adresse");
-        toolTip.SetToolTip(tbTelefon1, show ? "" : "Telefonnummer");
-        toolTip.SetToolTip(tbTelefon2, show ? "" : "Telefonnummer");
-        toolTip.SetToolTip(tbMobil, show ? "" : "Mobilfunknummer");
-        toolTip.SetToolTip(tbFax, show ? "" : "Faxnummer");
         toolTip.SetToolTip(tbInternet, show ? "" : "Webseite");
         toolTip.SetToolTip(tbNotizen, show ? "" : "Notizen");
         toolTip.SetToolTip(searchTextBox, show ? "" : "Suche");
         toolTip.SetToolTip(maskedTextBox, show ? "" : "Geburtstag (TT.MM.JJJJ)");
         toolTip.SetToolTip(searchTSTextBox.TextBox, show ? "" : "Suche (Strg+F)");
+        UpdatePhoneMailHints(tabControl.SelectedTab == contactTabPage);
+    }
+
+    /// <summary>
+    /// Platzhalter und Tooltips der Telefon- und E-Mail-Felder je nach Tab. Bei Google-Kontakten wird die feste Zuordnung der Felder zu den
+    /// Google-Labels sichtbar (Telefon 1 = privat, Telefon 2 = geschäftlich, E-Mail 1 = privat, E-Mail 2 = geschäftlich; s. GooglePeopleManager.MapPhoneSlots).
+    /// Bei lokalen Adressen gelten die neutralen Texte aus dem Designer.
+    /// </summary>
+    private void UpdatePhoneMailHints(bool isGoogle)
+    {
+        SetFieldHint(tbTelefon1, isGoogle ? "Telefon privat" : "Telefonnummer", isGoogle ? "Telefon privat – Google-Label „Privat“ (ersatzweise „Sonstige“ oder „Hauptnummer“)" : "Telefonnummer");
+        SetFieldHint(tbTelefon2, isGoogle ? "Telefon geschäftlich" : "Telefonnummer", isGoogle ? "Telefon geschäftlich – Google-Label „Geschäftlich“ (ersatzweise „Hauptnummer“ oder „Mobil geschäftlich“)" : "Telefonnummer");
+        SetFieldHint(tbMobil, "Mobilfunknummer", isGoogle ? "Mobilfunknummer – Google-Label „Mobil“ (ersatzweise „Mobil geschäftlich“ oder „Pager“)" : "Mobilfunknummer");
+        SetFieldHint(tbFax, "Faxnummer", isGoogle ? "Faxnummer – Google-Label „Fax“ (privat, geschäftlich oder sonstige)" : "Faxnummer");
+        SetFieldHint(tbMail1, isGoogle ? "E-Mail privat" : "E-Mail-Adresse", isGoogle ? "E-Mail privat – Google-Label „Privat“ (ersatzweise „Sonstige“ oder ohne Label)" : "E-Mail-Adresse");
+        SetFieldHint(tbMail2, isGoogle ? "E-Mail geschäftlich" : "E-Mail-Adresse", isGoogle ? "E-Mail geschäftlich – Google-Label „Geschäftlich“" : "E-Mail-Adresse");
+    }
+
+    private void SetFieldHint(TextBox tb, string placeholder, string tooltip)
+    {
+        var show = _settings.ShowPlaceholderText;
+        tb.Tag = tooltip;  // Tag ist der Tooltip-Text, wenn die Platzhalter ausgeschaltet sind (s. UpdateEditControlTooltips)
+        tb.PlaceholderText = show ? $"{AppSettings.TextBoxPaddingChar}{placeholder}" : "";
+        toolTip.SetToolTip(tb, GetFieldTooltip(tb));
     }
 
     private void ApplyMenuImages()
@@ -487,15 +500,14 @@ public partial class FrmAdressen : Form
         searchTSTextBox.TextBox.Focus();
         try
         {
-            if (Utils.IsUpdateCheckDue(_settings.UpdateIndex, _settings.LastUpdateCheck))
-            {
-                var (version, date) = await Utils.GetLatestVersionInfoAsync();
-                RefreshUpdateUI(version, date);
-            }
             if (!argsPath && _settings.ReloadRecent) { _databaseFilePath = _settings.RecentFiles.Count > 0 ? _settings.RecentFiles[0] : string.Empty; }
             await Task.Delay(100);  // Lässt den UI-Thread kurz durchatmen und die Form komplett rendern; mindestens 100 ms
 
             Opacity = 1; // oder 100, je nach bevorzugter Notation in WinForms
+
+            // Update-Prüfung erst JETZT und ohne await: Sie lief bisher vor dem Sichtbarwerden des Fensters und vor dem Laden der Datenbank –
+            // bei gestörtem Netz (Captive Portal, DNS-Hänger) blieb das Fenster bis zum HTTP-Timeout (15 s) hinter dem Splash verborgen.
+            if (Utils.IsUpdateCheckDue(_settings.UpdateIndex, _settings.LastUpdateCheck)) { _ = CheckForUpdateAsync(); }
 
             if ((_settings.ReloadRecent || argsPath) && !string.IsNullOrEmpty(_databaseFilePath)) { await ConnectSQLDatabaseAsync(_databaseFilePath); }
             else if (!_settings.ReloadRecent && !_settings.NoAutoload && !string.IsNullOrEmpty(_settings.StandardFile))
@@ -763,14 +775,32 @@ public partial class FrmAdressen : Form
             CloseDatabaseConnection();
             _databaseFilePath = Utils.CorrectUNC(file);  // hier einmalig CorrectUNC aufrufen, damit wir konsistenten Pfad haben
 
-            _currentDbVersion = DatabaseMigrator.GetDatabaseVersion(_databaseFilePath);
-            //MessageBox.Show($"Datenbankversion: {_currentDbVersion}\nErwartete Version: {AppSettings.DatabaseSchemaVersion}", "Debug Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            if (_currentDbVersion > AppSettings.DatabaseSchemaVersion)  // Downgrade-Schutz
+            // SCHRITT A: Zustand der Datei prüfen (ohne EF-Context) – s. DatabaseMigrator
+            var inspection = await Task.Run(() => DatabaseMigrator.Inspect(_databaseFilePath));
+            _currentDbVersion = inspection.Version;
+            switch (inspection.State)
             {
-                Utils.MsgTaskDlg(Handle, "Datenbank zu neu", "Diese Datenbank wurde mit einer neueren Version der Software erstellt.\nBitte aktualisiere das Programm.", TaskDialogIcon.ShieldErrorRedBar);
-                return;
+                case DbState.TooNew:
+                    Utils.MsgTaskDlg(Handle, "Datenbank zu neu", "Diese Datenbank wurde mit einer neueren Version der Software erstellt.\nBitte aktualisiere das Programm.", TaskDialogIcon.ShieldErrorRedBar);
+                    return;
+                case DbState.Legacy:
+                    Utils.MsgTaskDlg(Handle, "Altes Datenbankformat",
+                        $"Diese Datenbank (Version {inspection.Version}) hat noch das Format einer älteren Programmversion und kann von dieser Version nicht mehr umgestellt werden.\n\n" +
+                        "Öffne sie einmal mit Adressen 1.2.8 (www.netradio.info) – das führt die Umstellung durch. Lege vorher eine Sicherungskopie der Datei an.",
+                        TaskDialogIcon.ShieldErrorRedBar);
+                    return;
+                case DbState.Fresh:  // Datei vorhanden, aber ohne Tabellen (z. B. leer angelegt): Schema anlegen
+                    await Task.Run(() => DatabaseMigrator.CreateNew(_databaseFilePath));
+                    break;
             }
 
+            string? backupPath = null;
+            if (inspection.State == DbState.NeedsUpgrade)  // Sicherungskopie VOR dem Öffnen des Contexts und vor jeder Strukturänderung
+            {
+                toolStripStatusLabel.Text = "Sichere Datenbank vor dem Update...";
+                statusStrip.Update();
+                backupPath = await Task.Run(() => DatabaseMigrator.CreateBackupCopy(_databaseFilePath, inspection.Version));
+            }
 
             _context = new AdressenDbContext(_databaseFilePath);
 
@@ -792,37 +822,24 @@ public partial class FrmAdressen : Form
 
             toolStripProgressBar.Value = 30; // Fortschritt: 30%
             var isMigrated = false;
-            // SCHRITT B: Migration
-            if (_currentDbVersion < AppSettings.DatabaseSchemaVersion)
+            // SCHRITT B: Struktur-Update (nur fehlende Modell-Spalten; Altformate wurden oben abgewiesen)
+            if (inspection.State == DbState.NeedsUpgrade)
             {
-                toolStripStatusLabel.Text = "Führe Migration durch...";
+                toolStripStatusLabel.Text = "Aktualisiere Datenbankstruktur...";
                 statusStrip.Update();
-
-                // Wir rufen die Migration OHNE Handle auf
-                var (migrationDone, migrationWarnings) = await Task.Run(() => DatabaseMigrator.MigrateLegacyData(_context));
-
-                if (migrationDone)
-                {
-                    isMigrated = true;
-                    _currentDbVersion = AppSettings.DatabaseSchemaVersion;
-
-                    if (migrationWarnings.Count > 0)
-                    {
-                        var warningList = string.Join("\n", migrationWarnings.Select(w => $"• {w}"));
-                        Utils.MsgTaskDlg(Handle, "Datenbank aktualisiert (mit Warnungen)",
-                            $"Die Datenbank wurde auf v{AppSettings.DatabaseSchemaVersion} migriert.\n\n" +
-                            $"{migrationWarnings.Count} Datensatz/Datensätze konnten nicht vollständig migriert werden:\n{warningList}",
-                            TaskDialogIcon.ShieldWarningYellowBar);
-                    }
-                    else
-                    {
-                        Utils.MsgTaskDlg(Handle, "Datenbank aktualisiert",
-                            $"Die Datenbank wurde erfolgreich migriert (v{AppSettings.DatabaseSchemaVersion}).",
-                            TaskDialogIcon.ShieldSuccessGreenBar);
-                    }
-                }
+                await Task.Run(() => DatabaseMigrator.Upgrade(_context, inspection));
+                isMigrated = true;
+                _currentDbVersion = AppSettings.DatabaseSchemaVersion;
+                var columnList = string.Join(", ", inspection.MissingColumns.Select(c => c.Name));
+                Utils.MsgTaskDlg(Handle, "Datenbank aktualisiert",
+                    $"Die Datenbankstruktur wurde auf Version {AppSettings.DatabaseSchemaVersion} gebracht (neue Spalten: {columnList}).\n\nSicherungskopie: {backupPath}",
+                    TaskDialogIcon.ShieldSuccessGreenBar);
             }
-
+            else if (inspection.Version < AppSettings.DatabaseSchemaVersion)  // Struktur vollständig, nur der Versionsstempel fehlt
+            {
+                await Task.Run(() => DatabaseMigrator.StampVersion(_context));
+                _currentDbVersion = AppSettings.DatabaseSchemaVersion;
+            }
 
             // SCHRITT C: Laden (Der längste Teil)
             // Wir setzen ihn auf 50%, wohl wissend, dass er hier kurz "hängt"
@@ -922,12 +939,10 @@ public partial class FrmAdressen : Form
     {
         try
         {
-            SqliteConnection.ClearAllPools(); // bestehende Pools leeren, um Dateisperren zu vermeiden
-            if (File.Exists(filePath)) { File.Delete(filePath); }
-            using var dbContext = new AdressenDbContext(filePath);
-            dbContext.Database.EnsureCreated(); // Erstellt die Datenbank und ALLE Tabellen (Adressen, Gruppen, Dokumente, Foto)
+            DatabaseMigrator.CreateNew(filePath);  // Datei + komplettes Schema aus dem EF-Modell + Schema-Version (einzige Stelle dafür, s. auch FrmImportCsv)
             if (addSampleRecord)
             {
+                using var dbContext = new AdressenDbContext(filePath);
                 var sampleAdresse = new Adresse
                 {
                     Anrede = "Herrn",
@@ -947,7 +962,6 @@ public partial class FrmAdressen : Form
                 dbContext.Adressen.Add(sampleAdresse);
                 dbContext.SaveChanges();
             }
-            dbContext.Database.ExecuteSqlRaw($"PRAGMA user_version = {AppSettings.DatabaseSchemaVersion}"); // Schema-Version setzen, wenn Tabellen existieren
         }
         catch (Exception ex) { Utils.ErrTaskDlg(Handle, ex); }
     }
@@ -1105,7 +1119,7 @@ public partial class FrmAdressen : Form
         maskedTextBox?.DataBindings.Clear();
         maskedTextBox?.Text = string.Empty;
         topAlignZoomPictureBox.Image = Resources.Avatar150;
-        flowLayoutPanel.Controls.Clear();
+        ClearTagPanel();
         dokuListView.Items.Clear();
         tabPageDoku.ImageIndex = 3;
 
@@ -1796,6 +1810,7 @@ public partial class FrmAdressen : Form
         // Die Google-Kontakte behalten OnPropertyChanged, weil es dort keine expliziten WriteValue()-Aufrufe gibt.
         var updateMode = useNullConversion ? DataSourceUpdateMode.Never : DataSourceUpdateMode.OnPropertyChanged;
 
+        UpdatePhoneMailHints(targetSource == contactBSource);  // Platzhalter/Tag vor der Tooltip-Schleife unten setzen, damit die Google-Zuordnung sichtbar wird
         foreach (var (control, dataMember) in editControlsDictionary)
         {
             if (dataMember == nameof(Adresse.Reminder) || dataMember == nameof(Adresse.Geburtstag)) { continue; }
@@ -1806,7 +1821,7 @@ public partial class FrmAdressen : Form
                 textBinding.Parse += (s, e) => { if (e.Value is string str && string.IsNullOrEmpty(str)) { e.Value = null; } };
             }
             control.DataBindings.Add(textBinding);
-            toolTip.SetToolTip(control, !_settings.ShowPlaceholderText && string.IsNullOrEmpty(control.Text) ? control.Tag?.ToString() : "");
+            toolTip.SetToolTip(control, GetFieldTooltip(control));
         }
         UpdateTextBoxAutoComplete(targetSource); // Aktualisierung der ComboBox-Listen (Suggest-Listen)
         maskedTextBox.DataBindings.Clear(); // Spezialfall: Geburtstag, spezielle Formatierung
@@ -2584,7 +2599,7 @@ public partial class FrmAdressen : Form
         if (isGoogle && (contactBSource is null || contactBSource.Current is not Contact)) { return; }
 
         UpdateSaveButton();
-        toolTip.SetToolTip(senderControl, !_settings.ShowPlaceholderText && string.IsNullOrEmpty(senderControl.Text) ? senderControl.Tag?.ToString() : "");
+        toolTip.SetToolTip(senderControl, GetFieldTooltip(senderControl));
 
         if (((senderControl == tbBetreff) && DeathDateRegex().IsMatch(senderControl.Text)) || ageLabel.Text.EndsWith("verstorben"))
         {
@@ -2739,11 +2754,34 @@ public partial class FrmAdressen : Form
 
     private void BtnCalendar_Click(object sender, EventArgs e) => OpenCalendar();
 
+    /// <summary>
+    /// Tooltip eines Eingabefelds: Bei Google-Kontakten zeigen die gefüllten Telefon-/E-Mail-Felder das tatsächliche Google-Label des
+    /// dahinterliegenden Eintrags (z. B. „Hauptnummer" oder ein eigenes Label), bei neuen Einträgen den Standardtyp, mit dem gespeichert wird.
+    /// Sonst gilt die Grundregel: Tag-Text nur, wenn Platzhalter ausgeschaltet sind und das Feld leer ist.
+    /// </summary>
+    private string GetFieldTooltip(Control control)
+    {
+        if (tabControl.SelectedTab == contactTabPage && !string.IsNullOrEmpty(control.Text) && _lastActiveContact?.RawGooglePerson != null)
+        {
+            var labels = GooglePeopleManager.GetFieldLabels(_lastActiveContact);
+            if (control == tbTelefon1) { return LabelTooltip(labels.Telefon1, "Privat"); }
+            if (control == tbTelefon2) { return LabelTooltip(labels.Telefon2, "Geschäftlich"); }
+            if (control == tbMobil) { return LabelTooltip(labels.Mobil, "Mobil"); }
+            if (control == tbFax) { return LabelTooltip(labels.Fax, "Fax"); }
+            if (control == tbMail1) { return LabelTooltip(labels.Mail1, "Privat"); }
+            if (control == tbMail2) { return LabelTooltip(labels.Mail2, "Geschäftlich"); }
+        }
+        return !_settings.ShowPlaceholderText && string.IsNullOrEmpty(control.Text) ? control.Tag?.ToString() ?? "" : "";
+
+        static string LabelTooltip(string? label, string defaultLabel)
+            => label != null ? $"Google-Label: {label}" : $"Neuer Eintrag – wird bei Google mit dem Label „{defaultLabel}“ angelegt";
+    }
+
     private void UpdateEditControlTooltips()
     {
         foreach (var (control, _) in editControlsDictionary)
         {
-            toolTip.SetToolTip(control, !_settings.ShowPlaceholderText && string.IsNullOrEmpty(control.Text) ? control.Tag?.ToString() : "");
+            toolTip.SetToolTip(control, GetFieldTooltip(control));
         }
     }
 
@@ -2882,7 +2920,7 @@ public partial class FrmAdressen : Form
                 finally { ignoreTextChange = false; }
                 ShowPhotoInPictureBox(newContact);
                 newContact.GroupNames.Clear();
-                flowLayoutPanel.Controls.Clear();  //UpdateMembershipTags();
+                ClearTagPanel();  //UpdateMembershipTags();
                 UpdateSaveButton();
             }
             finally { isSelectionChanging = false; }
@@ -2977,7 +3015,7 @@ public partial class FrmAdressen : Form
                     finally { ignoreTextChange = false; }
                     ShowPhotoInPictureBox(newContact);
                     newContact.GroupNames.Clear();
-                    flowLayoutPanel.Controls.Clear();
+                    ClearTagPanel();
                 }
             }
             finally { isSelectionChanging = false; }
@@ -4124,8 +4162,9 @@ public partial class FrmAdressen : Form
         }
     }
 
-    private void HideToolStripMenuItem_Click(object sender, EventArgs e)
+    private async void HideToolStripMenuItem_Click(object sender, EventArgs e)
     {
+        if (tabControl.SelectedTab == contactTabPage && !await ContactChanges_Check()) { return; }  // Gatekeeper auch für den Direktaufruf per Strg+− (umgeht das Menü)
         if (tabControl.SelectedTab == addressTabPage && _context != null)
         {
             if (addressBSource.Current is not Adresse current) { return; }
@@ -4262,8 +4301,9 @@ public partial class FrmAdressen : Form
         tsClearLabel.Visible = hasSearchText;
     }
 
-    private void GroupFilterToolStripMenuItem_Click(object sender, EventArgs e)
+    private async void GroupFilterToolStripMenuItem_Click(object sender, EventArgs e)
     {
+        if (tabControl.SelectedTab == contactTabPage && !await ContactChanges_Check()) { return; }  // Gatekeeper auch für den Direktaufruf per F9 (umgeht das Menü)
         // 1. Gruppenliste für den Dialog vorbereiten
         SortedSet<string> dialogGroups;
         var isFilterActive = filterRemoveToolStripMenuItem.Visible;
@@ -4388,7 +4428,7 @@ public partial class FrmAdressen : Form
 
             contactGroupsDict = result.GroupMap;
             allContactMemberships.Clear();
-            flowLayoutPanel.Controls.Clear();
+            ClearTagPanel();
 
             // Erst alle regulären Gruppen aus der Map hinzufügen
             foreach (var kvp in contactGroupsDict)
@@ -4553,7 +4593,7 @@ public partial class FrmAdressen : Form
             delPictboxToolStripButton.Enabled = false;
             AgeLabel_MaskedTB_Clear();
             labelLastMod.Text = string.Empty;
-            flowLayoutPanel.Controls.Clear();
+            ClearTagPanel();
             btnEditContact.Visible = false;
             saveTSButton.Enabled = false;
             curContactMemberships.Clear();
@@ -4581,7 +4621,7 @@ public partial class FrmAdressen : Form
             }
             else
             {
-                flowLayoutPanel.Controls.Clear();
+                ClearTagPanel();
                 UpdatePlaceholderVis();
             }
             UpdateTagComboBoxDataSource();
@@ -5233,7 +5273,7 @@ public partial class FrmAdressen : Form
                     if (string.IsNullOrWhiteSpace(gName) || gName == "★") { continue; }
 
                     var gruppe = _context?.Gruppen.Local.FirstOrDefault(g => g.Name.Equals(gName, StringComparison.OrdinalIgnoreCase))
-                                 ?? _context?.Gruppen.FirstOrDefault(g => g.Name.Equals(gName, StringComparison.CurrentCultureIgnoreCase));
+                                 ?? _context?.Gruppen.FirstOrDefault(g => g.Name == gName);  // DB-Abfrage: EF Core übersetzt Equals mit StringComparison nicht (Exception); "==" ist dank COLLATE NOCASE ohnehin case-insensitiv
 
                     if (gruppe == null)
                     {
@@ -5352,56 +5392,64 @@ public partial class FrmAdressen : Form
     {
         var isContactTab = tabControl.SelectedTab == contactTabPage;
         var groupsList = isContactTab ? curContactMemberships : curAddressMemberships;
-        flowLayoutPanel.Controls.Clear();
-        foreach (var membership in groupsList)
+        flowLayoutPanel.SuspendLayout();  // ein Layout-Durchlauf statt einem pro Tag (weniger Flackern)
+        try
         {
-            var tagControl = new TagControl
+            ClearTagPanel();
+            foreach (var membership in groupsList)
             {
-                Text = membership,
-                Membership = membership
-            };
-
-            tagControl.DeleteClick += (sender, e) =>
-            {
-                var ctrl = sender as TagControl;
-                var membershipToRemove = ctrl?.Membership;
-                if (string.IsNullOrEmpty(membershipToRemove)) { return; }
-
-                if (isContactTab) // --- Google Kontakte Logic ---
+                var tagControl = new TagControl
                 {
-                    curContactMemberships.Remove(membershipToRemove);
-                    UpdateMembershipTags();
-                    UpdateCurrentContactMemberships();
-                    UpdateSaveButton();
-                }
-                else
-                {
-                    if (addressBSource.Current is Adresse adresse)
-                    {
-                        var gruppeToDelete = adresse.Gruppen.FirstOrDefault(g => g.Name.Equals(membershipToRemove, StringComparison.OrdinalIgnoreCase));
-                        if (gruppeToDelete != null)
-                        {
-                            // 1. Verknüpfung entfernen (Erzeugt "Deleted" State bei der Schatten-Entität)
-                            adresse.Gruppen.Remove(gruppeToDelete);
-                            curAddressMemberships.Remove(membershipToRemove);
-
-                            // 2. UI Aktualisieren
-                            UpdateMembershipTags();
-                            UpdateTagComboBoxDataSource();
-                            UpdatePlaceholderVis();
-
-                            // 3. WICHTIG: UI benachrichtigen (aktiviert Buttons, feuert Events)
-                            //addressBindingSource.ResetCurrentItem();
-
-                            // 4. Save-Button explizit prüfen
-                            UpdateSaveButton();
-                        }
-                    }
-                }
-            };
-            flowLayoutPanel.Controls.Add(tagControl);
+                    Text = membership,
+                    Membership = membership
+                };
+                tagControl.DeleteClick += TagControl_DeleteClick;  // benannter Handler statt Closure (kein per Tag gefangener Zustand, sauber mit dem Control entsorgt)
+                flowLayoutPanel.Controls.Add(tagControl);
+            }
+            UpdatePlaceholderVis();
         }
-        UpdatePlaceholderVis();
+        finally { flowLayoutPanel.ResumeLayout(); }
+    }
+
+    private void TagControl_DeleteClick(object? sender, EventArgs e)
+    {
+        if (sender is not TagControl ctrl || string.IsNullOrEmpty(ctrl.Membership)) { return; }
+        var membershipToRemove = ctrl.Membership;
+
+        if (tabControl.SelectedTab == contactTabPage) // --- Google Kontakte Logic ---
+        {
+            curContactMemberships.Remove(membershipToRemove);
+            UpdateMembershipTags();
+            UpdateCurrentContactMemberships();
+            UpdateSaveButton();
+        }
+        else if (addressBSource.Current is Adresse adresse)
+        {
+            var gruppeToDelete = adresse.Gruppen.FirstOrDefault(g => g.Name.Equals(membershipToRemove, StringComparison.OrdinalIgnoreCase));
+            if (gruppeToDelete != null)
+            {
+                // 1. Verknüpfung entfernen (Erzeugt "Deleted" State bei der Schatten-Entität)
+                adresse.Gruppen.Remove(gruppeToDelete);
+                curAddressMemberships.Remove(membershipToRemove);
+
+                // 2. UI Aktualisieren
+                UpdateMembershipTags();
+                UpdateTagComboBoxDataSource();
+                UpdatePlaceholderVis();
+
+                // 3. Save-Button explizit prüfen
+                UpdateSaveButton();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Leert das Tag-Panel und ENTSORGT die Controls. Controls.Clear() allein entfernt sie nur aus dem Panel: Fensterhandle, Fonts und
+    /// Event-Verdrahtung blieben bis zum Programmende erhalten – bei jedem Blättern kämen neue dazu (USER-/GDI-Handle-Leck).
+    /// </summary>
+    private void ClearTagPanel()
+    {
+        for (var i = flowLayoutPanel.Controls.Count - 1; i >= 0; i--) { flowLayoutPanel.Controls[i].Dispose(); }  // Dispose nimmt das Control auch aus dem Panel
     }
 
     private void TagButton_Click(object sender, EventArgs e)
@@ -7336,7 +7384,7 @@ public partial class FrmAdressen : Form
                         if (string.IsNullOrWhiteSpace(gName)) { continue; }
 
                         var gruppe = _context.Gruppen.Local.FirstOrDefault(g => g.Name.Equals(gName, StringComparison.OrdinalIgnoreCase))
-                            ?? _context.Gruppen.FirstOrDefault(g => g.Name.Equals(gName, StringComparison.OrdinalIgnoreCase));
+                            ?? _context.Gruppen.FirstOrDefault(g => g.Name == gName);  // DB-Abfrage: EF Core übersetzt Equals mit StringComparison nicht (Exception); "==" ist dank COLLATE NOCASE ohnehin case-insensitiv
                         if (gruppe == null)
                         {
                             gruppe = new Gruppe { Name = gName };
@@ -7944,9 +7992,11 @@ public partial class FrmAdressen : Form
                 }
                 return; // Für das Edit-Menü sind wir hier fertig
             }
-            if (isContactTab && _lastActiveContact != null && hasRealChanges)  // ALLE ANDEREN MENÜS (Datei, Ansicht, etc.)
+            if (isContactTab && _lastActiveContact != null && hasRealChanges)  // ALLE ANDEREN MENÜS (Datei, Ansicht, Filter, etc.)
             {
-                if (dropItem.OwnerItem == filterlToolStripMenuItem) { return; }  // filterRemoveToolStripMenuItem behandelt den SpeichernDialog selbst
+                // Auch das Filter-Menü läuft durch den Gatekeeper: Jeder Filter tauscht die DataSource und setzt die Auswahl auf Zeile 0,
+                // ungespeicherte Änderungen am aktuellen Kontakt würden sonst still verloren gehen. (filterRemoveToolStripMenuItem ist ein
+                // eigener Hauptmenüpunkt ohne Dropdown und prüft in seinem Click-Handler selbst.)
                 e.Cancel = true; // Menü-Öffnen sofort abbrechen für den asynchronen Dialog
                 var readyToProceed = await ContactChanges_Check();
                 if (readyToProceed) { ownerMenuItem.ShowDropDown(); }   // Menü nach Bestätigung wieder öffnen
@@ -8197,7 +8247,20 @@ public partial class FrmAdressen : Form
         }
     }
 
+    private void FrmAdressen_FormClosed(object sender, FormClosedEventArgs e) => Application.RemoveMessageFilter(this);
+
     private void AboutToolStripMenuItem_Click(object sender, EventArgs e) => Utils.HelpMsgTaskDlg(Handle, appLong, Icon, _currentDbVersion);
+
+    public bool PreFilterMessage(ref Message m) 
+    {
+        if (m.Msg == NativeMethods.WM_MOUSEHWHEEL && ActiveForm == this)  // Abfrage erfasst nur MouseTilt (nicht in Kombination mit Enter)
+        {
+            var delta = (short)(((long)m.WParam >> 16) & 0xFFFF); // HIWORD von wParam: >0 = rechts, <0 = links
+            if (delta != 0) { tabControl.SelectedIndex = delta > 0 ? 1 : 0; }  // 1 → Kontakte, 0 → Adressen
+            return true; // Nachricht verschlucken (kein horizontales Scrollen in Grids o. Ä.)
+        }
+        return false;
+    }
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
@@ -8274,8 +8337,8 @@ public partial class FrmAdressen : Form
             case Keys.F9 | Keys.Control:
                 ManageGroupsToolStripMenuItem_Click(null!, EventArgs.Empty);
                 return true;
-            case Keys.Enter | Keys.Control:  //case Keys.Tab | Keys.Control:   // funktioniert nicht
-                tabControl.SelectedIndex = tabControl.SelectedIndex == 1 ? 0 : 1;
+            case Keys.Enter | Keys.Control:  // Workaround für Ctrl+Tab
+                tabControl.SelectedIndex = tabControl.SelectedIndex == 1 ? 0 : 1; // der horizontale Wheel-Tilt wird separat über PreFilterMessage behandelt
                 return true;
             case Keys.F | Keys.Control | Keys.Shift:
                 SearchTSButton_Click(null!, EventArgs.Empty);
@@ -8508,6 +8571,18 @@ public partial class FrmAdressen : Form
             _settings.UpdateIndex = newIndex;
             SettingsManager.Save(_settings, _settingsPath);
         }
+    }
+
+    /// <summary>Update-Prüfung im Hintergrund (Fire-and-forget aus FrmAdressen_Shown); läuft parallel zum Laden der Datenbank. Fehler dürfen nicht entweichen, da niemand den Task awaitet.</summary>
+    private async Task CheckForUpdateAsync()
+    {
+        try
+        {
+            var (version, date) = await Utils.GetLatestVersionInfoAsync();
+            if (IsDisposed) { return; }  // Programm wurde inzwischen beendet
+            RefreshUpdateUI(version, date);
+        }
+        catch (Exception ex) { Debug.WriteLine($"Update-Prüfung fehlgeschlagen: {ex.Message}"); }
     }
 
     private void RefreshUpdateUI(Version? latestVersion, string? releaseDate)

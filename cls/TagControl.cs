@@ -11,8 +11,11 @@ internal class TagControl : Control
     private bool isHoveringDelete = false;
     private string _membership = string.Empty;
 
-    private readonly Image deleteImage = Resources.delete12;
-    private readonly int deleteButtonLogicalSize = 16;
+    // Geteilte GDI-Ressourcen für alle Tags: Jeder Zugriff auf Resources.delete12 erzeugt eine neue Bitmap, und Control.Dispose gibt eine zugewiesene Font nicht frei –
+    // pro Instanz angelegt würden Bild und Font bei jedem Neuaufbau des Tag-Panels (jede Adresse) als GDI-Handles übrig bleiben.
+    private static readonly Image DeleteImage = Resources.delete12;
+    private static readonly Font TagFont = new("Segoe UI", 10);
+    private const int deleteButtonLogicalSize = 16;
 
     public event EventHandler? DeleteClick;
 
@@ -32,7 +35,7 @@ internal class TagControl : Control
         BackColor = Color.Transparent; // wird sonst als rechtesckiger Hintergrund gezeichnet
         ForeColor = SystemColors.ControlText;
         Margin = new Padding(2); //Padding = new Padding(0, 0, 0, 0); // Padding.Left wird für die Textposition verwendet
-        Font = new Font("Segoe UI", 10);
+        Font = TagFont;
         UpdateSize();
     }
 
@@ -89,9 +92,9 @@ internal class TagControl : Control
                 using var hoverBrush = new SolidBrush(Color.LightPink);
                 g.FillEllipse(hoverBrush, deleteRect);
             }
-            var imgX = deleteRect.X + ((deleteRect.Width - deleteImage.Width) / 2);
-            var imgY = deleteRect.Y + ((deleteRect.Height - deleteImage.Height) / 2);
-            g.DrawImage(deleteImage, imgX, imgY);
+            var imgX = deleteRect.X + ((deleteRect.Width - DeleteImage.Width) / 2);
+            var imgY = deleteRect.Y + ((deleteRect.Height - DeleteImage.Height) / 2);
+            g.DrawImage(DeleteImage, imgX, imgY);
         }
         else
         {

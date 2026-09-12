@@ -6,7 +6,7 @@ namespace Adressen.cls;
 
 public class AppSettings
 {
-    public const int DatabaseSchemaVersion = 5; // v5: zuletzt "LastModified" hinzugefügt
+    public const int DatabaseSchemaVersion = 5; // v5 = Urzustand (Schema = EF-Modell); NICHT zurücksetzen – bestehende Datenbanken tragen user_version 5. Bei neuen Spalten im Modell erhöhen (s. DatabaseMigrator)
     public const int MaxRecentFiles = 10;   // Wird für JSON-Speicherung nicht verwendet, da es sich um eine Konstante handelt      
     public const char TextBoxPaddingChar = ' '; // schmales Leerzeichen // '\u200B'; ' '; kein JsonIgnore erforderlich
     public const int PictBoxWidth = 150; // Breite des Bildes in FrmAdressen (keine JSON-Speicherung weil Konstante)

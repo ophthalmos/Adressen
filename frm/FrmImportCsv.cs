@@ -144,13 +144,8 @@ public partial class FrmImportCsv : Form
 
     private async Task<(int imported, int skipped)> PerformImportAsync(string dbPath, Dictionary<int, string> fieldMapping, bool isNewDatabase, bool skipDuplicates, IProgress<int> progress)
     {
-        if (isNewDatabase && File.Exists(dbPath)) { File.Delete(dbPath); }  // context.Database.EnsureCreatedAsync() macht nichts, wenn die Datei schon existiert (belässt veraltete Tabellen)
+        if (isNewDatabase) { DatabaseMigrator.CreateNew(dbPath); }  // Datei + Schema + Schema-Version; ersetzt eine vorhandene Datei (EnsureCreated allein beließe veraltete Tabellen)
         using var context = new AdressenDbContext(dbPath);
-        if (isNewDatabase)
-        {
-            await context.Database.EnsureCreatedAsync();
-            await context.Database.ExecuteSqlRawAsync($"PRAGMA user_version = {AppSettings.DatabaseSchemaVersion};");
-        }
         context.ChangeTracker.AutoDetectChangesEnabled = false;
 
         using var transaction = await context.Database.BeginTransactionAsync();  // Transaktion für bessere Performance und um bei Fehlern die Datenbank nicht zu beschädigen
@@ -198,7 +193,7 @@ public partial class FrmImportCsv : Form
                         foreach (var gName in gruppenNamen)
                         {
                             var gruppe = context.Gruppen.Local.FirstOrDefault(g => g.Name.Equals(gName, StringComparison.OrdinalIgnoreCase))
-                                         ?? context.Gruppen.FirstOrDefault(g => g.Name.Equals(gName, StringComparison.CurrentCultureIgnoreCase));
+                                         ?? context.Gruppen.FirstOrDefault(g => g.Name == gName);  // DB-Abfrage: EF Core übersetzt Equals mit StringComparison nicht (Exception → Import bricht ab); "==" ist dank COLLATE NOCASE case-insensitiv
                             if (gruppe == null)
                             {
                                 gruppe = new Gruppe { Name = gName };

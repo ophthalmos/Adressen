@@ -2604,6 +2604,7 @@ partial class FrmAdressen
         // 
         // tbNotizen
         // 
+        tbNotizen.AcceptsTab = true;
         tbNotizen.BorderStyle = BorderStyle.None;
         tbNotizen.ContextMenuStrip = contextTextBox;
         tbNotizen.Dock = DockStyle.Fill;
@@ -3001,6 +3002,7 @@ partial class FrmAdressen
         Activated += FrmAdressen_Activated;
         Deactivate += FrmAdressen_Deactivate;
         FormClosing += FrmAdressen_FormClosing;
+        FormClosed += FrmAdressen_FormClosed;
         Load += FrmAdressen_Load;
         Shown += FrmAdressen_Shown;
         Resize += FrmAdressen_Resize;
