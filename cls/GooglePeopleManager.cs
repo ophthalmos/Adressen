@@ -19,9 +19,14 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
     // true, wenn bei der Autorisierung eine Browser-Anmeldung stattgefunden hat (statt stillem Token-Laden).
     internal bool LastAuthorizationWasInteractive { get; private set; }
     private static readonly SemaphoreSlim _serviceLock = new(1, 1);
-    // _allKnownPhoneTypes muss nicht zwangsläufig alle von Google unterstützten Typen enthalten, sondern nur die, die wir mit dem Fallback-Mechanismus auf bestimmte Felder verteilen.
-    private static readonly HashSet<string> _allKnownPhoneTypes = new(StringComparer.OrdinalIgnoreCase) {
-        TYPE_HOME, TYPE_WORK, TYPE_MOBILE, TYPE_FAX, TYPE_HOME_FAX, TYPE_WORK_FAX, TYPE_OTHER_FAX, TYPE_WORK_MOBILE, TYPE_MAIN, TYPE_PAGER, TYPE_OTHER };  // , "googleVoice", "workPager"
+    // Fax-Typen werden bei der Verteilung übrig gebliebener Nummern auf die Telefonfelder ausgeschlossen (siehe MapPhoneSlots)
+    private static readonly HashSet<string> _faxTypes = new(StringComparer.OrdinalIgnoreCase) { TYPE_FAX, TYPE_HOME_FAX, TYPE_WORK_FAX, TYPE_OTHER_FAX };
+
+    // Zuordnung Programmfeld → konkreter Google-Eintrag. Wird beim Lesen (MapPersonToContact) und beim Schreiben (UpdateContactAsync)
+    // mit derselben Regel berechnet, damit garantiert der angezeigte Eintrag geändert bzw. entfernt wird und kein anderer.
+    private sealed record PhoneSlots(PhoneNumber? Telefon1, PhoneNumber? Telefon2, PhoneNumber? Mobil, PhoneNumber? Fax);
+    private sealed record EmailSlots(EmailAddress? Mail1, EmailAddress? Mail2);
+    internal sealed record ContactFieldLabels(string? Telefon1, string? Telefon2, string? Mobil, string? Fax, string? Mail1, string? Mail2);
 
     // --- GOOGLE API KONSTANTEN ---
     private const string CONTACT_PERSON_FIELDS = "names,memberships,nicknames,addresses,phoneNumbers,emailAddresses,biographies,birthdays,urls,organizations,photos,userDefined,metadata";
@@ -168,7 +173,7 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         if (changedFields.Contains("names"))
         {
             personToUpdate.Names ??= [];
-            var primaryName = personToUpdate.Names.FirstOrDefault(n => n.Metadata?.Primary == true) ?? personToUpdate.Names.FirstOrDefault();
+            var primaryName = personToUpdate.Names.FirstOrDefault();  // derselbe Eintrag wie beim Lesen in MapPersonToContact (erster Eintrag) – sonst wird ein anderer Eintrag überschrieben als der angezeigte
             if (primaryName == null)
             {
                 primaryName = new Name();
@@ -184,7 +189,7 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         if (changedFields.Contains("nicknames"))
         {
             personToUpdate.Nicknames ??= [];
-            var primaryNick = personToUpdate.Nicknames.FirstOrDefault(n => n.Metadata?.Primary == true) ?? personToUpdate.Nicknames.FirstOrDefault();
+            var primaryNick = personToUpdate.Nicknames.FirstOrDefault();  // wie beim Lesen: erster Eintrag
             if (primaryNick == null)
             {
                 primaryNick = new Nickname();
@@ -196,10 +201,12 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         if (changedFields.Contains("addresses"))
         {
             personToUpdate.Addresses ??= [];
-            var primaryAddr = personToUpdate.Addresses.FirstOrDefault(a => a.Metadata?.Primary == true) ?? personToUpdate.Addresses.FirstOrDefault();
+            // Zwingend dieselbe Auswahlregel wie beim Lesen (home → work → other → erste): Sonst wird bei einem Kontakt mit
+            // z. B. [work (primär), home] die angezeigte Privatadresse in die Geschäftsadresse geschrieben und diese geht verloren.
+            var primaryAddr = GetGoogleAddressByType(personToUpdate, TYPE_HOME, TYPE_WORK, TYPE_OTHER);
             if (primaryAddr == null)
             {
-                primaryAddr = new Address();
+                primaryAddr = new Address { Type = TYPE_HOME };  // mit Typ anlegen, damit der nächste Lesevorgang denselben Eintrag findet
                 personToUpdate.Addresses.Add(primaryAddr);
             }
             primaryAddr.StreetAddress = contact.Strasse;
@@ -212,7 +219,7 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         if (changedFields.Contains("organizations"))
         {
             personToUpdate.Organizations ??= [];
-            var primaryOrg = personToUpdate.Organizations.FirstOrDefault(o => o.Metadata?.Primary == true) ?? personToUpdate.Organizations.FirstOrDefault();
+            var primaryOrg = personToUpdate.Organizations.FirstOrDefault();  // wie beim Lesen: erster Eintrag
             if (primaryOrg == null)
             {
                 primaryOrg = new Organization();
@@ -225,7 +232,7 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         if (changedFields.Contains("birthdays"))
         {
             personToUpdate.Birthdays ??= [];
-            var primaryBday = personToUpdate.Birthdays.FirstOrDefault(b => b.Metadata?.Primary == true) ?? personToUpdate.Birthdays.FirstOrDefault();
+            var primaryBday = personToUpdate.Birthdays.FirstOrDefault();  // wie beim Lesen: erster Eintrag (Birthdays[0])
             if (contact.Geburtstag.HasValue)
             {
                 if (primaryBday == null)
@@ -241,24 +248,14 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
             }
         }
 
-        if (changedFields.Contains("phoneNumbers"))
-        {
-            UpdateGooglePhone(personToUpdate, TYPE_HOME, contact.Telefon1, TYPE_OTHER, TYPE_MAIN);
-            UpdateGooglePhone(personToUpdate, TYPE_WORK, contact.Telefon2, TYPE_MAIN, TYPE_WORK_MOBILE);
-            UpdateGooglePhone(personToUpdate, TYPE_MOBILE, contact.Mobil, TYPE_WORK_MOBILE, TYPE_PAGER);
-            UpdateGooglePhone(personToUpdate, TYPE_FAX, contact.Fax, TYPE_HOME_FAX, TYPE_WORK_FAX, TYPE_OTHER_FAX);
-        }
+        if (changedFields.Contains("phoneNumbers")) { ApplyPhoneChanges(personToUpdate, contact); }
 
-        if (changedFields.Contains("emailAddresses"))
-        {
-            UpdateGoogleEmail(personToUpdate, TYPE_HOME, contact.Mail1, TYPE_OTHER);
-            UpdateGoogleEmail(personToUpdate, TYPE_WORK, contact.Mail2);
-        }
+        if (changedFields.Contains("emailAddresses")) { ApplyEmailChanges(personToUpdate, contact); }
 
         if (changedFields.Contains("urls"))
         {
             personToUpdate.Urls ??= [];
-            var primaryUrl = personToUpdate.Urls.FirstOrDefault(u => u.Type == TYPE_HOMEPAGE || u.Metadata?.Primary == true) ?? personToUpdate.Urls.FirstOrDefault();
+            var primaryUrl = GetGoogleUrlEntry(personToUpdate, TYPE_HOMEPAGE, TYPE_HOME, TYPE_WORK, TYPE_OTHER);  // dieselbe Auswahlregel wie beim Lesen
             if (string.IsNullOrWhiteSpace(contact.Internet))
             {
                 if (primaryUrl != null) { personToUpdate.Urls.Remove(primaryUrl); }
@@ -277,7 +274,7 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         if (changedFields.Contains("biographies"))
         {
             personToUpdate.Biographies ??= [];
-            var primaryBio = personToUpdate.Biographies.FirstOrDefault(b => b.Metadata?.Primary == true) ?? personToUpdate.Biographies.FirstOrDefault();
+            var primaryBio = personToUpdate.Biographies.FirstOrDefault();  // wie beim Lesen: erster Eintrag
             if (string.IsNullOrWhiteSpace(contact.Notizen))
             {
                 if (primaryBio != null)
@@ -556,6 +553,8 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
     private static Contact MapPersonToContact(Person person, Dictionary<string, string> groupMap)
     {
         var addr = GetGoogleAddressByType(person, TYPE_HOME, TYPE_WORK, TYPE_OTHER);
+        var phones = MapPhoneSlots(person);
+        var emails = MapEmailSlots(person);
         var newContact = new Contact
         {
             RawGooglePerson = person,
@@ -576,22 +575,13 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
             Land = addr?.Country ?? "",
             Notizen = person.Biographies?.FirstOrDefault()?.Value.ReplaceLineEndings() ?? "",
             Internet = GetGoogleUrlByType(person, TYPE_HOMEPAGE, TYPE_HOME, TYPE_WORK, TYPE_OTHER),
-            Mail1 = GetGoogleEmailByType(person, TYPE_HOME, TYPE_OTHER),
-            Mail2 = GetGoogleEmailByType(person, TYPE_WORK),
-            Telefon1 = GetGooglePhoneByType(person, TYPE_HOME, TYPE_OTHER, TYPE_MAIN),
-            Telefon2 = GetGooglePhoneByType(person, TYPE_WORK, TYPE_MAIN, TYPE_WORK_MOBILE),
-            Mobil = GetGooglePhoneByType(person, TYPE_MOBILE, TYPE_WORK_MOBILE, TYPE_PAGER),
-            Fax = GetGooglePhoneByType(person, TYPE_FAX, TYPE_HOME_FAX, TYPE_WORK_FAX, TYPE_OTHER_FAX),
+            Mail1 = emails.Mail1?.Value ?? "",
+            Mail2 = emails.Mail2?.Value ?? "",
+            Telefon1 = phones.Telefon1?.Value ?? "",
+            Telefon2 = phones.Telefon2?.Value ?? "",
+            Mobil = phones.Mobil?.Value ?? "",
+            Fax = phones.Fax?.Value ?? "",
         };
-        // Fallback für Custom-Typen: Alle unbekannten Nummern auf noch freie Felder verteilen
-        List<PhoneNumber> customPhones = [.. (person.PhoneNumbers ?? []).Where(static p => !string.IsNullOrEmpty(p.Value) && !_allKnownPhoneTypes.Contains(p.Type ?? ""))];
-        foreach (var customPhone in customPhones)
-        {
-            if (string.IsNullOrEmpty(newContact.Telefon1)) { newContact.Telefon1 = customPhone.Value!; }
-            else if (string.IsNullOrEmpty(newContact.Telefon2)) { newContact.Telefon2 = customPhone.Value!; }
-            else if (string.IsNullOrEmpty(newContact.Mobil)) { newContact.Mobil = customPhone.Value!; }
-            else { break; } // Alle verfügbaren Felder belegt; eine Nummer mit unbekanntem Typ ist mit hoher Wahrscheinlichkeit kein Fax
-        }
 
         if (person.UserDefined != null)
         {
@@ -635,26 +625,110 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
         return newContact;
     }
 
-    internal static string GetGooglePhoneByType(Person person, string primaryType, params string[] fallbackTypes)
+    /// <summary>
+    /// Verteilt die Telefonnummern eines Kontakts auf die vier Programmfelder. Jeder Google-Eintrag wird höchstens EINEM Feld zugeordnet
+    /// (keine Doppelanzeige, keine Duplikate beim Schreiben). Reihenfolge: erst die bevorzugten Typen je Feld, danach werden übrig gebliebene
+    /// Nummern (eigene Labels, zweite Nummer eines Typs, Nummern ohne Typ) auf noch freie Telefonfelder verteilt – nicht auf Fax.
+    /// </summary>
+    private static PhoneSlots MapPhoneSlots(Person person)
     {
-        var numbers = person.PhoneNumbers ?? [];
-        foreach (var type in fallbackTypes.Prepend(primaryType))
+        var numbers = (person.PhoneNumbers ?? []).Where(static p => !string.IsNullOrEmpty(p.Value)).ToList();
+        var used = new HashSet<PhoneNumber>(ReferenceEqualityComparer.Instance);
+        PhoneNumber? Pick(params string[] types)
         {
-            var match = numbers.FirstOrDefault(p => p.Type?.Equals(type, StringComparison.OrdinalIgnoreCase) == true && !string.IsNullOrEmpty(p.Value));
-            if (match != null) { return match.Value!; }
+            foreach (var type in types)
+            {
+                var match = numbers.FirstOrDefault(p => !used.Contains(p) && p.Type?.Equals(type, StringComparison.OrdinalIgnoreCase) == true);
+                if (match != null) { used.Add(match); return match; }
+            }
+            return null;
         }
-        return string.Empty;
+        var telefon1 = Pick(TYPE_HOME, TYPE_OTHER, TYPE_MAIN);
+        var telefon2 = Pick(TYPE_WORK, TYPE_MAIN, TYPE_WORK_MOBILE);
+        var mobil = Pick(TYPE_MOBILE, TYPE_WORK_MOBILE, TYPE_PAGER);
+        var fax = Pick(TYPE_FAX, TYPE_HOME_FAX, TYPE_WORK_FAX, TYPE_OTHER_FAX);
+        foreach (var rest in numbers.Where(p => !used.Contains(p) && !_faxTypes.Contains(p.Type ?? "")))
+        {
+            if (telefon1 == null) { telefon1 = rest; }
+            else if (telefon2 == null) { telefon2 = rest; }
+            else if (mobil == null) { mobil = rest; }
+            else { break; }  // alle Felder belegt – weitere Nummern bleiben bei Google unangetastet
+            used.Add(rest);
+        }
+        return new PhoneSlots(telefon1, telefon2, mobil, fax);
     }
 
-    private static string GetGoogleEmailByType(Person person, string primaryType, params string[] fallbackTypes)
+    /// <summary>Verteilt die E-Mail-Adressen analog zu <see cref="MapPhoneSlots"/>; Adressen ohne Typ (bei Google häufig) landen auf dem ersten freien Feld.</summary>
+    private static EmailSlots MapEmailSlots(Person person)
     {
-        var emails = person.EmailAddresses ?? [];
-        foreach (var type in fallbackTypes.Prepend(primaryType))
+        var emails = (person.EmailAddresses ?? []).Where(static e => !string.IsNullOrEmpty(e.Value)).ToList();
+        var used = new HashSet<EmailAddress>(ReferenceEqualityComparer.Instance);
+        EmailAddress? Pick(params string[] types)
         {
-            var match = emails.FirstOrDefault(e => e.Type?.Equals(type, StringComparison.OrdinalIgnoreCase) == true && !string.IsNullOrEmpty(e.Value));
-            if (match != null) { return match.Value!; }
+            foreach (var type in types)
+            {
+                var match = emails.FirstOrDefault(e => !used.Contains(e) && e.Type?.Equals(type, StringComparison.OrdinalIgnoreCase) == true);
+                if (match != null) { used.Add(match); return match; }
+            }
+            return null;
         }
-        return string.Empty;
+        var mail1 = Pick(TYPE_HOME, TYPE_OTHER);
+        var mail2 = Pick(TYPE_WORK);
+        foreach (var rest in emails.Where(e => !used.Contains(e)))
+        {
+            if (mail1 == null) { mail1 = rest; }
+            else if (mail2 == null) { mail2 = rest; }
+            else { break; }
+            used.Add(rest);
+        }
+        return new EmailSlots(mail1, mail2);
+    }
+
+    /// <summary>
+    /// Liefert für die Anzeige (Tooltip) das tatsächliche Google-Label des Eintrags, der aktuell hinter jedem Telefon-/E-Mail-Feld steht –
+    /// berechnet aus <see cref="Contact.RawGooglePerson"/> mit derselben Zuordnung wie Lesen und Schreiben. null = kein Eintrag (Feld ist neu oder leer).
+    /// </summary>
+    internal static ContactFieldLabels GetFieldLabels(Contact contact)
+    {
+        if (contact.RawGooglePerson == null) { return new ContactFieldLabels(null, null, null, null, null, null); }
+        var phones = MapPhoneSlots(contact.RawGooglePerson);
+        var emails = MapEmailSlots(contact.RawGooglePerson);
+        return new ContactFieldLabels(
+            PhoneLabel(phones.Telefon1), PhoneLabel(phones.Telefon2), PhoneLabel(phones.Mobil), PhoneLabel(phones.Fax),
+            EmailLabel(emails.Mail1), EmailLabel(emails.Mail2));
+    }
+
+    private static string? PhoneLabel(PhoneNumber? p) => p == null ? null : TypeLabel(p.Type, p.FormattedType, static t => t switch
+    {
+        TYPE_HOME => "Privat",
+        TYPE_WORK => "Geschäftlich",
+        TYPE_MOBILE => "Mobil",
+        TYPE_FAX => "Fax",
+        TYPE_HOME_FAX => "Fax privat",
+        TYPE_WORK_FAX => "Fax geschäftlich",
+        TYPE_OTHER_FAX => "Fax sonstige",
+        TYPE_WORK_MOBILE => "Mobil geschäftlich",
+        TYPE_MAIN => "Hauptnummer",
+        TYPE_PAGER => "Pager",
+        TYPE_OTHER => "Sonstige",
+        "googleVoice" => "Google Voice",
+        "workPager" => "Pager geschäftlich",
+        _ => null
+    });
+
+    private static string? EmailLabel(EmailAddress? e) => e == null ? null : TypeLabel(e.Type, e.FormattedType, static t => t switch
+    {
+        TYPE_HOME => "Privat",
+        TYPE_WORK => "Geschäftlich",
+        TYPE_OTHER => "Sonstige",
+        _ => null
+    });
+
+    // Bekannte Google-Typen auf Deutsch; eigene Labels stehen bei Google direkt im Type-Feld und werden unverändert angezeigt.
+    private static string TypeLabel(string? type, string? formattedType, Func<string, string?> knownTypes)
+    {
+        if (string.IsNullOrWhiteSpace(type)) { return "ohne Label"; }
+        return knownTypes(type) ?? (string.IsNullOrWhiteSpace(formattedType) ? type : formattedType);
     }
 
     private static Address? GetGoogleAddressByType(Person person, string primaryType, params string[] fallbackTypes)
@@ -669,70 +743,61 @@ internal class GooglePeopleManager(string secretPath, string tokenDir)
     }
 
     private static string GetGoogleUrlByType(Person person, string primaryType, params string[] fallbackTypes)
+        => GetGoogleUrlEntry(person, primaryType, fallbackTypes)?.Value ?? string.Empty;
+
+    private static Url? GetGoogleUrlEntry(Person person, string primaryType, params string[] fallbackTypes)  // gemeinsame Auswahlregel für Lesen (MapPersonToContact) und Schreiben (UpdateContactAsync)
     {
         var urls = person.Urls ?? [];
         foreach (var type in fallbackTypes.Prepend(primaryType))
         {
             var match = urls.FirstOrDefault(u => u.Type?.Equals(type, StringComparison.OrdinalIgnoreCase) == true && !string.IsNullOrEmpty(u.Value));
-            if (match != null) { return match.Value!; }
+            if (match != null) { return match; }
         }
-        return urls.FirstOrDefault(u => !string.IsNullOrEmpty(u.Value))?.Value ?? string.Empty;
+        return urls.FirstOrDefault(u => !string.IsNullOrEmpty(u.Value));  // absoluter Fallback: irgendeine URL mit Wert
     }
 
-    private static void UpdateGooglePhone(Person person, string targetType, string? newValue, params string[] fallbackTypes)
+    /// <summary>
+    /// Schreibt die vier Telefonfelder zurück. Die Zuordnung Feld → Eintrag wird mit derselben Regel wie beim Lesen berechnet (MapPhoneSlots),
+    /// BEVOR etwas verändert wird. Nur tatsächlich geänderte Felder werden angefasst; Typ/Label eines vorhandenen Eintrags bleibt erhalten.
+    /// Leeres Feld = Eintrag entfernen; neues Feld ohne Eintrag = neuen Eintrag mit Standardtyp anlegen.
+    /// </summary>
+    private static void ApplyPhoneChanges(Person person, Contact contact)
     {
         person.PhoneNumbers ??= [];
-        var existing = person.PhoneNumbers.FirstOrDefault(e => e.Type?.Equals(targetType, StringComparison.OrdinalIgnoreCase) == true);
-        if (existing == null)
-        {
-            foreach (var fbType in fallbackTypes)
-            {
-                existing = person.PhoneNumbers.FirstOrDefault(e => e.Type?.Equals(fbType, StringComparison.OrdinalIgnoreCase) == true);
-                if (existing != null) { break; }
-            }
-        }
-        if (string.IsNullOrWhiteSpace(newValue))
-        {
-            if (existing != null) { person.PhoneNumbers.Remove(existing); }
-        }
-        else
-        {
-            if (existing == null)
-            {
-                existing = new PhoneNumber { Type = targetType };
-                person.PhoneNumbers.Add(existing);
-            }
-            else { existing.Type = targetType; }  // Den Typ auf den Zieltyp anheben/migrieren um zu verhindern, dass nachfolgende Telefonfelder dasselbe Objekt manipulieren!
-            existing.Value = newValue; // Typ bleibt unverändert, nur Wert wird aktualisiert
-        }
+        var slots = MapPhoneSlots(person);
+        ApplyPhoneSlot(person.PhoneNumbers, slots.Telefon1, contact.Telefon1, TYPE_HOME);
+        ApplyPhoneSlot(person.PhoneNumbers, slots.Telefon2, contact.Telefon2, TYPE_WORK);
+        ApplyPhoneSlot(person.PhoneNumbers, slots.Mobil, contact.Mobil, TYPE_MOBILE);
+        ApplyPhoneSlot(person.PhoneNumbers, slots.Fax, contact.Fax, TYPE_FAX);
     }
 
-    private static void UpdateGoogleEmail(Person person, string targetType, string? newValue, params string[] fallbackTypes)
+    private static void ApplyPhoneSlot(IList<PhoneNumber> numbers, PhoneNumber? existing, string? newValue, string defaultType)
     {
-        person.EmailAddresses ??= [];
-        var existing = person.EmailAddresses.FirstOrDefault(e => e.Type?.Equals(targetType, StringComparison.OrdinalIgnoreCase) == true);
-        if (existing == null)
-        {
-            foreach (var fbType in fallbackTypes)
-            {
-                existing = person.EmailAddresses.FirstOrDefault(e => e.Type?.Equals(fbType, StringComparison.OrdinalIgnoreCase) == true);
-                if (existing != null) { break; }
-            }
-        }
         if (string.IsNullOrWhiteSpace(newValue))
         {
-            if (existing != null) { person.EmailAddresses.Remove(existing); }
+            if (existing != null) { numbers.Remove(existing); }
         }
-        else
+        else if (existing == null) { numbers.Add(new PhoneNumber { Type = defaultType, Value = newValue }); }
+        else if (!string.Equals(existing.Value, newValue, StringComparison.Ordinal)) { existing.Value = newValue; }  // Typ bleibt unverändert
+    }
+
+    /// <summary>E-Mail-Pendant zu <see cref="ApplyPhoneChanges"/>.</summary>
+    private static void ApplyEmailChanges(Person person, Contact contact)
+    {
+        person.EmailAddresses ??= [];
+        var slots = MapEmailSlots(person);
+        ApplyEmailSlot(person.EmailAddresses, slots.Mail1, contact.Mail1, TYPE_HOME);
+        ApplyEmailSlot(person.EmailAddresses, slots.Mail2, contact.Mail2, TYPE_WORK);
+    }
+
+    private static void ApplyEmailSlot(IList<EmailAddress> emails, EmailAddress? existing, string? newValue, string defaultType)
+    {
+        if (string.IsNullOrWhiteSpace(newValue))
         {
-            if (existing == null)
-            {
-                existing = new EmailAddress { Type = targetType };
-                person.EmailAddresses.Add(existing);
-            }
-            else { existing.Type = targetType; } // Typ auf Zieltyp migrieren, verhindert Doppelmanipulation
-            existing.Value = newValue;
+            if (existing != null) { emails.Remove(existing); }
         }
+        else if (existing == null) { emails.Add(new EmailAddress { Type = defaultType, Value = newValue }); }
+        else if (!string.Equals(existing.Value, newValue, StringComparison.Ordinal)) { existing.Value = newValue; }  // Typ bleibt unverändert
     }
 
     private static void UpdateGoogleUserDef(Person person, string targetKey, string? newValue)

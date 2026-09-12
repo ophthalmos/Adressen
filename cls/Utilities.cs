@@ -222,29 +222,6 @@ internal static partial class Utils
         return [.. result.OrderBy(x => x.Tage)];
     }
 
-    internal static Font GetSafeFont(string fontName, float fontSize, FontFamily fallbackFamily)
-    {
-        try
-        {
-            var font = new Font(fontName, fontSize);
-
-            // Wenn Windows die Schriftart nicht findet, wird automatisch "Microsoft Sans Serif" genommen.
-            // Das prüfen wir hier, um stattdessen unseren gewünschten Fallback zu nutzen.
-            if (!string.Equals(font.Name, fontName, StringComparison.OrdinalIgnoreCase))
-            {
-                font.Dispose();
-                return new Font(fallbackFamily, fontSize);
-            }
-
-            return font;
-        }
-        catch
-        {
-            // Falls ein anderer Fehler beim Instanziieren auftritt
-            return new Font(fallbackFamily, fontSize);
-        }
-    }
-
     internal static void StartFile(nint handle, string filePath)
     {
         try
@@ -378,16 +355,6 @@ internal static partial class Utils
             if (o is DateOnly dO) { return dO.ToString(); }
             return o.ToString() ?? string.Empty;
         }
-    }
-
-    internal static bool IsFileReady(string filename)
-    {
-        try
-        {
-            using var stream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.None);
-            return true;
-        }
-        catch (IOException) { return false; }  // Die Datei wird gerade noch von einem anderen Prozess geschrieben oder kopiert
     }
 
     internal static GraphicsPath GetRoundedRectanglePath(Rectangle bounds, int radius)

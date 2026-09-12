@@ -287,9 +287,9 @@ internal static class VCardService
                 if (byte.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var b))
                 {
                     bytes.Add(b);
-                    i += 2;
+                    i += 2;  // die beiden Hex-Zeichen sind verbraucht – NICHT zusätzlich anhängen (sonst wird aus "=D6" ein "Ö6")
                 }
-                bytes.Add(input[i] <= 0xFF ? (byte)input[i] : (byte)'?');  // Bei echtem ASCII-Zeichen das Byte direkt übernehmen, sonst Fragezeichen (Daten sind hier ohnehin defekt)
+                else { bytes.Add((byte)'='); }  // kein gültiges "=XX": das "=" wörtlich übernehmen
             }
             else { bytes.Add((byte)input[i]); }
         }

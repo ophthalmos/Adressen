@@ -510,9 +510,6 @@ public partial class FrmPrintSetting : Form
     {
         switch (keyData)
         {
-            //case Keys.Tab:
-            //    tabControl.SelectedIndex = (tabControl.SelectedIndex + 1) % tabControl.TabCount;
-            //    return true;
             case Keys.Oemplus | Keys.Control:
             case Keys.Add | Keys.Control:
                 if (printPreviewControl.Zoom < 1.0)

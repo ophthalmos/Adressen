@@ -1,434 +1,158 @@
-﻿#pragma warning disable EF1002 // Allow raw SQL interpolation for migration logic
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Data;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
-using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Adressen.cls;
 
-internal record LegacyRawData(int Id, string? Gruppen, string? Dokumente, string? Geburtstag);
+/// <summary>Zustand einer Datenbankdatei aus Sicht des aktuellen Schemas.</summary>
+internal enum DbState
+{
+    Fresh,        // Datei fehlt oder enthält keine Tabellen → Schema komplett aus dem EF-Modell anlegen
+    Current,      // Struktur vollständig; ein fehlender Versionsstempel wird nur nachgezogen
+    NeedsUpgrade, // Struktur bekannt, aber Spalten des Modells fehlen (künftige Versionen) → modellgetrieben ergänzen
+    Legacy,       // Format vor Version 3 (JSON-Gruppen, alte Spaltennamen, Tabellen ohne NOCASE) → nur mit Adressen 1.2.8 konvertierbar
+    TooNew        // user_version ist größer als die des Programms
+}
 
+internal sealed record ColumnSpec(string Name, string Ddl);
+internal sealed record DbInspection(DbState State, int Version, IReadOnlyList<ColumnSpec> MissingColumns);
+
+/// <summary>
+/// Schema-Verwaltung der SQLite-Datenbank. Das EF-Modell (AdressenDbContext) ist die einzige Schemaquelle;
+/// <see cref="AppSettings.DatabaseSchemaVersion"/> (= 5) ist der Urzustand. Ältere Formate werden nicht mehr migriert,
+/// sondern erkannt und mit Hinweis auf Adressen 1.2.8 abgewiesen. Künftige Änderungen: neue Spalte im Modell ergänzen,
+/// Versionsnummer erhöhen – fehlende Spalten werden hier automatisch per ALTER TABLE ADD COLUMN nachgezogen.
+/// Alles darüber hinaus (Umbenennen, Umbau) ist ein bewusster eigener Schritt.
+/// </summary>
 internal static class DatabaseMigrator
 {
-    public static int GetDatabaseVersion(string filePath)
+    private static readonly string[] RequiredTables = ["Adressen", "Gruppen", "Dokumente", "Fotos", "AdresseGruppen"];
+    private static readonly string[] LegacyColumns = ["Firma", "Gruppen", "Dokumente", "Straße", "Grußformel", "Präfix"];  // gab es nur vor Version 3
+
+    /// <summary>Prüft die Datei nur lesend und ohne EF-Context (die Verbindung wird danach wieder geschlossen).</summary>
+    public static DbInspection Inspect(string filePath)
     {
-        if (!File.Exists(filePath)) { return AppSettings.DatabaseSchemaVersion; }
-        var connectionString = $"Data Source={filePath};Mode=ReadOnly;";
-        try
+        if (!File.Exists(filePath)) { return new DbInspection(DbState.Fresh, AppSettings.DatabaseSchemaVersion, []); }
+        using var connection = new SqliteConnection($"Data Source={filePath}");
+        connection.Open();
+        var version = Convert.ToInt32(Scalar(connection, "PRAGMA user_version;") ?? 0);
+        if (version > AppSettings.DatabaseSchemaVersion) { return new DbInspection(DbState.TooNew, version, []); }
+
+        var tables = Names(connection, "SELECT name FROM sqlite_master WHERE type = 'table'");
+        if (tables.Count == 0) { return new DbInspection(DbState.Fresh, version, []); }
+        if (!RequiredTables.All(tables.Contains)) { return new DbInspection(DbState.Legacy, version, []); }
+
+        var columns = Names(connection, "SELECT name FROM pragma_table_info('Adressen')");
+        if (LegacyColumns.Any(columns.Contains)) { return new DbInspection(DbState.Legacy, version, []); }
+        if (version < 3)  // vor v3 wurde die Tabelle ohne COLLATE NOCASE angelegt; nur der Versionsstempel allein ist kein Beweis
         {
-            using var connection = new SqliteConnection(connectionString);
-            connection.Open();
-            using var command = connection.CreateCommand();
-            command.CommandText = "PRAGMA user_version;";
-            var result = command.ExecuteScalar();
-            return result != null ? Convert.ToInt32(result) : 0;
+            var createSql = Scalar(connection, "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'Adressen'") as string ?? string.Empty;
+            if (!createSql.Contains("NOCASE", StringComparison.OrdinalIgnoreCase)) { return new DbInspection(DbState.Legacy, version, []); }
         }
-        catch { return 0; }
+
+        var missing = ModelColumns().Where(c => !columns.Contains(c.Name)).ToList();
+        return new DbInspection(missing.Count > 0 ? DbState.NeedsUpgrade : DbState.Current, version, missing);
     }
 
-    internal static (bool changed, List<string> warnings) MigrateLegacyData(AdressenDbContext context)
+    /// <summary>Legt eine neue Datei mit dem kompletten Schema aus dem EF-Modell an (eine vorhandene Datei wird ersetzt – der Aufrufer fragt vorher).</summary>
+    public static void CreateNew(string filePath)
     {
-        if (context == null) { return (false, []); }
-        var currentDbVersion = 0;
-        try
+        SqliteConnection.ClearAllPools();  // offene Pool-Verbindungen lösen, sonst scheitert das Löschen an Dateisperren
+        foreach (var path in new[] { filePath, filePath + "-wal", filePath + "-shm" })  // verwaiste WAL-Dateien würden sonst in die neue Datei eingespielt
         {
-            using var cmd = context.Database.GetDbConnection().CreateCommand();
-            context.Database.OpenConnection();
-            cmd.CommandText = "PRAGMA user_version;";
-            currentDbVersion = Convert.ToInt32(cmd.ExecuteScalar() ?? 0);
+            if (File.Exists(path)) { File.Delete(path); }
         }
-        catch { /* Ignorieren */ }
+        using var context = new AdressenDbContext(filePath);
+        context.Database.EnsureCreated();
+        StampVersion(context);
+    }
 
-        //MessageBox.Show($"User_version = {currentDbVersion}.\nDatabaseSchemaVersion = {AppSettings.DatabaseSchemaVersion}.");
-
-        if (currentDbVersion >= AppSettings.DatabaseSchemaVersion) { return (false, []); }
-
-        var changesMade = false;
-        var warnings = new List<string>();
+    /// <summary>Ergänzt fehlende Modell-Spalten (Zustand NeedsUpgrade) in einer Transaktion und setzt die Schema-Version. Vorher <see cref="CreateBackupCopy"/> aufrufen.</summary>
+    public static void Upgrade(AdressenDbContext context, DbInspection inspection)
+    {
         using var transaction = context.Database.BeginTransaction();
-
-        try
+        foreach (var column in inspection.MissingColumns)
         {
-            // WICHTIG: Fremdschlüsselprüfung SOFORT deaktivieren.
-            // Da die DB aktuell fehlerhafte Referenzen auf "Adressen_Old" hat, 
-            // würde sonst jeder Schreibvorgang (auch in LegacyDataCleanup) abstürzen.
-            context.Database.ExecuteSqlRaw("PRAGMA foreign_keys = OFF;");
-
-            // ---------------------------------------------------------
-            // PHASE 1: Strukturelle Anpassungen
-            // ---------------------------------------------------------
-
-            var dbColumns = GetTableColumns(context, "Adressen");
-
-            // 1.1 Umbenennungen
-            var renames = new Dictionary<string, string>
-        {
-            { "Firma", "Unternehmen" },
-            { "Grußformel", "Grussformel" },
-            { "Straße", "Strasse" },
-            { "Präfix", "Praefix" }
-        };
-
-            // Spezialfall Firma -> Unternehmen
-            if (dbColumns.Contains("Firma"))
-            {
-                if (dbColumns.Contains("Unternehmen"))
-                {
-                    // Merge Logik falls beide existieren
-                    context.Database.ExecuteSqlRaw("UPDATE Adressen SET Unternehmen = Firma WHERE (Unternehmen IS NULL OR Unternehmen = '') AND (Firma IS NOT NULL AND Firma <> '')");
-                    context.Database.ExecuteSqlRaw("ALTER TABLE Adressen DROP COLUMN \"Firma\"");
-                }
-                else
-                {
-                    context.Database.ExecuteSqlRaw("ALTER TABLE Adressen RENAME COLUMN \"Firma\" TO Unternehmen");
-                    dbColumns.Add("Unternehmen");
-                }
-                dbColumns.Remove("Firma");
-                changesMade = true;
-            }
-
-            foreach (var rename in renames.Where(r => r.Key != "Firma"))
-            {
-                if (dbColumns.Contains(rename.Key))
-                {
-                    context.Database.ExecuteSqlRaw($"ALTER TABLE Adressen RENAME COLUMN \"{rename.Key}\" TO {rename.Value}");
-                    dbColumns.Remove(rename.Key);
-                    dbColumns.Add(rename.Value);
-                    changesMade = true;
-                }
-            }
-
-            // 1.2 Fehlende Spalten ergänzen
-            var entityProperties = typeof(Adresse).GetProperties()
-                .Where(p => p.Name != "Id"
-                            && !Attribute.IsDefined(p, typeof(NotMappedAttribute))
-                            && !p.GetAccessors().Any(x => x.IsVirtual));
-            foreach (var prop in entityProperties)
-            {
-                if (!dbColumns.Contains(prop.Name))
-                {
-                    var columnType = prop.PropertyType == typeof(bool) ? "INTEGER DEFAULT 1" : "TEXT";
-                    context.Database.ExecuteSqlRaw($"ALTER TABLE Adressen ADD COLUMN \"{prop.Name}\" {columnType}");
-
-                    // Sicherheitshalber NULL-Werte bei bestehenden Bool-Spalten mit 1 überschreiben
-                    if (prop.PropertyType == typeof(bool))
-                    {
-                        context.Database.ExecuteSqlRaw($"UPDATE Adressen SET \"{prop.Name}\" = 1 WHERE \"{prop.Name}\" IS NULL");
-                    }
-                    changesMade = true;
-                }
-            }
-            // 1.3 Hilfstabellen sicherstellen
-            // Hinweis: Da FKs jetzt OFF sind, laufen diese Befehle durch, auch wenn die Referenzen "krumm" sind.
-            context.Database.ExecuteSqlRaw(@"CREATE TABLE IF NOT EXISTS ""Fotos"" (""Id"" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, ""AdressId"" INTEGER NOT NULL UNIQUE, ""Fotodaten"" BLOB, FOREIGN KEY(""AdressId"") REFERENCES ""Adressen""(""Id"") ON DELETE CASCADE);");
-            context.Database.ExecuteSqlRaw(@"CREATE TABLE IF NOT EXISTS ""Gruppen"" (""Id"" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, ""Name"" TEXT NOT NULL);");
-            context.Database.ExecuteSqlRaw(@"CREATE TABLE IF NOT EXISTS ""AdresseGruppen"" (""AdressenId"" INTEGER NOT NULL, ""GruppenId"" INTEGER NOT NULL, PRIMARY KEY(""AdressenId"", ""GruppenId""), FOREIGN KEY(""AdressenId"") REFERENCES ""Adressen""(""Id"") ON DELETE CASCADE, FOREIGN KEY(""GruppenId"") REFERENCES ""Gruppen""(""Id"") ON DELETE CASCADE);");
-            context.Database.ExecuteSqlRaw(@"CREATE TABLE IF NOT EXISTS ""Dokumente"" (""Id"" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, ""Dateipfad"" TEXT NOT NULL, ""AdressId"" INTEGER NOT NULL, FOREIGN KEY(""AdressId"") REFERENCES ""Adressen""(""Id"") ON DELETE CASCADE);");
-
-            // 1.4 Datenmigration (JSON/Datum)
-            // Das hier verursachte vorher den Crash, weil SaveChanges() die kaputten FKs prüfte.
-            // Jetzt ist FK-Prüfung aus, also läuft es durch.
-            var (isCleaned, migrationWarnings) = LegacyDataCleanup(context, dbColumns);
-            warnings.AddRange(migrationWarnings);    
-            if (isCleaned) { changesMade = true; }
-
-            // ---------------------------------------------------------
-            // PHASE 2: Table Rebuild (Hier werden die kaputten Referenzen korrigiert)
-            // ---------------------------------------------------------
-
-            if (currentDbVersion < 3)  // Version Introducing NoCase = 3
-            {
-                context.SaveChanges();
-
-                // 2.2 Haupttabelle Backup
-                var backupTableName = "Adressen_Legacy_Backup";
-                context.Database.ExecuteSqlRaw($"DROP TABLE IF EXISTS \"{backupTableName}\"");
-                context.Database.ExecuteSqlRaw($"ALTER TABLE \"Adressen\" RENAME TO \"{backupTableName}\"");
-
-                // 2.3 Neue Tabelle Adressen erstellen (Clean)
-                var createSql = @"
-                CREATE TABLE ""Adressen"" (
-                    ""Id"" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                    ""Anrede"" TEXT COLLATE NOCASE,
-                    ""Praefix"" TEXT COLLATE NOCASE,
-                    ""Nachname"" TEXT COLLATE NOCASE,
-                    ""Vorname"" TEXT COLLATE NOCASE,
-                    ""Zwischenname"" TEXT COLLATE NOCASE,
-                    ""Nickname"" TEXT COLLATE NOCASE,
-                    ""Suffix"" TEXT COLLATE NOCASE,
-                    ""Unternehmen"" TEXT COLLATE NOCASE,
-                    ""Position"" TEXT COLLATE NOCASE,
-                    ""Strasse"" TEXT COLLATE NOCASE,
-                    ""PLZ"" TEXT COLLATE NOCASE,
-                    ""Ort"" TEXT COLLATE NOCASE,
-                    ""Postfach"" TEXT COLLATE NOCASE,
-                    ""Land"" TEXT COLLATE NOCASE,
-                    ""Betreff"" TEXT COLLATE NOCASE,
-                    ""Grussformel"" TEXT COLLATE NOCASE,
-                    ""Schlussformel"" TEXT COLLATE NOCASE,
-                    ""Geburtstag"" TEXT,
-                    ""Reminder"" INTEGER DEFAULT 1,
-                    ""Mail1"" TEXT COLLATE NOCASE,
-                    ""Mail2"" TEXT COLLATE NOCASE,
-                    ""Telefon1"" TEXT COLLATE NOCASE,
-                    ""Telefon2"" TEXT COLLATE NOCASE,
-                    ""Mobil"" TEXT COLLATE NOCASE,
-                    ""Fax"" TEXT COLLATE NOCASE,
-                    ""Internet"" TEXT COLLATE NOCASE,
-                    ""Notizen"" TEXT COLLATE NOCASE,
-                    ""LastModified"" TEXT
-                );";
-                context.Database.ExecuteSqlRaw(createSql);
-
-                // 2.4 Daten kopieren
-                var columns = "\"Id\", \"Anrede\", \"Praefix\", \"Nachname\", \"Vorname\", \"Zwischenname\", \"Nickname\", \"Suffix\", \"Unternehmen\", \"Position\", \"Strasse\", \"PLZ\", \"Ort\", \"Postfach\", \"Land\", \"Betreff\", \"Grussformel\", \"Schlussformel\", \"Geburtstag\", \"Reminder\", \"Mail1\", \"Mail2\", \"Telefon1\", \"Telefon2\", \"Mobil\", \"Fax\", \"Internet\", \"Notizen\", \"LastModified\"";
-                context.Database.ExecuteSqlRaw($"INSERT INTO \"Adressen\" ({columns}) SELECT {columns} FROM \"{backupTableName}\"");
-
-                // ---------------------------------------------------------
-                // REBUILD KIND-TABELLEN
-                // Hier korrigieren wir den Fehler "REFERENCES Adressen_Old"
-                // indem wir die Tabellen neu erstellen und auf "Adressen" zeigen lassen.
-                // ---------------------------------------------------------
-
-                // --- A) FOTOS reparieren ---
-                context.Database.ExecuteSqlRaw("ALTER TABLE \"Fotos\" RENAME TO \"Fotos_Backup\"");
-
-                // Neu erstellen
-                context.Database.ExecuteSqlRaw(@"
-    CREATE TABLE ""Fotos"" (
-        ""Id"" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        ""AdressId"" INTEGER NOT NULL UNIQUE,
-        ""Fotodaten"" BLOB,
-        FOREIGN KEY(""AdressId"") REFERENCES ""Adressen""(""Id"") ON DELETE CASCADE
-    );");
-
-                // Daten kopieren - MIT FILTERUNG verwaister Einträge
-                context.Database.ExecuteSqlRaw(@"
-    INSERT INTO ""Fotos"" (""Id"", ""AdressId"", ""Fotodaten"") 
-    SELECT f.""Id"", f.""AdressId"", f.""Fotodaten"" 
-    FROM ""Fotos_Backup"" f
-    WHERE EXISTS (SELECT 1 FROM ""Adressen"" a WHERE a.""Id"" = f.""AdressId"")");
-
-                // Backup weg
-                context.Database.ExecuteSqlRaw("DROP TABLE \"Fotos_Backup\"");
-
-                // --- B) DOKUMENTE reparieren ---
-                context.Database.ExecuteSqlRaw("ALTER TABLE \"Dokumente\" RENAME TO \"Dokumente_Backup\"");
-
-                // Neu erstellen
-                context.Database.ExecuteSqlRaw(@"
-    CREATE TABLE ""Dokumente"" (
-        ""Id"" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        ""Dateipfad"" TEXT NOT NULL,
-        ""AdressId"" INTEGER NOT NULL,
-        FOREIGN KEY(""AdressId"") REFERENCES ""Adressen""(""Id"") ON DELETE CASCADE
-    );");
-
-                // Daten kopieren - MIT FILTERUNG
-                context.Database.ExecuteSqlRaw(@"
-    INSERT INTO ""Dokumente"" (""Id"", ""Dateipfad"", ""AdressId"") 
-    SELECT d.""Id"", d.""Dateipfad"", d.""AdressId"" 
-    FROM ""Dokumente_Backup"" d
-    WHERE EXISTS (SELECT 1 FROM ""Adressen"" a WHERE a.""Id"" = d.""AdressId"")");
-
-                context.Database.ExecuteSqlRaw("DROP TABLE \"Dokumente_Backup\"");
-
-                // --- C) ADRESSEGRUPPEN reparieren ---
-                context.Database.ExecuteSqlRaw("ALTER TABLE \"AdresseGruppen\" RENAME TO \"AdresseGruppen_Backup\"");
-
-                // Neu erstellen
-                context.Database.ExecuteSqlRaw(@"
-    CREATE TABLE ""AdresseGruppen"" (
-        ""AdressenId"" INTEGER NOT NULL,
-        ""GruppenId"" INTEGER NOT NULL,
-        PRIMARY KEY(""AdressenId"", ""GruppenId""),
-        FOREIGN KEY(""AdressenId"") REFERENCES ""Adressen""(""Id"") ON DELETE CASCADE,
-        FOREIGN KEY(""GruppenId"") REFERENCES ""Gruppen""(""Id"") ON DELETE CASCADE
-    );");
-
-                // Daten kopieren - MIT FILTERUNG
-                context.Database.ExecuteSqlRaw(@"
-    INSERT INTO ""AdresseGruppen"" (""AdressenId"", ""GruppenId"") 
-    SELECT ag.""AdressenId"", ag.""GruppenId"" 
-    FROM ""AdresseGruppen_Backup"" ag
-    WHERE EXISTS (SELECT 1 FROM ""Adressen"" a WHERE a.""Id"" = ag.""AdressenId"")
-    AND EXISTS (SELECT 1 FROM ""Gruppen"" g WHERE g.""Id"" = ag.""GruppenId"")");
-                context.Database.ExecuteSqlRaw("DROP TABLE \"AdresseGruppen_Backup\"");
-                changesMade = true;
-            }
-
-            if (currentDbVersion < 4)
-            {
-                var dbColumnsCheck = GetTableColumns(context, "Adressen");
-                if (!dbColumnsCheck.Contains("Reminder"))
-                {
-                    context.Database.ExecuteSqlRaw("ALTER TABLE Adressen ADD COLUMN \"Reminder\" INTEGER DEFAULT 1");
-                    context.Database.ExecuteSqlRaw("UPDATE Adressen SET \"Reminder\" = 1 WHERE \"Reminder\" IS NULL");
-                    changesMade = true;
-                }
-            }
-
-            if (currentDbVersion < 5)
-            {
-                var dbColumnsV5 = GetTableColumns(context, "Adressen");
-                if (!dbColumnsV5.Contains("LastModified"))
-                {
-                    context.Database.ExecuteSqlRaw("ALTER TABLE Adressen ADD COLUMN \"LastModified\" TEXT");
-                    changesMade = true;  // Kein UPDATE – bestehende Datensätze bleiben NULL
-                }
-            }
-
-            // Schema Version setzen
-            context.Database.ExecuteSqlRaw($"PRAGMA user_version = {AppSettings.DatabaseSchemaVersion}");
-
-            // Ganz am Ende, wenn alles sauber ist: Check aktivieren
-            // Wenn hier etwas knallt, sind die Daten wirklich inkonsistent, aber die Struktur stimmt jetzt.
-            // Wir machen es VOR dem Commit, damit wir bei Fehlern rollen können.
-            context.Database.ExecuteSqlRaw("PRAGMA foreign_key_check;");
-            context.Database.ExecuteSqlRaw("PRAGMA foreign_keys = ON;");
-
-            transaction.Commit();
-
-            if (changesMade) { context.Database.ExecuteSqlRaw("VACUUM;"); }
-            return (changesMade, warnings);
+            var sql = $"ALTER TABLE \"Adressen\" ADD COLUMN {column.Ddl}";
+            context.Database.ExecuteSqlRaw(sql);
         }
-        catch (Exception ex)
-        {
-            transaction.Rollback();
-            // Er wird in ConnectSQLDatabaseAsync im catch-Block gefangen und sicher im UI-Thread angezeigt!
-            throw new Exception("Fehler während der Datenbankmigration.", ex);
-        }
+        StampVersion(context);
+        transaction.Commit();
+    }
+
+    public static void StampVersion(AdressenDbContext context)
+    {
+        var sql = $"PRAGMA user_version = {AppSettings.DatabaseSchemaVersion};";
+        context.Database.ExecuteSqlRaw(sql);
+    }
+
+    /// <summary>Konsistente Sicherungskopie über die SQLite-Backup-API (auch bei WAL-Modus korrekt) neben der Originaldatei; liefert den Pfad der Kopie.</summary>
+    public static string CreateBackupCopy(string filePath, int fromVersion)
+    {
+        var directory = Path.GetDirectoryName(filePath) ?? string.Empty;
+        var backupPath = Path.Combine(directory, $"{Path.GetFileNameWithoutExtension(filePath)}.vor-Update-v{fromVersion}-{DateTime.Now:yyyyMMdd-HHmmss}{Path.GetExtension(filePath)}");
+        using var source = new SqliteConnection($"Data Source={filePath}");
+        using var target = new SqliteConnection($"Data Source={backupPath}");
+        source.Open();
+        target.Open();
+        source.BackupDatabase(target);
+        return backupPath;
     }
 
     // --- Hilfsmethoden ---
 
-    private static HashSet<string> GetTableColumns(AdressenDbContext context, string tableName)
+    /// <summary>Spalten der Tabelle Adressen aus dem EF-Modell (ohne Primärschlüssel) mit fertigem DDL-Fragment für ADD COLUMN.</summary>
+    private static List<ColumnSpec> ModelColumns()
     {
-        var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        using var command = context.Database.GetDbConnection().CreateCommand();
-        command.CommandText = $"SELECT name FROM pragma_table_info('{tableName}')";
-        if (context.Database.GetDbConnection().State != ConnectionState.Open) { context.Database.OpenConnection(); }
-        using var reader = command.ExecuteReader();
-        while (reader.Read()) { columns.Add(reader.GetString(0)); }
-        return columns;
+        using var context = new AdressenDbContext(":memory:");  // nur für das Modell, es wird keine Verbindung geöffnet
+        var model = context.GetService<IDesignTimeModel>().Model;  // das Laufzeitmodell (context.Model) enthält Collation/Defaults nicht
+        var entity = model.FindEntityType(typeof(Adresse)) ?? throw new InvalidOperationException("Entität Adresse fehlt im EF-Modell.");
+        var table = StoreObjectIdentifier.Table(entity.GetTableName() ?? "Adressen");
+        var sample = new Adresse();  // liefert die Vorgabewerte neuer Datensätze (z. B. Reminder = true) – das EF-Modell kennt keine DB-Defaults
+        var result = new List<ColumnSpec>();
+        foreach (var property in entity.GetProperties())
+        {
+            if (property.IsPrimaryKey()) { continue; }
+            var name = property.GetColumnName(table) ?? property.Name;
+            var ddl = new StringBuilder($"\"{name}\" {property.GetColumnType()}");
+            if (property.GetCollation() is { Length: > 0 } collation) { ddl.Append(" COLLATE ").Append(collation); }
+            if (!property.IsNullable) { ddl.Append(" NOT NULL DEFAULT ").Append(DefaultLiteral(property, sample)); }  // ADD COLUMN NOT NULL verlangt einen Default
+            result.Add(new ColumnSpec(name, ddl.ToString()));
+        }
+        return result;
     }
 
-    private static (bool cleaned, List<string>) LegacyDataCleanup(AdressenDbContext context, HashSet<string> dbColumns)
+    /// <summary>SQL-Literal für den Vorgabewert einer NOT-NULL-Spalte, abgeleitet vom Wert der Eigenschaft in einem frisch erzeugten Datensatz.</summary>
+    private static string DefaultLiteral(IProperty property, Adresse sample)
     {
-        var warnings = new List<string>();
-        // --- SCHRITT D: Datenmigration (JSON/Datum) ---
-        var hasOldGruppen = dbColumns.Contains("Gruppen");
-        var hasOldDokumente = dbColumns.Contains("Dokumente");
-        bool hasOldDateFormats;
-
-        using (var command = context.Database.GetDbConnection().CreateCommand())
+        var value = property.PropertyInfo?.GetValue(sample);
+        return value switch
         {
-            command.CommandText = "SELECT 1 FROM Adressen WHERE Geburtstag LIKE '%.%' OR Geburtstag = '' LIMIT 1";
-            using var reader = command.ExecuteReader();
-            hasOldDateFormats = reader.HasRows;
-        }
+            bool b => b ? "1" : "0",
+            string s => $"'{s.Replace("'", "''")}'",
+            int or long or short or byte or double or float or decimal => Convert.ToString(value, CultureInfo.InvariantCulture)!,
+            null when property.ClrType == typeof(string) => "''",
+            _ => "0"
+        };
+    }
 
-        if (hasOldGruppen || hasOldDokumente || hasOldDateFormats)
-        {
-            var sbSql = new StringBuilder();
-            sbSql.Append("SELECT Id, NULLIF(CAST(Geburtstag AS TEXT), '') AS Geburtstag");
-            sbSql.Append(hasOldGruppen ? ", Gruppen" : ", NULL AS Gruppen");
-            sbSql.Append(hasOldDokumente ? ", Dokumente" : ", NULL AS Dokumente");
-            sbSql.Append(" FROM Adressen");
+    private static object? Scalar(SqliteConnection connection, string sql)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        return command.ExecuteScalar();
+    }
 
-            var legacyData = context.Database.SqlQueryRaw<LegacyRawData>(sbSql.ToString()).ToList();
-            context.Database.ExecuteSqlRaw("UPDATE Adressen SET Geburtstag = NULL;");
-
-            var allAdressen = context.Adressen.Include(a => a.Gruppen).Include(a => a.Dokumente).ToList();
-            var gruppenCache = new Dictionary<string, Gruppe>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var row in legacyData)
-            {
-                var adresse = allAdressen.FirstOrDefault(a => a.Id == row.Id);
-                if (adresse == null) { continue; }
-
-                var dataChanged = false;
-
-                // Geburtstag
-                if (!string.IsNullOrWhiteSpace(row.Geburtstag) &&
-                    (DateOnly.TryParseExact(row.Geburtstag, "d.M.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate) ||
-                     DateOnly.TryParse(row.Geburtstag, CultureInfo.GetCultureInfo("de-DE"), DateTimeStyles.None, out parsedDate)))
-                {
-                    adresse.Geburtstag = parsedDate;
-                    dataChanged = true;
-                }
-
-                // Gruppen (JSON)
-                if (hasOldGruppen && !string.IsNullOrWhiteSpace(row.Gruppen))
-                {
-                    try
-                    {
-                        var namen = JsonSerializer.Deserialize<List<string>>(row.Gruppen);
-                        if (namen != null)
-                        {
-                            foreach (var name in namen.Where(n => !string.IsNullOrWhiteSpace(n)))
-                            {
-                                if (!gruppenCache.TryGetValue(name, out var gruppe))
-                                {
-                                    gruppe = context.Gruppen.Local.FirstOrDefault(g => g.Name == name) ??
-                                             context.Gruppen.FirstOrDefault(g => g.Name == name) ??
-                                             new Gruppe { Name = name };
-                                    if (gruppe.Id == 0 && !context.Gruppen.Local.Contains(gruppe))
-                                    {
-                                        context.Gruppen.Add(gruppe);
-                                    }
-
-                                    gruppenCache[name] = gruppe;
-                                }
-                                if (!adresse.Gruppen.Any(g => g.Name == name)) { adresse.Gruppen.Add(gruppe); dataChanged = true; }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        var name = $"{adresse.Vorname} {adresse.Nachname}".Trim();
-                        warnings.Add($"Adresse {adresse.Id} ({name}): Gruppen konnten nicht migriert werden.");
-                        System.Diagnostics.Debug.WriteLine($"[Migration] Adresse {adresse.Id}: {ex.Message}");
-                    }
-                }
-
-                // Dokumente (JSON)
-                if (hasOldDokumente && !string.IsNullOrWhiteSpace(row.Dokumente))
-                {
-                    try
-                    {
-                        var pfade = JsonSerializer.Deserialize<List<string>>(row.Dokumente);
-                        if (pfade != null)
-                        {
-                            foreach (var pfad in pfade.Where(p => !string.IsNullOrWhiteSpace(p)))
-                            {
-                                if (!adresse.Dokumente.Any(d => d.Dateipfad == pfad))
-                                {
-                                    adresse.Dokumente.Add(new Dokument { Dateipfad = pfad });
-                                    dataChanged = true;
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        var name = $"{adresse.Vorname} {adresse.Nachname}".Trim();
-                        warnings.Add($"Adresse {adresse.Id} ({name}): Dokumente konnten nicht migriert werden.");
-                        System.Diagnostics.Debug.WriteLine($"[Migration] Adresse {adresse.Id}: {ex.Message}");
-                    }
-                }
-                if (dataChanged) { context.Entry(adresse).State = EntityState.Modified; }
-            }
-
-            context.SaveChanges();
-            if (hasOldGruppen) { context.Database.ExecuteSqlRaw("ALTER TABLE Adressen DROP COLUMN Gruppen"); }
-            if (hasOldDokumente) { context.Database.ExecuteSqlRaw("ALTER TABLE Adressen DROP COLUMN Dokumente"); }
-            return (true, warnings);
-        }
-        return (false, warnings);
-
+    private static HashSet<string> Names(SqliteConnection connection, string sql)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        using var reader = command.ExecuteReader();
+        while (reader.Read()) { names.Add(reader.GetString(0)); }
+        return names;
     }
 }

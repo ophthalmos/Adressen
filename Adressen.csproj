@@ -11,8 +11,8 @@
     <SourceRevisionId>build$([System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss"))</SourceRevisionId>
     <NeutralLanguage>de</NeutralLanguage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion>1.2.8</AssemblyVersion>
-    <FileVersion>1.2.8</FileVersion>
+    <AssemblyVersion>1.2.9</AssemblyVersion>
+    <FileVersion>1.2.9</FileVersion>
     <StartupObject>Adressen.Program</StartupObject>
     <Product>$(AssemblyName) &amp; Kontakte</Product>
     <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
@@ -45,12 +45,6 @@
     <None Remove="lib\**" />
     <None Remove="Papierkorb\**" />
     <None Remove="_Backups\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="cls\ForenameService.cs" />
-    <Compile Remove="frm\FrmAdressen %28Original%29.cs" />
-    <Compile Remove="LibreOffice.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -93,7 +87,7 @@
   <ItemGroup>
     <PackageReference Include="Google.Apis.Oauth2.v2" Version="1.74.0.1869" />
     <PackageReference Include="Google.Apis.PeopleService.v1" Version="1.74.0.3973" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
   </ItemGroup>
 
   <ItemGroup>
