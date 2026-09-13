@@ -418,3 +418,6 @@ FodyWeavers.xsd
 /winget-release.ps1
 /rss_un4seen.php
 /WinGet-Release.pdf
+
+# Persönliche Claude-Code-Einstellungen (nicht auf GitHub)
+.claude/settings.local.json
