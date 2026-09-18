@@ -422,3 +422,6 @@ FodyWeavers.xsd
 # Persönliche Claude-Code-Einstellungen (nicht auf GitHub)
 .claude/settings.local.json
 /CLAUDE.md
+
+# Von wingetcreate erzeugte WinGet-Manifeste (werden per PR ans winget-pkgs-Repo eingereicht, hier nicht benoetigt)
+/manifests/
